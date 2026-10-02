@@ -1,4 +1,7 @@
 .reference/
+.npm-cache/
+*.tsbuildinfo
+.test-data/
 node_modules/
 .venv/
 __pycache__/

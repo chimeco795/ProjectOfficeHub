@@ -1,0 +1,48 @@
+export type Project = {
+  id: string;
+  name: string;
+  description: string;
+  objective: string;
+  go_live: string | null;
+  cut_count: number;
+  methodology: "Agile" | "Waterfall" | "Hybrid";
+  priority: "Baja" | "Media" | "Alta" | "Crítica";
+  target_date: string | null;
+  updated_at: string;
+  version: number;
+  start_date: string | null;
+  close_date: string | null;
+  status: string;
+};
+export type Cut = {
+  id: string;
+  report_date: string;
+  start_date: string | null;
+  end_date: string | null;
+  status: "borrador" | "publicado";
+  version: number;
+  metadata: Record<string, unknown>;
+  project_snapshot: Partial<Project>;
+  published_at: string | null;
+};
+export type Row = {
+  id: string;
+  section: string;
+  location: string;
+  original: Record<string, unknown>;
+  current: Record<string, unknown>;
+  generated: Record<string, unknown>;
+  source_id: string | null;
+  parent_record_id: string | null;
+  review: string;
+  modified: number;
+  version: number;
+};
+export type Source = {
+  id: string;
+  filename: string;
+  kind: string;
+  warnings: string[];
+  sha256: string;
+};
+export type Detail = { cut: Cut; records: Row[]; sources: Source[] };
