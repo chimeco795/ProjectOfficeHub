@@ -24,3 +24,13 @@ Los campos ejecutivos de cortes siguen en metadata; actividades, riesgos e hitos
 Migración aditiva y transaccional; respaldo previo si existen proyectos. Los valores iniciales son Hybrid, Media, target_date nulo y updated_at igual a created_at. Ejecutarla otra vez no modifica los datos ni duplica columnas. Se prueban tanto la evolución desde v1 como desde v2 y la conservación de snapshots publicados.
 
 No se cargó información real del navegador PMO ni una base semanal del usuario. Una migración de datos entre productos requerirá el mapa de identidades y la conciliación definidos en INTEGRATION_PLAN.md.
+
+## Fase 2 — seguimiento semanal
+
+Esquema 4: cuts.updated_at y cuts.history_snapshot. La migración crea respaldo de bases pobladas antes de cambios. Triggers bloquean UPDATE/DELETE del corte publicado y INSERT/UPDATE/DELETE de sus registros y fuentes. Los archivos fuente no se pueden actualizar, y un registro no puede moverse a otro corte.
+
+Toda modificación de registros o fuentes incrementa cuts.version dentro de la misma transacción. Así una publicación o edición del resumen desde una ventana antigua se rechaza con 409. Los lotes inválidos se revierten completos, incluidos los incrementos de versión.
+
+La publicación congela project_snapshot, metadata, registros y history_snapshot. Este último guarda la serie oficial de publicaciones conocida en ese momento; publicar después una semana atrasada no cambia el reporte ya publicado. Para publicaciones anteriores al esquema 4 se congela la serie disponible durante la migración: no se puede reconstruir qué publicaciones eran visibles originalmente si no se registró ese dato.
+
+cut_audit registra ahora creación e importación además de copia, edición y publicación. GET /api/cuts/{cut_id}/timeline combina esos eventos con las ediciones de records para consulta del corte. Las auditorías históricas no se inventan retroactivamente; la auditoría global unificada permanece pendiente.

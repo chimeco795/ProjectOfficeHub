@@ -1,6 +1,6 @@
 # Plan de integración de Project Office Hub
 
-Fecha: 2026-10-02. Estado actualizado: fases 0 y 1 completadas. Base unificada implementada; fases 2–5 pendientes. Véase VERIFICATION.md para resultados y límites de validación.
+Fecha: 2026-10-02. Estado actualizado: fases 0, 1 y 2 completadas. Base unificada y flujo semanal implementados; fases 3–5 pendientes. Véase VERIFICATION.md para resultados y límites de validación.
 
 Las secciones de arquitectura observada describen los paquetes originales; ARCHITECTURE.md y DATA_MODEL.md describen la implementación actual.
 
@@ -177,4 +177,4 @@ Preservar los componentes de reporte desde la fase 2; la fase 4 adapta y verific
 | Colisiones entre fecha objetivo y Go Live | Campos separados y decisión explícita en migración |
 | Módulos todavía no migrados | Seguimiento de paridad; no presentar el primer incremento como PMO terminado |
 
-Baseline ejecutado: ambos builds terminan y las 10 pruebas semanales originales pasan. La fase 1 termina con 19 pruebas correctas, build React/TypeScript y verificación de navegación en navegador. No se han importado datos reales exportados de PMO ni bases de usuario. La compilación HTML antigua tiene advertencias documentadas en VERIFICATION.md.
+Baseline ejecutado: ambos builds terminan y las 10 pruebas semanales originales pasan. La fase 1 terminó con 19 pruebas correctas. La fase 2 termina con 31 pruebas correctas, build React/TypeScript y verificación del flujo semanal completo en navegador (VERIFICATION_PHASE2.md). No se han importado datos reales exportados de PMO ni bases de usuario. La compilación HTML antigua tiene advertencias documentadas en VERIFICATION.md.

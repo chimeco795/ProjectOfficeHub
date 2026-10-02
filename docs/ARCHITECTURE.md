@@ -23,3 +23,11 @@ El frontend no persiste datos de negocio en localStorage. El almacenamiento prin
 La separación API/dominio/repositorio se inició con Project. Las rutas semanales todavía permanecen en main.py y usan SQL SQLite directo; su separación se hará progresivamente. No se afirma portabilidad completa a PostgreSQL en esta fase.
 
 No se migraron todavía las páginas HTML del PMO antiguo. Sus ZIP permanecen como referencia; no hay iframe ni doble escritura. La aplicación nueva arranca sin datos de muestra y escucha exclusivamente en localhost mediante Start.ps1.
+
+## Incremento de fase 2
+
+frontend/src/modules/executive/CutHistory.tsx añade histórico filtrable y consulta de eventos del corte. Las cargas de detalle refrescan también conteos y versiones. Las tablas y revisión siguen conservando originales; los campos de publicaciones están bloqueados visualmente.
+
+La API preserva endpoints existentes y añade timeline. El esquema 4 proporciona protección adicional en SQLite y control de versión sobre todo el contenido semanal. Las series oficiales se congelan al publicar; las series importadas siguen siendo fuentes de consulta identificadas, pendientes de la consolidación visual de fase 4.
+
+La integración con entidades maestras RAID, WorkItem, Milestone y personas aún corresponde a fase 3. En esta fase los registros semanales conservan el modelo JSON revisable recibido; no se crearon catálogos maestros duplicados.
