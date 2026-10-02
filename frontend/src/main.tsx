@@ -1,3 +1,4 @@
+import { CutHistory, CutTimeline } from "./modules/executive/CutHistory";
 import type { Project, Cut, Row, Source, Detail } from "./types";
 import { api, json } from "./api";
 import React, { useEffect, useState, useRef } from "react";
@@ -94,6 +95,7 @@ function App() {
     [busy, setBusy] = useState(false),
     [mapping, setMapping] = useState("{}");
   const navigate = (next: string) => {
+    if (busy) return;
     if (dirty) {
       setError("Guarda o descarta los cambios antes de cambiar de pantalla.");
       return;
@@ -113,7 +115,16 @@ function App() {
     }
   };
   const load = async (id = cutId, projectId = project?.id) => {
-    if (id && projectId) setDetail(await api(`/projects/${projectId}/cuts/${id}`));
+    if (id && projectId) {
+      const token = selection.current;
+      const [loaded, list] = await Promise.all([
+        api(`/projects/${projectId}/cuts/${id}`), api(`/projects/${projectId}/cuts`),
+      ]);
+      if (token !== selection.current) return;
+      setDetail(loaded);
+      setCutId(id);
+      setCuts(list);
+    }
   };
   useEffect(() => {
     let active = true;
@@ -175,7 +186,7 @@ function App() {
       setCutId(target);
       setDetail(loaded);
     }
-    setView(["summary", "report", "weekly", "data", "review", "import", "history"].includes(nextView) ? nextView : "summary");
+    setView(["summary", "report", "weekly", "data", "review", "import", "history", "timeline"].includes(nextView) ? nextView : "summary");
   }
   async function save(row: Row, review: string) {
     for (const [key, value] of Object.entries(row.current)) {
@@ -251,6 +262,7 @@ function App() {
               <FolderKanban size={19} /> Resumen del proyecto
             </button>
             <div className="workspace-label">SEGUIMIENTO EJECUTIVO</div>
+            <button className={"nav " + (view === "timeline" ? "active" : "")} onClick={() => navigate("timeline")}><ShieldCheck size={19} /> Trazabilidad del corte</button>
             <button
               className={"nav " + (view === "report" ? "active" : "")}
               onClick={() => navigate("report")}
@@ -410,12 +422,12 @@ function App() {
                         : "REVISIÓN DEL CORTE"}
                   </div>
                   <h1>
-                    {view !== "summary" && detail?.cut.status === "publicado"
+                    {!["summary", "history"].includes(view) && detail?.cut.status === "publicado"
                       ? (detail.cut.project_snapshot.name ?? project.name)
                       : project.name}
                   </h1>
                   <p>
-                    {(view !== "summary" && detail?.cut.status === "publicado"
+                    {(!["summary", "history"].includes(view) && detail?.cut.status === "publicado"
                       ? detail.cut.project_snapshot.description
                       : project.description) ||
                       (view === "summary" ? "Define los objetivos y las fechas de tu proyecto." : "Prepara la información de tu reporte semanal.")}
@@ -433,7 +445,7 @@ function App() {
                   </button>
                 </div>
               </div>
-              {view !== "summary" && <div className="cutbar">
+              {!["summary", "history"].includes(view) && <div className="cutbar">
                 <label>
                   Corte de reporte{" "}
                   <select
@@ -442,7 +454,6 @@ function App() {
                     value={cutId}
                     onChange={(e) =>
                       run(async () => {
-                        setCutId(e.target.value);
                         await load(e.target.value);
                       })
                     }
@@ -467,18 +478,21 @@ function App() {
                     )}
                   </strong>
                 </span>
+                <button disabled={dirty || busy} onClick={() => run(() => load())}>Recargar corte</button>
                 <span className="saved">
                   <ShieldCheck size={15} /> Persistencia local
                 </span>
               </div>
               }
-              {view !== "summary" && detail?.cut.status === "publicado" && (
+              {!["summary", "history"].includes(view) && detail?.cut.status === "publicado" && (
                 <div className="message success">
                   Este corte está publicado. Los datos son de solo lectura.
                 </div>
               )}
               {view === "summary" ? (
                 <ProjectSummary project={project} cuts={cuts} onExecutive={() => navigate("history")} onEdit={() => setEditingProject(true)} />
+              ) : view === "history" && !cutId ? (
+                <CutHistory cuts={cuts} busy={busy} onCreate={() => setModal("cut")} onOpen={() => {}} />
               ) : !cutId ? (
                 <div className="empty">
                   <CalendarDays size={40} />
@@ -515,27 +529,12 @@ function App() {
                   onDirty={setDirty}
                 />
               ) : view === "history" ? (
-                <section className="panel">
-                  <h2>Cortes del proyecto</h2>
-                  <p>Consulta cada corte sin reemplazar los anteriores.</p>
-                  {cuts.map((c) => (
-                    <button
-                      className="history-row"
-                      key={c.id}
-                      onClick={() =>
-                        run(async () => {
-                          setCutId(c.id);
-                          await load(c.id);
-                          setView("review");
-                        })
-                      }
-                    >
-                      <CalendarDays size={19} />
-                      {fmt(c.report_date)} · {c.status}
-                      <ChevronRight size={18} />
-                    </button>
-                  ))}
-                </section>
+                <CutHistory cuts={cuts} busy={busy} onCreate={() => setModal("cut")} onOpen={id => run(async () => {
+                  await load(id);
+                  setView(cuts.find(c => c.id === id)?.status === "publicado" ? "report" : "review");
+                })} />
+              ) : view === "timeline" && detail ? (
+                <CutTimeline cutId={cutId} version={detail.cut.version} />
               ) : view === "import" ? (
                 <>
                   <section className="panel import-panel">
@@ -903,6 +902,8 @@ function App() {
                       ...json({
                         ...values,
                         copy_from: values.copy_from || null,
+                        start_date: values.start_date || null,
+                        end_date: values.end_date || null,
                       }),
                     });
                     setCuts(await api("/projects/" + project!.id + "/cuts"));
@@ -940,6 +941,10 @@ function App() {
                     Fecha del reporte
                     <input name="report_date" type="date" required autoFocus />
                   </label>
+                  <div className="form-grid">
+                    <label>Inicio del periodo<input name="start_date" type="date" /></label>
+                    <label>Fin del periodo<input name="end_date" type="date" /></label>
+                  </div>
                   <label>
                     Partir de un corte anterior
                     <select name="copy_from" defaultValue="">
@@ -996,6 +1001,7 @@ function App() {
                 <label>
                   Sección
                   <select
+                    disabled={busy || detail?.cut.status === "publicado"}
                     value={edit.section}
                     onChange={(e) =>
                       setEdit({ ...edit, section: e.target.value })
@@ -1018,7 +1024,11 @@ function App() {
                 ).map((k) => (
                   <label key={k}>
                     {labels[k] ?? k}
-                    <textarea
+                    {typeof edit.current[k] === "boolean" || k === "executive_priority" ? (
+                      <input type="checkbox" checked={edit.current[k] === true} disabled={busy || detail?.cut.status === "publicado"}
+                        onChange={e => setEdit({...edit,current:{...edit.current,[k]:e.target.checked}})} />
+                    ) : <textarea
+                      disabled={busy || detail?.cut.status === "publicado"}
                       rows={k === "description" ? 5 : 2}
                       value={
                         edit.current[k] === null
@@ -1030,7 +1040,7 @@ function App() {
                           "planned",
                           "actual",
                           "weight",
-                          "source_variation",
+                          "source_variation", "percentage", "confidence_percent",
                         ].includes(k);
                         setEdit({
                           ...edit,
@@ -1044,7 +1054,7 @@ function App() {
                           },
                         });
                       }}
-                    />
+                    />}
                   </label>
                 ))}
               </div>

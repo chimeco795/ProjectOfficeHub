@@ -22,7 +22,7 @@ async def lifespan(app):
     initialize()
     yield
 
-app=FastAPI(title='Project Office Hub',version='0.1.0',lifespan=lifespan)
+app=FastAPI(title='Project Office Hub',version='0.2.0',lifespan=lifespan)
 from .api.projects import router as projects_router
 app.include_router(projects_router)
 app.add_middleware(TrustedHostMiddleware,allowed_hosts=['127.0.0.1','localhost','testserver'])
@@ -38,7 +38,7 @@ class Cut(BaseModel):
         return self
 
 class Review(BaseModel):
-    version:int
+    version:int=Field(ge=1)
     current:dict
     review:Literal['pendiente','aceptado','dudoso','eliminado']
     section:str
@@ -63,7 +63,7 @@ def editable(db,cut_id):
     return row
 
 @app.get('/api/health')
-def health():return {'status':'ok','version':'0.1.0','product':'Project Office Hub'}
+def health():return {'status':'ok','version':'0.2.0','product':'Project Office Hub'}
 
 @app.get('/api/schema')
 def schema():return {'sections':SECTIONS,'aliases':ALIASES}
@@ -72,7 +72,14 @@ def schema():return {'sections':SECTIONS,'aliases':ALIASES}
 def cuts(project_id:str):
     with connection() as db:
         require(db,'projects',project_id)
-        return [dict(r) for r in db.execute('SELECT * FROM cuts WHERE project_id=? ORDER BY report_date DESC',(project_id,))]
+        result=[]
+        for row in db.execute('SELECT * FROM cuts WHERE project_id=? ORDER BY report_date DESC',(project_id,)):
+            cut=dict(row)
+            cut['metadata']=json.loads(cut['metadata'])
+            cut['record_count']=db.execute("SELECT COUNT(*) FROM records WHERE cut_id=? AND review!='eliminado'",(cut['id'],)).fetchone()[0]
+            cut['pending_count']=db.execute("SELECT COUNT(*) FROM records WHERE cut_id=? AND review IN ('pendiente','dudoso')",(cut['id'],)).fetchone()[0]
+            result.append(cut)
+        return result
 
 @app.post('/api/projects/{project_id}/cuts',status_code=201)
 def create_cut(project_id:str,value:Cut):
@@ -93,6 +100,8 @@ def create_cut(project_id:str,value:Cut):
             for row in db.execute("SELECT * FROM records WHERE cut_id=? AND review!='eliminado' AND section!='avance'",(value.copy_from,)).fetchall():
                 db.execute('INSERT INTO records(id,cut_id,source_id,section,location,original,current,generated,review,modified,parent_record_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)',(uid(),id,source_ids.get(row['source_id']),row['section'],row['location'],row['original'],row['current'],row['generated'],'pendiente',row['modified'],row['id']))
             db.execute('INSERT INTO cut_audit(cut_id,changed_at,event,previous,next) VALUES(?,?,?,?,?)',(id,now(),'copiar',encode({'copy_from':value.copy_from}),'{}'))
+        db.execute('UPDATE cuts SET updated_at=? WHERE id=?',(now(),id))
+        db.execute('INSERT INTO cut_audit(cut_id,changed_at,event,previous,next) VALUES(?,?,?,?,?)',(id,now(),'crear','{}',encode(value.model_dump(mode='json'))))
         return dict(require(db,'cuts',id))
 
 @app.get('/api/cuts/{cut_id}')
@@ -143,6 +152,7 @@ async def import_file(cut_id:str,file:UploadFile=File(...),mapping:str=Form('{}'
         db.execute('INSERT INTO sources VALUES(?,?,?,?,?,?,?,?,?)',(sid,cut_id,Path(file.filename).name,extension[1:],hash,now(),data,encode(config),encode(warnings)))
         for r in records:
             db.execute('INSERT INTO records(id,cut_id,source_id,section,location,original,current,review) VALUES(?,?,?,?,?,?,?,?)',(uid(),cut_id,sid,r['section'],r['location'],encode(r['original']),encode(r['current']),r['review']))
+        db.execute('INSERT INTO cut_audit(cut_id,changed_at,event,previous,next) VALUES(?,?,?,?,?)',(cut_id,now(),'importar','{}',encode({'source_id':sid,'filename':Path(file.filename).name,'sha256':hash,'count':len(records),'warnings':warnings})))
         return {'source_id':sid,'count':len(records),'warnings':warnings}
 
 @app.patch('/api/records/{record_id}')
@@ -210,7 +220,7 @@ class WeeklyMetadata(BaseModel):
     pmp:PMP=Field(default_factory=PMP)
 
 class CutUpdate(BaseModel):
-    version:int
+    version:int=Field(ge=1)
     metadata:WeeklyMetadata
     start_date:date|None=None
     end_date:date|None=None
@@ -220,7 +230,7 @@ class CutUpdate(BaseModel):
         return self
 
 class Version(BaseModel):
-    version:int
+    version:int=Field(ge=1)
 
 @app.post('/api/cuts/{cut_id}/records',status_code=201)
 def manual_record(cut_id:str,value:ManualRecord):
@@ -247,7 +257,7 @@ def update_cut(cut_id:str,value:CutUpdate):
         db.execute('BEGIN IMMEDIATE');old=dict(editable(db,cut_id))
         if old['version']!=value.version:raise HTTPException(409,'El corte cambió. Recarga antes de guardar.')
         metadata=value.metadata.model_dump(mode='json')
-        db.execute('UPDATE cuts SET metadata=?,start_date=?,end_date=?,version=version+1 WHERE id=?',(encode(metadata),str(value.start_date) if value.start_date else None,str(value.end_date) if value.end_date else None,cut_id))
+        db.execute('UPDATE cuts SET metadata=?,start_date=?,end_date=?,updated_at=?,version=version+1 WHERE id=?',(encode(metadata),str(value.start_date) if value.start_date else None,str(value.end_date) if value.end_date else None,now(),cut_id))
         db.execute('INSERT INTO cut_audit(cut_id,changed_at,event,previous,next) VALUES(?,?,?,?,?)',(cut_id,now(),'editar',encode(old),encode(value.model_dump(mode='json'))))
         return {'saved':True}
 
@@ -259,7 +269,12 @@ def publish_cut(cut_id:str,value:Version):
         pending=db.execute("SELECT COUNT(*) FROM records WHERE cut_id=? AND review IN ('pendiente','dudoso')",(cut_id,)).fetchone()[0]
         if pending:raise HTTPException(422,f'Revisa los {pending} registros pendientes o dudosos antes de publicar.')
         snapshot=dict(require(db,'projects',old['project_id']))
-        db.execute("UPDATE cuts SET status='publicado',published_at=?,project_snapshot=?,version=version+1 WHERE id=?",(now(),encode(snapshot),cut_id))
+        from .migrations import history_points
+        points=[p for p in history_points(db,cut_id) if p['status']=='publicado' or p['id']==cut_id]
+        for point in points:
+            if point['id']==cut_id:point['status']='publicado'
+        stamp=now()
+        db.execute("UPDATE cuts SET status='publicado',published_at=?,updated_at=?,project_snapshot=?,history_snapshot=?,version=version+1 WHERE id=?",(stamp,stamp,encode(snapshot),encode(points),cut_id))
         db.execute('INSERT INTO cut_audit(cut_id,changed_at,event,previous,next) VALUES(?,?,?,?,?)',(cut_id,now(),'publicar',encode(old),encode({'status':'publicado','project_snapshot':snapshot})))
         return {'published':True}
 
@@ -273,10 +288,19 @@ def cut_audit(cut_id:str):
 def report_history(cut_id:str):
     with connection() as db:
         cut=require(db,'cuts',cut_id)
-        rows=db.execute('SELECT id,report_date,status,metadata FROM cuts WHERE project_id=? AND report_date<=? ORDER BY report_date',(cut['project_id'],cut['report_date'])).fetchall()
-        return [{'id':r['id'],'date':r['report_date'],'status':r['status'],
-                 'planned':json.loads(r['metadata']).get('planned'),
-                 'actual':json.loads(r['metadata']).get('actual')} for r in rows]
+        if cut['status']=='publicado' and cut['history_snapshot'] is not None:
+            return json.loads(cut['history_snapshot'])
+        from .migrations import history_points
+        return history_points(db,cut_id)
+
+@app.get('/api/cuts/{cut_id}/timeline')
+def timeline(cut_id:str):
+    with connection() as db:
+        require(db,'cuts',cut_id)
+        events=[dict(r) for r in db.execute('SELECT id,changed_at,event,previous,next FROM cut_audit WHERE cut_id=?',(cut_id,))]
+        for r in db.execute('SELECT a.*,r.section,r.location FROM audit a JOIN records r ON r.id=a.record_id WHERE r.cut_id=?',(cut_id,)):
+            events.append({**dict(r),'event':'registro'})
+        return sorted(events,key=lambda e:(e['changed_at'],e['id']))
 
 dist=Path(__file__).resolve().parents[2]/'frontend'/'dist'
 if dist.exists():app.mount('/',StaticFiles(directory=dist,html=True),name='frontend')

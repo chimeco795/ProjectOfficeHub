@@ -24,6 +24,7 @@ export function WeeklyEditor({
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const locked = detail.cut.status === "publicado";
+  const pending = detail.records.filter(r => ["pendiente", "dudoso"].includes(r.review)).length;
   useEffect(() => onDirty(dirty), [dirty, onDirty]);
   useEffect(() => {
     const guard = (e: BeforeUnloadEvent) => {
@@ -380,9 +381,10 @@ export function WeeklyEditor({
             ? `Guardado como solo lectura el ${new Date(detail.cut.published_at!).toLocaleString("es-MX")}. Puedes crear la siguiente semana desde este corte.`
             : "Publicar conserva una versión de solo lectura de los datos y del proyecto. Revisa los registros pendientes o dudosos antes de publicar. Después continúa en un nuevo corte."}
         </p>
+        {!locked && pending > 0 && <p role="status">Quedan {pending} registros por revisar antes de publicar.</p>}
         {!locked && (
           <button
-            disabled={busy || dirty}
+            disabled={busy || dirty || pending > 0}
             onClick={() =>
               work(async () => {
                 await api("/cuts/" + detail.cut.id + "/publish", {

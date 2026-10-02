@@ -24,6 +24,9 @@ export type Cut = {
   metadata: Record<string, unknown>;
   project_snapshot: Partial<Project>;
   published_at: string | null;
+  updated_at: string;
+  record_count?: number;
+  pending_count?: number;
 };
 export type Row = {
   id: string;

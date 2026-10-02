@@ -44,11 +44,11 @@ def test_manual_batch_atomicity_and_conflicts(client):
 def test_published_cut_immutable_snapshot_and_copy(client):
     project,cut=project_cut(client)
     client.post(f"/api/cuts/{cut['id']}/imports",files={'file':('source.docx',doc_bytes())})
-    assert client.post(f"/api/cuts/{cut['id']}/publish",json={'version':1}).status_code==422
+    assert client.post(f"/api/cuts/{cut['id']}/publish",json={'version':get(client,cut)['cut']['version']}).status_code==422
     rows=get(client,cut)['records']
     assert client.patch(f"/api/cuts/{cut['id']}/records",json={'records':[change(r) for r in rows]}).status_code==200
-    assert client.put(f"/api/cuts/{cut['id']}",json={'version':1,'metadata':{'planned':48,'actual':45,'executive_comment':'Revisado'}}).status_code==200
-    assert client.post(f"/api/cuts/{cut['id']}/publish",json={'version':2}).status_code==200
+    assert client.put(f"/api/cuts/{cut['id']}",json={'version':get(client,cut)['cut']['version'],'metadata':{'planned':48,'actual':45,'executive_comment':'Revisado'}}).status_code==200
+    assert client.post(f"/api/cuts/{cut['id']}/publish",json={'version':get(client,cut)['cut']['version']}).status_code==200
     published=get(client,cut)
     row=published['records'][0]
     assert client.patch('/api/records/'+row['id'],json=change(row,owner='Cambio')).status_code==409
@@ -94,7 +94,7 @@ def test_v1_migration_preserves_data_and_creates_backup(tmp_path,monkeypatch):
     with db.connection() as connection:
         assert connection.execute('SELECT name,version FROM projects').fetchone()['name']=='Proyecto existente'
         assert connection.execute('SELECT status FROM cuts').fetchone()['status']=='borrador'
-        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==3
+        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==4
     backups=list(tmp_path.glob('backup-v1-*.sqlite3'))
     assert len(backups)==1
     with sqlite3.connect(backups[0]) as connection:
