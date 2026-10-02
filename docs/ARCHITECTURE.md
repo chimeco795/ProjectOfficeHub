@@ -1,4 +1,4 @@
-# Arquitectura implementada — fase 1
+# Arquitectura implementada — fases 1–3
 
 Un frontend React/TypeScript y una API FastAPI sirven Project Office Hub. El backend sirve frontend/dist en ejecución local; Vite redirige /api al puerto 8000 durante desarrollo. La navegación conserva proyecto/vista/corte en el fragmento de URL y los restaura al cargar. Actualmente los cambios de vista reemplazan la URL; no crean un historial de pantallas para el botón Atrás del navegador.
 
@@ -30,4 +30,8 @@ frontend/src/modules/executive/CutHistory.tsx añade histórico filtrable y cons
 
 La API preserva endpoints existentes y añade timeline. El esquema 4 proporciona protección adicional en SQLite y control de versión sobre todo el contenido semanal. Las series oficiales se congelan al publicar; las series importadas siguen siendo fuentes de consulta identificadas, pendientes de la consolidación visual de fase 4.
 
-La integración con entidades maestras RAID, WorkItem, Milestone y personas aún corresponde a fase 3. En esta fase los registros semanales conservan el modelo JSON revisable recibido; no se crearon catálogos maestros duplicados.
+## Incremento de fase 3
+
+api/master.py expone catálogo, personas, conciliación y auditoría; domain/master.py valida contratos y services/master.py centraliza operaciones y SQL transaccional. modules/master contiene catálogo, edición y conciliación. Se conserva el registro semanal revisable y su original; weekly_item_snapshots lo relaciona con la identidad maestra y conserva la versión capturada.
+
+La auditoría se consulta unificada sin reescribir las tablas heredadas. master_items comparte campos entre RAID, hitos y actividades; evita catálogos paralelos. Activity es la base de planificación, no la jerarquía completa de WorkItem. La extracción adicional de SQL a repositorios y la planificación avanzada continúan en futuras fases.

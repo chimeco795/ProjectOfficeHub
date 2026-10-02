@@ -4,9 +4,11 @@ Producto PMO con un catálogo maestro de proyectos y Seguimiento Ejecutivo dentr
 
 ## Estado
 
-Fases 0, 1 y 2 completadas el 2 de octubre de 2026: baseline, estructura unificada, proyecto maestro, migración a esquema 4 y navegación Portafolio → Proyecto → Seguimiento Ejecutivo. Se conserva el código y las pruebas del módulo semanal; la conciliación con entidades RAID, hitos y actividades maestras corresponde a fases posteriores.
+Fases 0–3 completadas el 2 de octubre de 2026. Versión 0.3.0, esquema SQLite 5: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
 
-El producto todavía no tiene integrados Board, Gantt, presupuesto, personas ni el resto de los módulos del PMO antiguo. Los ZIP originales permanecen intactos.
+Desde **Catálogo y responsables** administra el estado actual. Al crear un corte puedes partir del catálogo o copiar una semana anterior. Revisa y acepta los registros; en **Conciliar con el catálogo** vincula los riesgos, dependencias, hitos y actividades antes de publicar. Vincular no sobrescribe los valores semanales. Traer datos actuales vuelve a dejar el registro pendiente; aplicar cambios al catálogo exige revisar y guardar el formulario. **Auditoría del proyecto** reúne los eventos históricos.
+
+Pendientes: consolidación del reporte (fase 4) y Board, Gantt, Roadmap, presupuesto, equipos, agenda, documentos y migración de datos del PMO antiguo (fase 5). Actividades es la base maestra inicial; no incluye aún jerarquías completas de WorkItem. Los ZIP originales permanecen intactos.
 
 ## Inicio en este equipo
 

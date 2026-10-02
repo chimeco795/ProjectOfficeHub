@@ -22,9 +22,12 @@ async def lifespan(app):
     initialize()
     yield
 
-app=FastAPI(title='Project Office Hub',version='0.2.0',lifespan=lifespan)
+app=FastAPI(title='Project Office Hub',version='0.3.0',lifespan=lifespan)
 from .api.projects import router as projects_router
 app.include_router(projects_router)
+from .api.master import router as master_router
+from .services import master as master_service
+app.include_router(master_router)
 app.add_middleware(TrustedHostMiddleware,allowed_hosts=['127.0.0.1','localhost','testserver'])
 
 class Cut(BaseModel):
@@ -32,8 +35,10 @@ class Cut(BaseModel):
     start_date:date|None=None
     end_date:date|None=None
     copy_from:str|None=None
+    from_master:bool=False
     @model_validator(mode='after')
     def check(self):
+        if self.copy_from and self.from_master:raise ValueError('Selecciona un único origen del corte')
         if self.start_date and self.end_date and self.start_date>self.end_date:raise ValueError('Inicio posterior al fin')
         return self
 
@@ -63,7 +68,7 @@ def editable(db,cut_id):
     return row
 
 @app.get('/api/health')
-def health():return {'status':'ok','version':'0.2.0','product':'Project Office Hub'}
+def health():return {'status':'ok','version':'0.3.0','product':'Project Office Hub'}
 
 @app.get('/api/schema')
 def schema():return {'sections':SECTIONS,'aliases':ALIASES}
@@ -100,6 +105,8 @@ def create_cut(project_id:str,value:Cut):
             for row in db.execute("SELECT * FROM records WHERE cut_id=? AND review!='eliminado' AND section!='avance'",(value.copy_from,)).fetchall():
                 db.execute('INSERT INTO records(id,cut_id,source_id,section,location,original,current,generated,review,modified,parent_record_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)',(uid(),id,source_ids.get(row['source_id']),row['section'],row['location'],row['original'],row['current'],row['generated'],'pendiente',row['modified'],row['id']))
             db.execute('INSERT INTO cut_audit(cut_id,changed_at,event,previous,next) VALUES(?,?,?,?,?)',(id,now(),'copiar',encode({'copy_from':value.copy_from}),'{}'))
+        if value.copy_from:master_service.copy_bindings(db,id)
+        if value.from_master:master_service.from_master(db,project_id,id)
         db.execute('UPDATE cuts SET updated_at=? WHERE id=?',(now(),id))
         db.execute('INSERT INTO cut_audit(cut_id,changed_at,event,previous,next) VALUES(?,?,?,?,?)',(id,now(),'crear','{}',encode(value.model_dump(mode='json'))))
         return dict(require(db,'cuts',id))
@@ -165,6 +172,9 @@ def update_record(db,record_id,value):
         old=dict(require(db,'records',record_id))
         editable(db,old['cut_id'])
         if old['version']!=value.version:raise HTTPException(409,'Este registro cambió en otra ventana. Recargue antes de guardar.')
+        link=db.execute('SELECT master_snapshot FROM weekly_item_snapshots WHERE record_id=?',(record_id,)).fetchone()
+        if link and master_service.SECTIONS[json.loads(link['master_snapshot'])['kind']]!=value.section:
+            raise HTTPException(422,'Desvincula el registro antes de cambiar su sección')
         calculated=generated(value.current)
         changed=int(bool(old['modified']) or json.loads(old['current'])!=value.current or old['section']!=value.section)
         result=db.execute('UPDATE records SET current=?,generated=?,review=?,section=?,modified=?,version=version+1 WHERE id=? AND version=?',(encode(value.current),encode(calculated),value.review,value.section,changed,record_id,value.version))
@@ -268,6 +278,7 @@ def publish_cut(cut_id:str,value:Version):
         if old['version']!=value.version:raise HTTPException(409,'El corte cambió. Recarga antes de publicar.')
         pending=db.execute("SELECT COUNT(*) FROM records WHERE cut_id=? AND review IN ('pendiente','dudoso')",(cut_id,)).fetchone()[0]
         if pending:raise HTTPException(422,f'Revisa los {pending} registros pendientes o dudosos antes de publicar.')
+        master_service.freeze(db,cut_id)
         snapshot=dict(require(db,'projects',old['project_id']))
         from .migrations import history_points
         points=[p for p in history_points(db,cut_id) if p['status']=='publicado' or p['id']==cut_id]

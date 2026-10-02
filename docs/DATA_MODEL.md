@@ -1,4 +1,4 @@
-# Modelo de datos implementado — esquema 3
+# Modelo de datos implementado — esquema 5
 
 ## Project maestro
 
@@ -17,7 +17,7 @@ La creación y cada actualización se registran en project_audit. Cada modificac
 - audit, cut_audit y project_audit conservan la auditoría heredada.
 - cuts.project_snapshot conserva los datos de proyecto publicados. La migración no lo recalcula.
 
-Los campos ejecutivos de cortes siguen en metadata; actividades, riesgos e hitos siguen siendo registros semanales JSON. Esto preserva compatibilidad durante fase 1; no constituye todavía la reconciliación con entidades maestras de fase 3. La auditoría unificada propuesta también queda pendiente.
+Los campos ejecutivos de cortes siguen en metadata; actividades, riesgos e hitos siguen siendo registros semanales JSON. El esquema 5 añade vínculos explícitos al catálogo y una consulta de auditoría unificada, preservando estos registros.
 
 ## Migración v2 → v3
 
@@ -33,4 +33,15 @@ Toda modificación de registros o fuentes incrementa cuts.version dentro de la m
 
 La publicación congela project_snapshot, metadata, registros y history_snapshot. Este último guarda la serie oficial de publicaciones conocida en ese momento; publicar después una semana atrasada no cambia el reporte ya publicado. Para publicaciones anteriores al esquema 4 se congela la serie disponible durante la migración: no se puede reconstruir qué publicaciones eran visibles originalmente si no se registró ese dato.
 
-cut_audit registra ahora creación e importación además de copia, edición y publicación. GET /api/cuts/{cut_id}/timeline combina esos eventos con las ediciones de records para consulta del corte. Las auditorías históricas no se inventan retroactivamente; la auditoría global unificada permanece pendiente.
+cut_audit registra ahora creación e importación además de copia, edición y publicación. GET /api/cuts/{cut_id}/timeline combina esos eventos con las ediciones de records para consulta del corte. Las auditorías históricas no se inventan retroactivamente; la consulta de fase 3 agrega estos eventos sin reescribirlos.
+
+## Fase 3 — esquema 5
+
+- people: identidad global, correo normalizado único si está informado, versión. project_people asigna personas a proyectos.
+- master_items: tipo Risk/Assumption/Issue/Dependency/Milestone/Activity, código único sin distinguir mayúsculas por proyecto, nombre, descripción, estado, responsable, relación, fechas, probabilidad, impacto, respuesta, prioridad, avance, inclusión ejecutiva, archivo y versión. No hay borrado físico en la API.
+- weekly_item_snapshots: record_id único, cut_id, master_item_id, master_version, master_snapshot, payload y frozen_at. Un maestro solo se vincula una vez por corte. Relaciones y responsables deben pertenecer al proyecto.
+- audit_events: eventos nuevos de catálogo/personas. La consulta por proyecto combina estos eventos con auditorías anteriores y cambios de las personas asignadas.
+
+Crear corte desde maestro copia elementos activos seleccionados y los deja pendientes. Copiar corte conserva vínculos y procedencia, sin copiar frozen_at. Importar Word/Excel nunca crea maestros automáticamente. Conciliar requiere aceptación previa; alta y vínculo son atómicos. Traer valores actuales requiere versiones y nueva revisión; aplicar al maestro requiere formulario explícito. Vincular, desvincular y aplicar invalidan la versión del registro para detectar concurrencia.
+
+Publicar exige vínculos en riesgos, dependencias, hitos y actividades aceptados; congela payload con los valores semanales revisados. master_snapshot conserva el estado maestro capturado al vincular/traer/aplicar, que puede diferir del semanal. Triggers protegen snapshots publicados. La migración v4→v5 respalda bases pobladas, no altera publicaciones anteriores ni inventa sus vínculos.

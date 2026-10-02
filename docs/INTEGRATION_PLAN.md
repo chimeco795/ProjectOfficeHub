@@ -1,6 +1,6 @@
 # Plan de integración de Project Office Hub
 
-Fecha: 2026-10-02. Estado actualizado: fases 0, 1 y 2 completadas. Base unificada y flujo semanal implementados; fases 3–5 pendientes. Véase VERIFICATION.md para resultados y límites de validación.
+Fecha: 2026-10-02. Estado actualizado: fases 0–3 completadas. Base unificada, flujo semanal y conciliación maestra implementados; fases 4–5 pendientes. Véase VERIFICATION.md para resultados y límites de validación.
 
 Las secciones de arquitectura observada describen los paquetes originales; ARCHITECTURE.md y DATA_MODEL.md describen la implementación actual.
 
@@ -178,3 +178,7 @@ Preservar los componentes de reporte desde la fase 2; la fase 4 adapta y verific
 | Módulos todavía no migrados | Seguimiento de paridad; no presentar el primer incremento como PMO terminado |
 
 Baseline ejecutado: ambos builds terminan y las 10 pruebas semanales originales pasan. La fase 1 terminó con 19 pruebas correctas. La fase 2 termina con 31 pruebas correctas, build React/TypeScript y verificación del flujo semanal completo en navegador (VERIFICATION_PHASE2.md). No se han importado datos reales exportados de PMO ni bases de usuario. La compilación HTML antigua tiene advertencias documentadas en VERIFICATION.md.
+
+## Cierre de fase 3
+
+Implementado en esquema 5: catálogo común master_items para RAID, Milestone y Activity (base inicial de WorkItem), personas/asignación por proyecto, snapshots semanales, conciliación explícita y auditoría agregada. Las jerarquías y vistas avanzadas de planificación quedan en fase 5. No se infieren identidades por nombre ni se convierten importaciones automáticamente en maestros. Código único por proyecto y vínculo único por entidad/corte. Véase VERIFICATION_PHASE3.md.

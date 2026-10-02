@@ -42,6 +42,7 @@ def test_word_excel_review_publication_copy_and_restart(client):
     latest = get(client, cut)['cut']
     assert client.put(base, json={'version': latest['version'], 'start_date':'2026-09-21','end_date':'2026-09-25',
         'metadata': {'planned':48,'actual':45,'executive_comment':'Semana validada'}}).status_code == 200
+    reconcile_structured(client, project, cut)
     assert publish(client, cut).status_code == 200
     published = get(client, cut)
     assert published['records'][0]['original'] == original
@@ -65,7 +66,7 @@ def test_word_excel_review_publication_copy_and_restart(client):
 
 
 def test_content_change_invalidates_publication_version(client):
-    _, cut = project_cut(client)
+    project, cut = project_cut(client)
     base = f"/api/cuts/{cut['id']}"
     stale = get(client, cut)['cut']['version']
     record = client.post(base + '/records',json={'section':'riesgos','current':{'description':'Revisar riesgo'}})
@@ -75,6 +76,7 @@ def test_content_change_invalidates_publication_version(client):
     row = latest['records'][0]
     assert client.patch('/api/records/'+row['id'],json=change(row,owner='Otro responsable')).status_code == 200
     assert client.post(base + '/publish',json={'version':latest['cut']['version']}).status_code == 409
+    reconcile_structured(client, project, cut)
     assert publish(client,cut).status_code == 200
 
 
@@ -116,6 +118,7 @@ def test_v3_migration_preserves_data_and_creates_backup(tmp_path,monkeypatch):
     monkeypatch.setattr(db,'DATA',tmp_path)
     with monkeypatch.context() as before:
         before.setattr(migrations,'migrate_weekly',lambda *args:None)
+        before.setattr(migrations,'migrate_master',lambda *args:None)
         db.initialize()
     with db.connection() as connection:
         connection.execute("INSERT INTO projects(id,name,description,objective,created_at) VALUES('p','Original','','','2026-09-01')")
@@ -125,8 +128,17 @@ def test_v3_migration_preserves_data_and_creates_backup(tmp_path,monkeypatch):
         cut=connection.execute('SELECT * FROM cuts').fetchone()
         assert json.loads(cut['project_snapshot']) == {'name':'Histórico'}
         assert json.loads(cut['history_snapshot'])[0]['planned'] == 48
-        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 4
+        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 5
     backups=list(tmp_path.glob('backup-v3-*.sqlite3'))
     assert len(backups)==1
     with sqlite3.connect(backups[0]) as connection:
         assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==3
+
+
+def reconcile_structured(client, project, cut):
+    kinds={'riesgos':'Risk','actividades':'Activity','dependencias':'Dependency','hitos':'Milestone'}
+    for index,row in enumerate(get(client,cut)['records']):
+        if row['section'] in kinds and row['review']=='aceptado':
+            response=client.post(f"/api/projects/{project['id']}/cuts/{cut['id']}/records/{row['id']}/reconcile",json={
+                'record_version':row['version'],'new_item':{'kind':kinds[row['section']],'code':f'REF-{index}','name':str(row['current'].get('description','Elemento'))}})
+            assert response.status_code==200,response.text

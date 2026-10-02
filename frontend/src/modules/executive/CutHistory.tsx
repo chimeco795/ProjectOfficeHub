@@ -69,7 +69,7 @@ const auditLabels: Record<string,string> = {
   planned:"Planeado", actual:"Real", executive_comment:"Resumen ejecutivo", project_snapshot:"Proyecto al publicar",
   name:"Nombre", status:"Estado", changed_at:"Fecha", copy_from:"Corte de origen", location:"Ubicación de origen",
 };
-function AuditValues({value}: {value: unknown}) {
+export function AuditValues({value}: {value: unknown}) {
   if (value == null || value === "") return <span>Sin dato</span>;
   if (typeof value !== "object") return <span>{String(value)}</span>;
   if (Array.isArray(value)) return <span>{value.map(v => typeof v === "object" ? JSON.stringify(v) : String(v)).join("; ") || "Sin datos"}</span>;

@@ -1,3 +1,5 @@
+import { MasterCatalog } from "./modules/master/MasterCatalog";
+import { Reconciliation, ProjectAudit } from "./modules/master/Reconciliation";
 import { CutHistory, CutTimeline } from "./modules/executive/CutHistory";
 import type { Project, Cut, Row, Source, Detail } from "./types";
 import { api, json } from "./api";
@@ -42,6 +44,8 @@ const sections: Record<string, string> = {
   acciones: "Acciones de mitigación",
 };
 const labels: Record<string, string> = {
+  percentage: "Avance (%)",
+  executive_priority: "Prioridad ejecutiva",
   description: "Descripción",
   executive_title: "Título ejecutivo (opcional)",
   owner: "Responsable",
@@ -186,7 +190,7 @@ function App() {
       setCutId(target);
       setDetail(loaded);
     }
-    setView(["summary", "report", "weekly", "data", "review", "import", "history", "timeline"].includes(nextView) ? nextView : "summary");
+    setView(["master", "audit", "reconcile", "summary", "report", "weekly", "data", "review", "import", "history", "timeline"].includes(nextView) ? nextView : "summary");
   }
   async function save(row: Row, review: string) {
     for (const [key, value] of Object.entries(row.current)) {
@@ -261,6 +265,7 @@ function App() {
             <button className={"nav " + (view === "summary" ? "active" : "")} onClick={() => navigate("summary")}>
               <FolderKanban size={19} /> Resumen del proyecto
             </button>
+            {[["master","Catálogo y responsables"],["audit","Auditoría del proyecto"],["reconcile","Conciliar con el catálogo"]].map(([id,label]) => <button key={id} className={"nav " + (view===id?"active":"")} onClick={()=>navigate(id)}><Files size={19}/>{label}</button>)}
             <div className="workspace-label">SEGUIMIENTO EJECUTIVO</div>
             <button className={"nav " + (view === "timeline" ? "active" : "")} onClick={() => navigate("timeline")}><ShieldCheck size={19} /> Trazabilidad del corte</button>
             <button
@@ -313,7 +318,7 @@ function App() {
         <header className="topbar">
           <span>
             Gestión de proyectos <ChevronRight size={14} />{" "}
-            {project ? (view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
+            {project ? (view === "master" ? "Catálogo y responsables" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
           </span>
           <span className="phase">Project Office Hub</span>
         </header>
@@ -415,22 +420,22 @@ function App() {
               <div className="page-heading">
                 <div>
                   <div className="eyebrow">
-                    {view === "summary" ? "PROYECTO" : view === "import"
+                    {["summary","master","audit"].includes(view) ? "PROYECTO" : view === "import"
                       ? "FUENTES DEL REPORTE"
                       : view === "history"
                         ? "ARCHIVO DEL PROYECTO"
                         : "REVISIÓN DEL CORTE"}
                   </div>
                   <h1>
-                    {!["summary", "history"].includes(view) && detail?.cut.status === "publicado"
+                    {!["summary", "history", "master", "audit"].includes(view) && detail?.cut.status === "publicado"
                       ? (detail.cut.project_snapshot.name ?? project.name)
                       : project.name}
                   </h1>
                   <p>
-                    {(!["summary", "history"].includes(view) && detail?.cut.status === "publicado"
+                    {(!["summary", "history", "master", "audit"].includes(view) && detail?.cut.status === "publicado"
                       ? detail.cut.project_snapshot.description
                       : project.description) ||
-                      (view === "summary" ? "Define los objetivos y las fechas de tu proyecto." : "Prepara la información de tu reporte semanal.")}
+                      (["summary","master","audit"].includes(view) ? "Administra el estado actual y el historial de tu proyecto." : "Prepara la información de tu reporte semanal.")}
                   </p>
                 </div>
                 <div className="button-row">
@@ -445,7 +450,7 @@ function App() {
                   </button>
                 </div>
               </div>
-              {!["summary", "history"].includes(view) && <div className="cutbar">
+              {!["summary", "history", "master", "audit"].includes(view) && <div className="cutbar">
                 <label>
                   Corte de reporte{" "}
                   <select
@@ -484,13 +489,19 @@ function App() {
                 </span>
               </div>
               }
-              {!["summary", "history"].includes(view) && detail?.cut.status === "publicado" && (
+              {!["summary", "history", "master", "audit"].includes(view) && detail?.cut.status === "publicado" && (
                 <div className="message success">
                   Este corte está publicado. Los datos son de solo lectura.
                 </div>
               )}
               {view === "summary" ? (
                 <ProjectSummary project={project} cuts={cuts} onExecutive={() => navigate("history")} onEdit={() => setEditingProject(true)} />
+              ) : view === "master" ? (
+                <MasterCatalog key={project.id} projectId={project.id} />
+              ) : view === "audit" ? (
+                <ProjectAudit key={project.id} projectId={project.id} />
+              ) : view === "reconcile" && detail ? (
+                <Reconciliation key={cutId + detail.cut.version} projectId={project.id} detail={detail} reload={()=>load()} />
               ) : view === "history" && !cutId ? (
                 <CutHistory cuts={cuts} busy={busy} onCreate={() => setModal("cut")} onOpen={() => {}} />
               ) : !cutId ? (
@@ -901,7 +912,8 @@ function App() {
                       method: "POST",
                       ...json({
                         ...values,
-                        copy_from: values.copy_from || null,
+                        copy_from: values.copy_from === "__master__" ? null : values.copy_from || null,
+                        from_master: values.copy_from === "__master__",
                         start_date: values.start_date || null,
                         end_date: values.end_date || null,
                       }),
@@ -946,9 +958,9 @@ function App() {
                     <label>Fin del periodo<input name="end_date" type="date" /></label>
                   </div>
                   <label>
-                    Partir de un corte anterior
+                    Origen del nuevo corte
                     <select name="copy_from" defaultValue="">
-                      <option value="">Comenzar vacío</option>
+                      <option value="">Comenzar vacío</option><option value="__master__">Estado actual del catálogo (elementos seleccionados)</option>
                       {cuts.map((c) => (
                         <option key={c.id} value={c.id}>
                           {fmt(c.report_date)} · {c.status}

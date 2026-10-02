@@ -379,7 +379,7 @@ export function WeeklyEditor({
         <p>
           {locked
             ? `Guardado como solo lectura el ${new Date(detail.cut.published_at!).toLocaleString("es-MX")}. Puedes crear la siguiente semana desde este corte.`
-            : "Publicar conserva una versión de solo lectura de los datos y del proyecto. Revisa los registros pendientes o dudosos antes de publicar. Después continúa en un nuevo corte."}
+            : "Publicar conserva una versión de solo lectura de los datos y del proyecto. Revisa los registros pendientes o dudosos y vincula riesgos, dependencias, hitos y actividades en Conciliar con el catálogo antes de publicar. Después continúa en un nuevo corte."}
         </p>
         {!locked && pending > 0 && <p role="status">Quedan {pending} registros por revisar antes de publicar.</p>}
         {!locked && (
