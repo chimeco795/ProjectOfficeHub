@@ -4,7 +4,7 @@
 
 Fases 0–4 completadas. Repositorio privado chimeco795/ProjectOfficeHub, master. Base React/TypeScript/Vite + FastAPI + SQLite funcional. Proyecto maestro con metodología, prioridad y fechas independientes; portafolio, resumen y acceso a Seguimiento Ejecutivo. Start.ps1 permite iniciar la app local.
 
-Baseline: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. Producto nuevo: 50 tests backend, 9 tests frontend y build correctos (versión 0.6.0). Creación, edición, recarga de proyecto/corte y aislamiento entre dos proyectos comprobados en navegador con base temporal.
+Baseline: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. Producto nuevo: 50 tests backend, 13 tests frontend y build correctos (versión 0.7.0). Creación, edición, recarga de proyecto/corte y aislamiento entre dos proyectos comprobados en navegador con base temporal.
 
 ## Reglas
 
@@ -38,3 +38,5 @@ Fase 4: reportModel centraliza indicadores, filtrado y snapshots. Reporte oficia
 Ver docs/VERIFICATION_PHASE4.md. No actualizar retrospectivamente una publicación. El servidor se mantiene local y sin autenticación.
 
 Fase 6 solicitada: mejorar forma visual y funcionalidad. Entrega 0.6.0: navegación WorkspaceNav/WorkspaceTabs, panel de proyecto con métricas actuales, búsqueda del portafolio, Board por arrastre y filtros, calendario día/semana/mes. Pruebas y límites en docs/VERIFICATION_PHASE6.md. Esquema permanece en 6; no cerrar paridad ni migración real de fase 5.
+
+Incremento 0.7.0: cronograma Schedule con escala, progreso y revisión de dependencias. scheduleModel evalúa fechas incompletas, vencidos y precedencias fin-inicio al día siguiente en días naturales; analiza catálogo completo pese a filtros. No reprograma ni calcula ruta crítica. Ver VERIFICATION_PHASE7.md.

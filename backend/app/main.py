@@ -22,7 +22,7 @@ async def lifespan(app):
     initialize()
     yield
 
-app=FastAPI(title='Project Office Hub',version='0.6.0',lifespan=lifespan)
+app=FastAPI(title='Project Office Hub',version='0.7.0',lifespan=lifespan)
 from .api.projects import router as projects_router
 app.include_router(projects_router)
 from .api.master import router as master_router
@@ -72,7 +72,7 @@ def editable(db,cut_id):
     return row
 
 @app.get('/api/health')
-def health():return {'status':'ok','version':'0.6.0','product':'Project Office Hub'}
+def health():return {'status':'ok','version':'0.7.0','product':'Project Office Hub'}
 
 @app.get('/api/schema')
 def schema():return {'sections':SECTIONS,'aliases':ALIASES}

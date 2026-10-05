@@ -1,3 +1,4 @@
+import {Schedule} from "./Schedule";
 import { useEffect, useState } from "react";
 import { api, json } from "../../api";
 import type { Project } from "../../types";
@@ -291,7 +292,7 @@ export function Planning({
           })}
         </div>
       ) : view === "gantt" ? (
-        <Gantt items={visible} onEdit={setEditing} />
+        <Schedule items={visible} allItems={items} onEdit={setEditing} />
       ) : view === "roadmap" ? (
         <>
           <div className="button-row">
@@ -432,71 +433,6 @@ export function Planning({
         />
       )}
     </section>
-  );
-}
-function Gantt({
-  items,
-  onEdit,
-}: {
-  items: Work[];
-  onEdit: (i: Work) => void;
-}) {
-  const dated = items.filter((i) => i.start_date && i.target_date);
-  const stamps = dated.flatMap((i) => [
-    Date.parse(i.start_date!),
-    Date.parse(i.target_date!),
-  ]);
-  const start = Math.min(...stamps),
-    end = Math.max(...stamps),
-    span = Math.max(86400000, end - start + 86400000);
-  return (
-    <>
-      <p>
-        Calendario de fechas guardadas; las precedencias no reprograman
-        automáticamente las tareas.
-      </p>
-      {dated.length > 0 && (
-        <p>
-          {new Date(start).toISOString().slice(0, 10)} →{" "}
-          {new Date(end).toISOString().slice(0, 10)}
-        </p>
-      )}
-      <div className="gantt-list">
-        {dated.map((i) => (
-          <div className="gantt-row" key={i.id}>
-            <button onClick={() => onEdit(i)}>
-              {i.code} · {i.name}
-            </button>
-            <div className="gantt-track">
-              <button
-                title={`${i.start_date} → ${i.target_date}; ${i.progress ?? "Sin dato"}%`}
-                onClick={() => onEdit(i)}
-                className="gantt-bar"
-                style={{
-                  left: `${((Date.parse(i.start_date!) - start) / span) * 100}%`,
-                  width: `${Math.max(1, ((Date.parse(i.target_date!) - Date.parse(i.start_date!) + 86400000) / span) * 100)}%`,
-                }}
-              >
-                {i.progress == null ? "" : `${i.progress}%`}
-              </button>
-            </div>
-            <span>
-              {i.start_date} → {i.target_date}
-            </span>
-          </div>
-        ))}
-      </div>
-      <h3>Sin fechas completas</h3>
-      {items
-        .filter((i) => !i.start_date || !i.target_date)
-        .map((i) => (
-          <p key={i.id}>
-            <button onClick={() => onEdit(i)}>
-              {i.code} · {i.name}
-            </button>
-          </p>
-        ))}
-    </>
   );
 }
 function WorkEditor({

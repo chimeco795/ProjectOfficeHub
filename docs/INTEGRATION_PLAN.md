@@ -190,3 +190,5 @@ Reporte oficial basado en resumen y registros del corte, sin relleno desde el ma
 Fase 5 en curso: incremento 0.5.0 con 50 pruebas backend, 6 frontend y build correctos. Planificación, equipos, presupuesto, agenda, documentos e importador conservador disponibles. Matriz y diferencias pendientes en VERIFICATION_PHASE5.md. El usuario aún no tiene exportación .pohub; no declarar migración real validada ni retirar datos antiguos.
 
 Fase 6 añadida por solicitud del usuario: diseño y experiencia de uso. Incremento 0.6.0 implementa navegación agrupada, resumen operativo, filtros, tablero arrastrable y calendario. Ver VERIFICATION_PHASE6.md. Los pendientes de migración real y paridad avanzada de fase 5 permanecen abiertos.
+
+Fase 7: incremento 0.7.0 de revisión de cronograma. Escala, progreso y diagnóstico de fechas/dependencias con filtros; sin reprogramación automática. Ver VERIFICATION_PHASE7.md. No supone paridad avanzada completa.
