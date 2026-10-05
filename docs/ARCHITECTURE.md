@@ -39,3 +39,7 @@ La auditoría se consulta unificada sin reescribir las tablas heredadas. master_
 ## Incremento de fase 4
 
 modules/executive/reportModel.ts centraliza selección de registros, proyecto histórico, porcentajes y serie oficial; pruebas puras con Node y TypeScript ya instalado, sin nuevas dependencias. ExecutiveReport mantiene plantilla/marca y consulta series importadas fuera de la hoja oficial. ProgressChart valida fechas/porcentajes y usa escala 0–100, preservando huecos y ceros. El histórico dispone de ruta con pertenencia proyecto/corte validada; se conserva la ruta anterior para compatibilidad. No requiere migración de base.
+
+## Fase 5
+
+Planning usa los endpoints del catálogo maestro; Operations usa api/pmo.py y modelos domain/pmo.py. services/planning.py valida jerarquías y precedencias. services/legacy.py comparte la ruta transaccional entre preview (rollback) y aplicación; api/migration.py verifica el hash confirmado. Los originales y mapas de identidad se conservan en SQLite. Véase VERIFICATION_PHASE5.md para límites de paridad y validación real pendiente.

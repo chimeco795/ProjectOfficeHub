@@ -186,3 +186,5 @@ Implementado en esquema 5: catálogo común master_items para RAID, Milestone y 
 ## Cierre de fase 4
 
 Reporte oficial basado en resumen y registros del corte, sin relleno desde el maestro actual en publicaciones. Gráfica oficial separada de fuentes de consulta; borradores ajenos y fechas futuras excluidos del histórico. Datos ausentes se conservan como ausentes; cero y variación negativa se muestran correctamente. Revisión pendiente optativa en borradores, acceso a resumen/registros/tablas y regreso al proyecto. Plantilla y marca por corte conservadas. Pruebas y límites en VERIFICATION_PHASE4.md.
+
+Fase 5 en curso: incremento 0.5.0 con 50 pruebas backend, 6 frontend y build correctos. Planificación, equipos, presupuesto, agenda, documentos e importador conservador disponibles. Matriz y diferencias pendientes en VERIFICATION_PHASE5.md. El usuario aún no tiene exportación .pohub; no declarar migración real validada ni retirar datos antiguos.

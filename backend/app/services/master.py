@@ -21,6 +21,7 @@ def item(db, project_id, identity):
     if value['project_id']!=project_id:raise HTTPException(404,'Elemento ajeno al proyecto')
     person=db.execute('SELECT name FROM people WHERE id=?',(value['owner_id'],)).fetchone()
     value['owner_name']=person['name'] if person else ''
+    value['dependencies']=[r[0] for r in db.execute('SELECT predecessor_id FROM work_dependencies WHERE item_id=? ORDER BY predecessor_id',(identity,))]
     return value
 
 def audit(db,project_id,entity_id,event,old,new):
@@ -44,7 +45,10 @@ def save_item(db,project_id,values,identity=None,version=None):
     if old and old['version']!=version:raise HTTPException(409,'El elemento maestro cambió; recarga antes de guardar')
     if old and old['kind']!=values.kind:raise HTTPException(422,'El tipo de entidad no se puede cambiar')
     validate_links(db,project_id,values,identity)
+    from .planning import validate
+    validate(db,project_id,values,identity)
     fields=values.model_dump(mode='json')
+    dependencies=fields.pop('dependencies')
     fields['code_key']=fields['code'].casefold();fields['updated_at']=now()
     identity=identity or uid()
     try:
@@ -55,6 +59,8 @@ def save_item(db,project_id,values,identity=None,version=None):
             db.execute('INSERT INTO master_items ('+','.join(fields)+') VALUES ('+','.join('?' for _ in fields)+')',tuple(fields.values()))
     except sqlite3.IntegrityError as exc:
         raise HTTPException(409,'Ya existe ese código en el proyecto; vincula el elemento existente') from exc
+    db.execute('DELETE FROM work_dependencies WHERE item_id=?',(identity,))
+    db.executemany('INSERT INTO work_dependencies VALUES(?,?)',[(identity,p) for p in dependencies])
     saved=item(db,project_id,identity)
     audit(db,project_id,identity,'actualizar_elemento' if old else 'crear_elemento',old,saved)
     return saved

@@ -1,3 +1,6 @@
+import { Migration } from "./modules/operations/Migration";
+import { Planning } from "./modules/planning/Planning";
+import { Operations } from "./modules/operations/Operations";
 import { MasterCatalog } from "./modules/master/MasterCatalog";
 import { Reconciliation, ProjectAudit } from "./modules/master/Reconciliation";
 import { CutHistory, CutTimeline } from "./modules/executive/CutHistory";
@@ -28,6 +31,7 @@ import { WeeklyEditor, ProjectEditor } from "./WeeklyEditor";
 import { ProjectSummary } from "./modules/projects/ProjectSummary";
 import { ProjectFields } from "./modules/projects/ProjectFields";
 
+const operationViews = ["backlog","board","gantt","roadmap","teams","budget","agenda","documents"];
 const sections: Record<string, string> = {
   general: "Datos generales",
   avance: "Avance",
@@ -140,6 +144,7 @@ function App() {
         setProjects(list);
         const route = new URLSearchParams(location.hash.slice(1));
         const id = route.get("project");
+        if (!id && route.get("view") === "migration") setView("migration");
         if (id) {
           const found = list.find(p => p.id === id);
           if (!found) throw Error("El proyecto del enlace no existe.");
@@ -159,6 +164,7 @@ function App() {
       route.set("view", view);
       if (cutId) route.set("cut", cutId);
     }
+    if (view === "migration") route.set("view", view);
     history.replaceState(null, "", location.pathname + location.search + (route.size ? "#" + route : ""));
   }, [project?.id, view, cutId, routeReady]);
   useEffect(() => {
@@ -191,7 +197,7 @@ function App() {
       setCutId(target);
       setDetail(loaded);
     }
-    setView(["master", "audit", "reconcile", "summary", "report", "weekly", "data", "review", "import", "history", "timeline"].includes(nextView) ? nextView : "summary");
+    setView(["migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents", "master", "audit", "reconcile", "summary", "report", "weekly", "data", "review", "import", "history", "timeline"].includes(nextView) ? nextView : "summary");
   }
   async function save(row: Row, review: string) {
     for (const [key, value] of Object.entries(row.current)) {
@@ -245,13 +251,14 @@ function App() {
         </div>
         <div className="workspace-label">ESPACIO DE TRABAJO</div>
         <button
-          className={!project ? "nav active" : "nav"}
+          className={!project && view !== "migration" ? "nav active" : "nav"}
           onClick={() => {
             if (dirty) {
               setError("Guarda o descarta los cambios antes de salir.");
               return;
             }
             ++selection.current;
+            setView("summary");
             setProject(null);
             setDetail(null);
             setCutId("");
@@ -260,6 +267,7 @@ function App() {
         >
           <FolderKanban size={19} /> Portafolio
         </button>
+        <button className={"nav "+(view==="migration"?"active":"")} onClick={()=>navigate("migration")}><Files size={19}/>Migrar archivo .pohub</button>
         {project && (
           <>
             <div className="workspace-label">PROYECTO ACTUAL</div>
@@ -267,6 +275,8 @@ function App() {
               <FolderKanban size={19} /> Resumen del proyecto
             </button>
             {[["master","Catálogo y responsables"],["audit","Auditoría del proyecto"],["reconcile","Conciliar con el catálogo"]].map(([id,label]) => <button key={id} className={"nav " + (view===id?"active":"")} onClick={()=>navigate(id)}><Files size={19}/>{label}</button>)}
+            <div className="workspace-label">PLANIFICACIÓN Y OPERACIÓN</div>
+            {[["backlog","Backlog"],["board","Board"],["gantt","Gantt"],["roadmap","Roadmap"],["teams","Equipos y asignaciones"],["budget","Presupuesto"],["agenda","Agenda"],["documents","Documentos"]].map(([id,label])=><button key={id} className={"nav "+(view===id?"active":"")} onClick={()=>navigate(id)}><Files size={19}/>{label}</button>)}
             <div className="workspace-label">SEGUIMIENTO EJECUTIVO</div>
             <button className={"nav " + (view === "timeline" ? "active" : "")} onClick={() => navigate("timeline")}><ShieldCheck size={19} /> Trazabilidad del corte</button>
             <button
@@ -319,7 +329,7 @@ function App() {
         <header className="topbar">
           <span>
             Gestión de proyectos <ChevronRight size={14} />{" "}
-            {project ? (view === "master" ? "Catálogo y responsables" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
+            {view === "migration" ? "Migración .pohub" : operationViews.includes(view) && project ? "Planificación y operación" : project ? (view === "master" ? "Catálogo y responsables" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
           </span>
           <span className="phase">Project Office Hub</span>
         </header>
@@ -337,7 +347,9 @@ function App() {
               {notice}
             </div>
           )}
-          {!project ? (
+          {view === "migration" ? (
+            <Migration projects={projects} onApplied={async()=>{setProjects(await api("/projects"));}}/>
+          ) : !project ? (
             <>
               <div className="page-heading">
                 <div>
@@ -425,18 +437,18 @@ function App() {
                       ? "FUENTES DEL REPORTE"
                       : view === "history"
                         ? "ARCHIVO DEL PROYECTO"
-                        : "REVISIÓN DEL CORTE"}
+                        : ["backlog","board","gantt","roadmap","teams","budget","agenda","documents"].includes(view) ? "PLANIFICACIÓN Y OPERACIÓN" : "REVISIÓN DEL CORTE"}
                   </div>
                   <h1>
-                    {!["summary", "history", "master", "audit"].includes(view) && detail?.cut.status === "publicado"
+                    {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado"
                       ? (detail.cut.project_snapshot.name ?? "Nombre histórico no disponible")
                       : project.name}
                   </h1>
                   <p>
-                    {(!["summary", "history", "master", "audit"].includes(view) && detail?.cut.status === "publicado"
+                    {(!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado"
                       ? detail.cut.project_snapshot.description
                       : project.description) ||
-                      (["summary","master","audit"].includes(view) ? "Administra el estado actual y el historial de tu proyecto." : "Prepara la información de tu reporte semanal.")}
+                      ([...operationViews,"summary","master","audit"].includes(view) ? "Administra el estado actual y el historial de tu proyecto." : "Prepara la información de tu reporte semanal.")}
                   </p>
                 </div>
                 <div className="button-row">
@@ -451,7 +463,7 @@ function App() {
                   </button>
                 </div>
               </div>
-              {!["summary", "history", "master", "audit"].includes(view) && <div className="cutbar">
+              {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && <div className="cutbar">
                 <label>
                   Corte de reporte{" "}
                   <select
@@ -490,13 +502,18 @@ function App() {
                 </span>
               </div>
               }
-              {!["summary", "history", "master", "audit"].includes(view) && detail?.cut.status === "publicado" && (
+              {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado" && (
                 <div className="message success">
                   Este corte está publicado. Los datos son de solo lectura.
                 </div>
               )}
               {view === "summary" ? (
                 <ProjectSummary project={project} cuts={cuts} onExecutive={() => navigate("history")} onEdit={() => setEditingProject(true)} />
+
+              ) : ["backlog","board","gantt","roadmap"].includes(view) ? (
+                <Planning key={project.id} project={project} view={view}/>
+              ) : ["teams","budget","agenda","documents"].includes(view) ? (
+                <Operations key={project.id+view} projectId={project.id} view={view}/>
               ) : view === "master" ? (
                 <MasterCatalog key={project.id} projectId={project.id} />
               ) : view === "audit" ? (

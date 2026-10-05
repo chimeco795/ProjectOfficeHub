@@ -24,15 +24,16 @@ def doc_bytes():
     b=BytesIO();d.save(b);return b.getvalue()
 
 def test_persistence_original_duplicates_and_isolation(client):
+    payload=doc_bytes()
     p,c=setup(client)
     route=f"/api/cuts/{c['id']}/imports"
-    assert client.post(route,files={'file':('a.docx',doc_bytes())}).status_code==201
+    assert client.post(route,files={'file':('a.docx',payload)}).status_code==201
     detail=client.get(f"/api/cuts/{c['id']}").json();row=detail['records'][0]
     current={**row['current'],'description':'Pablo confirmó la liberación'}
     value={'version':1,'section':'logros','review':'aceptado','current':current}
     assert client.patch('/api/records/'+row['id'],json=value).status_code==200
     assert client.patch('/api/records/'+row['id'],json=value).status_code==409
-    assert client.post(route,files={'file':('renamed.docx',doc_bytes())}).status_code==409
+    assert client.post(route,files={'file':('renamed.docx',payload)}).status_code==409
     # Reopen app and a fresh connection: persisted state survives lifecycle restart.
     with TestClient(app) as fresh:
         saved=fresh.get(f"/api/cuts/{c['id']}").json()['records'][0]

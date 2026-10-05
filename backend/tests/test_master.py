@@ -76,6 +76,7 @@ def test_v4_migration_preserves_published_cuts(tmp_path,monkeypatch):
     monkeypatch.setattr(db,'DATA',tmp_path)
     with monkeypatch.context() as before:
         before.setattr(migrations,'migrate_master',lambda *args:None)
+        before.setattr(migrations,'migrate_pmo',lambda *args:None)
         db.initialize()
     with db.connection() as conn:
         conn.execute("INSERT INTO projects(id,name,description,objective,created_at) VALUES('p','Original','','','2026-09-01')")

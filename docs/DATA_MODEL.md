@@ -45,3 +45,7 @@ cut_audit registra ahora creación e importación además de copia, edición y p
 Crear corte desde maestro copia elementos activos seleccionados y los deja pendientes. Copiar corte conserva vínculos y procedencia, sin copiar frozen_at. Importar Word/Excel nunca crea maestros automáticamente. Conciliar requiere aceptación previa; alta y vínculo son atómicos. Traer valores actuales requiere versiones y nueva revisión; aplicar al maestro requiere formulario explícito. Vincular, desvincular y aplicar invalidan la versión del registro para detectar concurrencia.
 
 Publicar exige vínculos en riesgos, dependencias, hitos y actividades aceptados; congela payload con los valores semanales revisados. master_snapshot conserva el estado maestro capturado al vincular/traer/aplicar, que puede diferir del semanal. Triggers protegen snapshots publicados. La migración v4→v5 respalda bases pobladas, no altera publicaciones anteriores ni inventa sus vínculos.
+
+## Incremento fase 5 (0.5.0)
+
+SQLite 6 añade planning_periods, work_dependencies, teams/project_teams, memberships, budgets/budget_entries, events, documents y migration_batches/migration_identities. master_items conserva identidad y amplía Activity con tipo, padre, esfuerzos, puntos, iteración y release. El dominio valida ciclos y relaciones dentro del proyecto; publicaciones conservan sus snapshots. Dinero se almacena en centavos, documentos y exportaciones originales como BLOB. Migración v5 respaldada y aditiva; véase VERIFICATION_PHASE5.md.

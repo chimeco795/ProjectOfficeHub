@@ -130,3 +130,62 @@ def migrate_master(db, data_dir):
         db.execute(f'''CREATE TRIGGER revision_snapshot_{action.lower()} AFTER {action} ON weekly_item_snapshots
             BEGIN UPDATE cuts SET version=version+1,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id={row}.cut_id; END''')
     db.execute('INSERT INTO schema_version VALUES(5)')
+
+
+def migrate_pmo(db, data_dir):
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] >= 6:
+        return
+    db.commit()
+    if db.execute('SELECT COUNT(*) FROM projects').fetchone()[0]:
+        stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
+        with sqlite3.connect(data_dir / f'backup-v5-{stamp}.sqlite3') as backup:
+            db.backup(backup)
+    db.execute('BEGIN IMMEDIATE')
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] >= 6:
+        return
+    db.execute('''CREATE TABLE planning_periods(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),
+        kind TEXT NOT NULL CHECK(kind IN ('Iteration','Release')),name TEXT NOT NULL,start_date TEXT,end_date TEXT,
+        status TEXT NOT NULL DEFAULT 'Planned',description TEXT NOT NULL DEFAULT '',archived INTEGER NOT NULL DEFAULT 0,
+        version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,updated_at TEXT NOT NULL)''')
+    for column in ["work_type TEXT NOT NULL DEFAULT 'Activity'", 'parent_id TEXT REFERENCES master_items(id)',
+        'original_effort REAL CHECK(original_effort>=0)', 'remaining_effort REAL CHECK(remaining_effort>=0)',
+        'completed_effort REAL CHECK(completed_effort>=0)', 'points REAL CHECK(points>=0)',
+        'iteration_id TEXT REFERENCES planning_periods(id)', 'release_id TEXT REFERENCES planning_periods(id)']:
+        db.execute('ALTER TABLE master_items ADD COLUMN '+column)
+    db.execute('''CREATE TABLE work_dependencies(item_id TEXT NOT NULL REFERENCES master_items(id),
+        predecessor_id TEXT NOT NULL REFERENCES master_items(id),PRIMARY KEY(item_id,predecessor_id),CHECK(item_id!=predecessor_id))''')
+    db.execute('''CREATE TABLE teams(id TEXT PRIMARY KEY,name TEXT NOT NULL,lead_id TEXT REFERENCES people(id),
+        archived INTEGER NOT NULL DEFAULT 0,version INTEGER NOT NULL DEFAULT 1)''')
+    db.execute('CREATE TABLE project_teams(project_id TEXT NOT NULL REFERENCES projects(id),team_id TEXT NOT NULL REFERENCES teams(id),PRIMARY KEY(project_id,team_id))')
+    db.execute('''CREATE TABLE memberships(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),
+        team_id TEXT REFERENCES teams(id),person_id TEXT NOT NULL REFERENCES people(id),role TEXT NOT NULL,
+        allocation REAL NOT NULL CHECK(allocation BETWEEN 0 AND 100),valid_from TEXT,valid_to TEXT,
+        archived INTEGER NOT NULL DEFAULT 0,version INTEGER NOT NULL DEFAULT 1)''')
+    db.execute('''CREATE TABLE budgets(project_id TEXT PRIMARY KEY REFERENCES projects(id),currency TEXT NOT NULL,
+        approved_cents INTEGER NOT NULL CHECK(approved_cents>=0),contingency_cents INTEGER NOT NULL CHECK(contingency_cents>=0),
+        notes TEXT NOT NULL DEFAULT '',version INTEGER NOT NULL DEFAULT 1)''')
+    db.execute('''CREATE TABLE budget_entries(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),
+        concept TEXT NOT NULL,category TEXT NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('Planned','Committed','Actual','Forecast')),
+        amount_cents INTEGER NOT NULL CHECK(amount_cents>=0),currency TEXT NOT NULL,date TEXT,related_id TEXT REFERENCES master_items(id),
+        vendor TEXT NOT NULL DEFAULT '',notes TEXT NOT NULL DEFAULT '',archived INTEGER NOT NULL DEFAULT 0,version INTEGER NOT NULL DEFAULT 1)''')
+    db.execute('''CREATE TABLE events(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),title TEXT NOT NULL,
+        date TEXT NOT NULL,time TEXT NOT NULL,kind TEXT NOT NULL,owner_id TEXT REFERENCES people(id),description TEXT NOT NULL DEFAULT '',
+        guests TEXT NOT NULL DEFAULT '[]',archived INTEGER NOT NULL DEFAULT 0,version INTEGER NOT NULL DEFAULT 1)''')
+    db.execute('''CREATE TABLE documents(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),filename TEXT NOT NULL,
+        size INTEGER NOT NULL,sha256 TEXT NOT NULL,content BLOB NOT NULL,related_id TEXT REFERENCES master_items(id),
+        notes TEXT NOT NULL DEFAULT '',archived INTEGER NOT NULL DEFAULT 0,version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL)''')
+    db.execute('''CREATE TABLE migration_batches(id TEXT PRIMARY KEY,sha256 TEXT NOT NULL UNIQUE,filename TEXT NOT NULL,
+        original BLOB NOT NULL,report TEXT NOT NULL,created_at TEXT NOT NULL)''')
+    db.execute('''CREATE TABLE migration_identities(batch_id TEXT NOT NULL REFERENCES migration_batches(id),entity_type TEXT NOT NULL,
+        old_id TEXT NOT NULL,new_id TEXT NOT NULL,source TEXT NOT NULL,PRIMARY KEY(batch_id,entity_type,old_id),UNIQUE(source,entity_type,old_id))''')
+    for action in ('INSERT','UPDATE'):
+        db.execute(f'''CREATE TRIGGER planning_scope_{action.lower()} BEFORE {action} ON master_items
+            WHEN (NEW.parent_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM master_items p WHERE p.id=NEW.parent_id AND p.project_id=NEW.project_id AND p.kind='Activity' AND NEW.kind='Activity' AND p.id!=NEW.id))
+              OR (NEW.iteration_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM planning_periods p WHERE p.id=NEW.iteration_id AND p.project_id=NEW.project_id AND p.kind='Iteration'))
+              OR (NEW.release_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM planning_periods p WHERE p.id=NEW.release_id AND p.project_id=NEW.project_id AND p.kind='Release'))
+            BEGIN SELECT RAISE(ABORT,'Planificación ajena al proyecto'); END''')
+        db.execute(f'''CREATE TRIGGER dependency_scope_{action.lower()} BEFORE {action} ON work_dependencies
+            WHEN NOT EXISTS(SELECT 1 FROM master_items a JOIN master_items b ON a.project_id=b.project_id
+                WHERE a.id=NEW.item_id AND b.id=NEW.predecessor_id AND a.kind='Activity' AND b.kind='Activity')
+            BEGIN SELECT RAISE(ABORT,'Dependencia ajena al proyecto'); END''')
+    db.execute('INSERT INTO schema_version VALUES(6)')

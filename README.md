@@ -4,11 +4,11 @@ Producto PMO con un catálogo maestro de proyectos y Seguimiento Ejecutivo dentr
 
 ## Estado
 
-Fases 0–4 completadas el 5 de octubre de 2026. Versión 0.4.0, esquema SQLite 5: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
+Fases 0–4 completadas el 5 de octubre de 2026. Incremento de fase 5 disponible: versión 0.5.0, esquema SQLite 6: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
 
 Desde **Catálogo y responsables** administra el estado actual. Al crear un corte puedes partir del catálogo o copiar una semana anterior. Revisa y acepta los registros; en **Conciliar con el catálogo** vincula los riesgos, dependencias, hitos y actividades antes de publicar. Vincular no sobrescribe los valores semanales. Traer datos actuales vuelve a dejar el registro pendiente; aplicar cambios al catálogo exige revisar y guardar el formulario. **Auditoría del proyecto** reúne los eventos históricos.
 
-Pendientes de fase 5: Board, Gantt, Roadmap, presupuesto, equipos, agenda, documentos y migración de datos del PMO antiguo (fase 5). Actividades es la base maestra inicial; no incluye aún jerarquías completas de WorkItem. Los ZIP originales permanecen intactos.
+Fase 5 en curso: Backlog, Board, Gantt, Roadmap, equipos, presupuesto, agenda y documentos operan sobre SQLite. Migración .pohub con validación previa, asignación de proyectos, transacción atómica y originales descargables. El usuario aún no tiene su exportación: la migración real y la paridad completa siguen pendientes. Véase docs/VERIFICATION_PHASE5.md para la matriz de alcance. Los ZIP originales permanecen intactos.
 
 ## Reporte ejecutivo
 

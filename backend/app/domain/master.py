@@ -36,6 +36,16 @@ class ItemInput(BaseModel):
     include_in_report: bool = True
     progress: float | None = Field(default=None,ge=0,le=100,allow_inf_nan=False)
     archived: bool = False
+    work_type: Literal['Epic','Feature','EnablerFeature','UserStory','EnablerUserStory','Task','Bug','Issue','Phase','Deliverable','Activity','Document','Evidence'] = 'Activity'
+    parent_id: str | None = None
+    original_effort: float | None = Field(default=None,ge=0,allow_inf_nan=False)
+    remaining_effort: float | None = Field(default=None,ge=0,allow_inf_nan=False)
+    completed_effort: float | None = Field(default=None,ge=0,allow_inf_nan=False)
+    points: float | None = Field(default=None,ge=0,allow_inf_nan=False)
+    iteration_id: str | None = None
+    release_id: str | None = None
+    dependencies: list[str] = Field(default_factory=list,max_length=500)
+
 
     @model_validator(mode='after')
     def validate_item(self):
