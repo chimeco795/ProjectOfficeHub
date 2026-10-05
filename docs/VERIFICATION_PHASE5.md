@@ -31,3 +31,5 @@ El producto nuevo usa SQLite; no escribe en localStorage del PMO anterior. No re
 ## Continuación
 
 Completar las diferencias de interfaz y comportamiento de la matriz. Cuando el usuario tenga `.pohub`, validar primero el archivo, resolver formatos/identidades ambiguos y comparar recuentos y valores por proyecto antes de aplicar. El usuario confirmó que todavía no tiene la exportación; no volver a suponer que los ZIP de código son sus datos actuales.
+
+Actualización 0.6.0: se implementaron arrastre de Board y vistas de calendario día/semana/mes. Véase VERIFICATION_PHASE6.md; la matriz anterior describe el alcance original 0.5.0.

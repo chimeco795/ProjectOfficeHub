@@ -1,3 +1,5 @@
+import {WorkspaceNav, WorkspaceTabs, viewLabel} from "./modules/workspace/Navigation";
+import "./modules/workspace/workspace.css";
 import { Migration } from "./modules/operations/Migration";
 import { Planning } from "./modules/planning/Planning";
 import { Operations } from "./modules/operations/Operations";
@@ -82,6 +84,7 @@ const fmt = (s: string | null) =>
     : "Sin definir";
 
 function App() {
+  const [projectSearch,setProjectSearch]=useState(""),[projectStatus,setProjectStatus]=useState("all");
   const [tableSection, setTableSection] = useState("actividades");
   const [dirty, setDirty] = useState(false);
   const [routeReady, setRouteReady] = useState(false);
@@ -236,6 +239,7 @@ function App() {
       detail?.records.filter((r) => r.review === "aceptado").length ?? 0,
     doubt: detail?.records.filter((r) => r.review === "dudoso").length ?? 0,
   };
+  const filteredProjects=projects.filter(p=>(projectStatus==="all"||p.status===projectStatus)&&`${p.name} ${p.description}`.toLowerCase().includes(projectSearch.toLowerCase()));
   return (
     <div
       className={"shell " + (project && view === "report" ? "report-mode" : "")}
@@ -268,56 +272,7 @@ function App() {
           <FolderKanban size={19} /> Portafolio
         </button>
         <button className={"nav "+(view==="migration"?"active":"")} onClick={()=>navigate("migration")}><Files size={19}/>Migrar archivo .pohub</button>
-        {project && (
-          <>
-            <div className="workspace-label">PROYECTO ACTUAL</div>
-            <button className={"nav " + (view === "summary" ? "active" : "")} onClick={() => navigate("summary")}>
-              <FolderKanban size={19} /> Resumen del proyecto
-            </button>
-            {[["master","Catálogo y responsables"],["audit","Auditoría del proyecto"],["reconcile","Conciliar con el catálogo"]].map(([id,label]) => <button key={id} className={"nav " + (view===id?"active":"")} onClick={()=>navigate(id)}><Files size={19}/>{label}</button>)}
-            <div className="workspace-label">PLANIFICACIÓN Y OPERACIÓN</div>
-            {[["backlog","Backlog"],["board","Board"],["gantt","Gantt"],["roadmap","Roadmap"],["teams","Equipos y asignaciones"],["budget","Presupuesto"],["agenda","Agenda"],["documents","Documentos"]].map(([id,label])=><button key={id} className={"nav "+(view===id?"active":"")} onClick={()=>navigate(id)}><Files size={19}/>{label}</button>)}
-            <div className="workspace-label">SEGUIMIENTO EJECUTIVO</div>
-            <button className={"nav " + (view === "timeline" ? "active" : "")} onClick={() => navigate("timeline")}><ShieldCheck size={19} /> Trazabilidad del corte</button>
-            <button
-              className={"nav " + (view === "report" ? "active" : "")}
-              onClick={() => navigate("report")}
-            >
-              <FolderKanban size={19} /> Reporte ejecutivo
-            </button>
-            <button
-              className={"nav " + (view === "weekly" ? "active" : "")}
-              onClick={() => navigate("weekly")}
-            >
-              <CalendarDays size={19} /> Actualización semanal
-            </button>
-            <button
-              className={"nav " + (view === "data" ? "active" : "")}
-              onClick={() => navigate("data")}
-            >
-              <Files size={19} /> Tablas y contenido
-            </button>
-            <p className="side-project">{project.name}</p>
-            <button
-              className={"nav " + (view === "review" ? "active" : "")}
-              onClick={() => navigate("review")}
-            >
-              <Files size={19} /> Información detectada
-            </button>
-            <button
-              className={"nav " + (view === "import" ? "active" : "")}
-              onClick={() => navigate("import")}
-            >
-              <Upload size={19} /> Importar archivos
-            </button>
-            <button
-              className={"nav " + (view === "history" ? "active" : "")}
-              onClick={() => navigate("history")}
-            >
-              <CalendarDays size={19} /> Cortes del proyecto
-            </button>
-          </>
-        )}
+        {project && <><div className="workspace-label">PROYECTO ACTUAL</div><div className="workspace-project"><span>{project.name.slice(0,2).toUpperCase()}</span><div><strong>{project.name}</strong><small>{project.methodology} · {project.status}</small></div></div><WorkspaceNav view={view} onNavigate={navigate}/></>}
         <div className="side-bottom">
           <ShieldCheck size={19} />
           <div>
@@ -331,7 +286,7 @@ function App() {
             Gestión de proyectos <ChevronRight size={14} />{" "}
             {view === "migration" ? "Migración .pohub" : operationViews.includes(view) && project ? "Planificación y operación" : project ? (view === "master" ? "Catálogo y responsables" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
           </span>
-          <span className="phase">Project Office Hub</span>
+          <span className="phase">{project ? viewLabel(view) : "Espacio de trabajo"}</span>
         </header>
         <div className="content">
           {error && (
@@ -371,12 +326,14 @@ function App() {
                   <span>Cortes guardados</span>
                 </div>
                 <div>
-                  <b>Word + Excel</b>
-                  <span>Fuentes de información</span>
+                  <b>{projects.filter(p=>p.status==="Activo").length}</b>
+                  <span>Proyectos activos</span>
                 </div>
               </div>
+              {!!projects.length&&<div className="planning-filters"><label>Buscar proyecto<input placeholder="Nombre o descripción" value={projectSearch} onChange={e=>setProjectSearch(e.target.value)}/></label><label>Estado del proyecto<select value={projectStatus} onChange={e=>setProjectStatus(e.target.value)}><option value="all">Todos los estados</option>{[...new Set(projects.map(p=>p.status))].map(state=><option key={state}>{state}</option>)}</select></label><span>{filteredProjects.length} de {projects.length} proyectos</span></div>}
+              {!!projects.length&&!filteredProjects.length&&<p>No hay proyectos con estos filtros. <button onClick={()=>{setProjectSearch("");setProjectStatus("all");}}>Limpiar filtros</button></p>}
               <div className="project-grid">
-                {projects.map((p) => (
+                {filteredProjects.map((p) => (
                   <button
                     disabled={busy || !routeReady}
                     className="project-card"
@@ -458,11 +415,12 @@ function App() {
                   >
                     Editar proyecto
                   </button>
-                  <button disabled={dirty} onClick={() => setModal("cut")}>
+                  {!operationViews.includes(view) && <button disabled={dirty} onClick={() => setModal("cut")}>
                     <Plus size={17} /> Nuevo corte
-                  </button>
+                  </button>}
                 </div>
               </div>
+              <WorkspaceTabs view={view} onNavigate={navigate}/>
               {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && <div className="cutbar">
                 <label>
                   Corte de reporte{" "}
@@ -508,7 +466,7 @@ function App() {
                 </div>
               )}
               {view === "summary" ? (
-                <ProjectSummary project={project} cuts={cuts} onExecutive={() => navigate("history")} onEdit={() => setEditingProject(true)} />
+                <ProjectSummary onNavigate={navigate} project={project} cuts={cuts} onExecutive={() => navigate("history")} onEdit={() => setEditingProject(true)} />
 
               ) : ["backlog","board","gantt","roadmap"].includes(view) ? (
                 <Planning key={project.id} project={project} view={view}/>

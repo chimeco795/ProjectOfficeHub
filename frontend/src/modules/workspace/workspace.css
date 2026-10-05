@@ -1,0 +1,655 @@
+/* Workspace structure: compact navigation, clear work surfaces, responsive summaries. */
+.shell {
+  background: #f3f5f8;
+}
+.shell > aside {
+  width: 232px;
+  padding: 24px 14px;
+  background: #122b35;
+}
+.shell .brand {
+  font-size: 17px;
+  line-height: 1.3;
+  margin: 0 8px 28px;
+  gap: 10px;
+}
+.shell .brand-icon {
+  background: #c5e8d3;
+  color: #174b3a;
+  padding: 9px;
+}
+.shell .workspace-label {
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  margin: 22px 12px 10px;
+  color: #8fadb8;
+}
+.shell .nav {
+  padding: 11px 13px;
+  font-size: 13px;
+  border-radius: 8px;
+  margin: 3px 0;
+  gap: 11px;
+  min-height: 41px;
+}
+.shell .nav.active {
+  background: #264954;
+  color: #fff;
+  border-left-color: #a2ddbc;
+}
+.shell .nav:hover {
+  background: #203e49;
+  color: #fff;
+}
+.workspace-project {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: #ffffff09;
+  border: 1px solid #ffffff16;
+  border-radius: 9px;
+}
+.workspace-project > span {
+  background: #d4e9e1;
+  color: #174638;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 750;
+}
+.workspace-project div {
+  min-width: 0;
+}
+.workspace-project strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: #fff;
+}
+.workspace-project small {
+  font-size: 11px;
+  color: #a7bdc4;
+}
+.shell .content {
+  max-width: 1600px;
+  margin: auto;
+  padding: 28px 32px;
+}
+.shell .topbar {
+  height: 64px;
+  background: #fff;
+  border-bottom: 1px solid #e4e9ed;
+}
+.shell .page-heading {
+  margin-bottom: 24px;
+}
+.shell .page-heading h1 {
+  font-size: 29px;
+  letter-spacing: -0.7px;
+}
+.shell .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #648078;
+}
+.shell .panel {
+  border: 1px solid #e0e6e9;
+  border-radius: 13px;
+  box-shadow: 0 2px 4px #15394203;
+}
+.shell .primary {
+  background: #21644e;
+  border-color: #21644e;
+}
+.shell .primary:hover {
+  background: #174b3a;
+}
+.shell h2 {
+  font-size: 19px;
+  letter-spacing: -0.3px;
+}
+.workspace-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 0 0 16px;
+  margin-bottom: 8px;
+}
+.workspace-tabs button {
+  border: 1px solid transparent;
+  background: transparent;
+  white-space: nowrap;
+  color: #667680;
+  font-size: 13px;
+  padding: 10px 15px;
+}
+.workspace-tabs .selected {
+  background: #fff;
+  border-color: #d9e2df;
+  color: #18533f;
+  box-shadow: 0 2px 4px #183d3007;
+}
+.overview {
+  display: grid;
+  gap: 22px;
+}
+.overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.overview-metric {
+  position: relative;
+  display: grid;
+  text-align: left;
+  justify-content: stretch;
+  grid-template-columns: 42px 1fr;
+  gap: 8px 12px;
+  background: #fff;
+  padding: 20px;
+  border: 1px solid #e0e6e9;
+  border-radius: 12px;
+  font-weight: 400;
+}
+.overview-metric strong {
+  font-size: 30px;
+  letter-spacing: -1px;
+  align-self: center;
+}
+.overview-metric > span:last-of-type {
+  grid-column: 1/-1;
+  font-size: 12px;
+  color: #61717c;
+}
+.metric-icon {
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #eaf0f8;
+  color: #446a9d;
+}
+.green .metric-icon {
+  background: #e6f4eb;
+  color: #2b7852;
+}
+.amber .metric-icon {
+  background: #fff4da;
+  color: #986c17;
+}
+.rose .metric-icon {
+  background: #faeceb;
+  color: #b15954;
+}
+.metric-arrow {
+  position: absolute;
+  right: 16px;
+  top: 18px;
+  color: #98a6aa;
+}
+.overview-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  gap: 22px;
+}
+.overview .panel {
+  margin: 0;
+  padding: 24px;
+}
+.overview .section-heading {
+  gap: 16px;
+  align-items: start;
+}
+.overview .section-heading button {
+  font-size: 12px;
+}
+.overview p {
+  color: #63757c;
+  line-height: 1.65;
+}
+.getting-started {
+  text-align: center;
+  padding: 24px 28px;
+}
+.getting-started > svg {
+  color: #679080;
+}
+.getting-started h3 {
+  margin: 12px 0 0;
+}
+.overview-footnote {
+  font-size: 11px;
+  color: #809096;
+  padding-top: 20px;
+  margin-top: 14px;
+  border-top: 1px solid #edf0f1;
+}
+.attention-list > button {
+  display: flex;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid #edf0f1;
+  padding: 14px 0;
+  justify-content: start;
+  text-align: left;
+  gap: 14px;
+}
+.attention-list > button > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.attention-list strong,
+.attention-list small {
+  display: block;
+}
+.attention-list small {
+  font-size: 11px;
+  color: #7b8a93;
+  margin-bottom: 4px;
+}
+.attention-list strong {
+  font-size: 13px;
+}
+.due-date {
+  padding: 8px;
+  min-width: 43px;
+  text-align: center;
+  background: #eef3f2;
+  border-radius: 8px;
+  font-size: 18px;
+  color: #376255;
+}
+.due-date small {
+  margin: 0;
+}
+.due-date.overdue {
+  background: #fff1e3;
+  color: #946329;
+}
+.status-pill {
+  font-size: 10px;
+  background: #f0f4f5;
+  border-radius: 20px;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+.report-counts {
+  display: flex;
+  gap: 35px;
+  margin: 24px 0;
+}
+.report-counts strong {
+  display: block;
+  font-size: 30px;
+}
+.report-counts span {
+  font-size: 12px;
+  color: #6e7e88;
+}
+.shell .executive-card {
+  background: linear-gradient(135deg, #f5faf7, #fff);
+}
+.module-links {
+  display: grid;
+}
+.module-links button {
+  border: 0;
+  border-bottom: 1px solid #edf0f1;
+  border-radius: 0;
+  padding: 15px 0;
+  justify-content: space-between;
+  text-align: left;
+}
+.module-links strong,
+.module-links small {
+  display: block;
+}
+.module-links small {
+  font-size: 11px;
+  font-weight: 400;
+  color: #788b90;
+  margin-top: 4px;
+}
+.project-facts dd {
+  font-size: 14px;
+}
+.shell .planning-filters,
+.shell .pmo-actions {
+  background: #f7f9fa;
+  border: 1px solid #e8edef;
+  padding: 14px;
+  border-radius: 10px;
+  gap: 14px;
+}
+.planning-filters label,
+.pmo-actions label {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  color: #60727c;
+}
+.planning-filters input:not([type="checkbox"]),
+.planning-filters select,
+.pmo-actions input:not([type="checkbox"]),
+.pmo-actions select {
+  padding: 8px 10px;
+  border: 1px solid #dce4e8;
+  border-radius: 6px;
+  background: white;
+}
+.planning-filters label:has([type="checkbox"]),
+.pmo-actions label:has([type="checkbox"]) {
+  display: flex;
+  align-items: center;
+}
+.shell .kanban {
+  gap: 14px;
+  align-items: stretch;
+  min-height: 360px;
+}
+.shell .kanban-column {
+  min-width: 250px;
+  background: #f0f4f5;
+  border: 1px solid #e5ebec;
+  padding: 12px;
+  border-radius: 12px;
+}
+.shell .kanban-column h3 {
+  font-size: 12px;
+  color: #5c737a;
+  margin: 4px 0 20px;
+}
+.shell .work-card {
+  box-shadow: 0 2px 5px #162d3406;
+  border-color: #e2e9eb;
+  padding: 15px;
+}
+.work-card[draggable="true"] {
+  cursor: grab;
+}
+.shell .work-card > button {
+  border: 0;
+  padding: 0;
+  justify-content: start;
+  background: transparent;
+  font-size: 13px;
+  color: #233c46;
+}
+.work-card label {
+  display: grid;
+  gap: 5px;
+  font-size: 10px;
+  color: #7c8c92;
+}
+.work-card select {
+  border: 1px solid #e1e7e9;
+  border-radius: 6px;
+  padding: 7px;
+  background: #fff;
+  font-size: 12px;
+}
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0;
+  color: #839296;
+  font-size: 10px;
+}
+.card-priority {
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #f0f5f3;
+  color: #446b5c;
+}
+.work-progress {
+  height: 4px;
+  background: #edf2f3;
+  border-radius: 5px;
+  margin: 12px 0;
+}
+.work-progress span {
+  display: block;
+  height: 100%;
+  background: #68a990;
+  border-radius: 5px;
+}
+.board-hint {
+  font-size: 12px;
+  color: #71848a;
+}
+.drop-placeholder {
+  border: 1px dashed #c9d6d9;
+  padding: 18px;
+  text-align: center;
+  border-radius: 8px;
+  color: #8a9c9f;
+  font-size: 12px;
+}
+.shell .planning-table th {
+  font-size: 11px;
+  background: #f6f8f9;
+  color: #6a7e85;
+}
+.shell .planning-table td {
+  font-size: 12px;
+}
+.shell .planning-table td > button {
+  border: 0;
+  padding: 2px 0;
+  justify-content: start;
+  background: transparent;
+}
+@media (max-width: 1100px) {
+  .overview-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .overview-columns {
+    grid-template-columns: 1fr;
+  }
+  .shell .content {
+    padding: 24px;
+  }
+  .shell > aside {
+    width: 205px;
+  }
+}
+@media (max-width: 720px) {
+  .shell {
+    display: block;
+  }
+  .shell > aside {
+    width: 100%;
+    height: auto;
+    position: relative;
+    padding: 14px;
+  }
+  .shell .brand {
+    margin: 0 0 12px;
+  }
+  .shell > aside nav {
+    display: flex;
+    overflow: auto;
+    gap: 5px;
+  }
+  .shell > aside nav .nav {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .shell .workspace-label,
+  .shell .workspace-project,
+  .shell .side-bottom {
+    display: none;
+  }
+  .shell > aside > .nav {
+    display: inline-flex;
+    width: auto;
+  }
+  .shell .content {
+    padding: 18px 14px;
+  }
+  .shell .page-heading {
+    align-items: start;
+    gap: 12px;
+  }
+  .shell .page-heading h1 {
+    font-size: 23px;
+  }
+  .overview-metric {
+    padding: 14px;
+  }
+  .overview .panel {
+    padding: 18px;
+  }
+  .attention-list .status-pill {
+    display: none;
+  }
+  .shell .topbar {
+    padding: 12px 15px;
+  }
+  .shell .page-heading .button-row {
+    flex-wrap: wrap;
+  }
+  .shell .page-heading .button-row button {
+    font-size: 11px;
+    padding: 8px;
+  }
+  .overview .section-heading {
+    flex-wrap: wrap;
+  }
+}
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 15px 0;
+}
+.calendar-toolbar h3 {
+  margin: 0 12px;
+  text-transform: capitalize;
+  font-size: 16px;
+}
+.calendar-toolbar button {
+  padding: 8px 11px;
+  font-size: 12px;
+}
+.calendar-modes {
+  display: flex;
+  gap: 4px;
+}
+.calendar-modes [aria-pressed="true"] {
+  background: #e3f0e9;
+  border-color: #bed9cb;
+  color: #205e46;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  border-left: 1px solid #e3e9ec;
+  border-top: 1px solid #e3e9ec;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.calendar-grid.day {
+  grid-template-columns: 1fr;
+}
+.calendar-weekday {
+  font-size: 11px;
+  font-weight: 600;
+  color: #788a91;
+  background: #f6f8f9;
+  padding: 10px;
+  border-bottom: 1px solid #e3e9ec;
+  text-align: center;
+}
+.calendar-day {
+  min-height: 125px;
+  padding: 9px;
+  border-right: 1px solid #e3e9ec;
+  border-bottom: 1px solid #e3e9ec;
+  min-width: 0;
+}
+.calendar-grid.week .calendar-day {
+  min-height: 260px;
+}
+.calendar-grid.day .calendar-day {
+  min-height: 300px;
+}
+.calendar-day.outside {
+  background: #fafbfc;
+  color: #aeb8bd;
+}
+.calendar-day.today {
+  background: #f4faf6;
+}
+.calendar-date {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 9px;
+  font-size: 12px;
+}
+.calendar-date button {
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  color: #90a6a0;
+}
+.today .calendar-date > time {
+  background: #27654e;
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 7px;
+}
+.calendar-event {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 7px;
+  text-align: left;
+  justify-content: start;
+  background: #eaf3ef;
+  border: 0;
+  border-left: 3px solid #75a990;
+  border-radius: 4px;
+  padding: 7px;
+  width: 100%;
+  margin: 5px 0;
+  font-size: 11px;
+}
+.calendar-event time {
+  font-size: 10px;
+  color: #648173;
+}
+.calendar-event strong {
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calendar-event small {
+  display: none;
+}
+.week .calendar-event small,
+.day .calendar-event small {
+  display: block;
+  width: 100%;
+  font-size: 10px;
+  color: #789084;
+}
+.calendar-scroll {
+  overflow: auto;
+}
+@media (max-width: 720px) {
+  .calendar-toolbar {
+    align-items: start;
+    flex-direction: column;
+  }
+  .calendar-grid:not(.day) {
+    min-width: 770px;
+  }
+}
