@@ -78,6 +78,7 @@ const fmt = (s: string | null) =>
     : "Sin definir";
 
 function App() {
+  const [tableSection, setTableSection] = useState("actividades");
   const [dirty, setDirty] = useState(false);
   const [routeReady, setRouteReady] = useState(false);
   const selection = useRef(0);
@@ -428,7 +429,7 @@ function App() {
                   </div>
                   <h1>
                     {!["summary", "history", "master", "audit"].includes(view) && detail?.cut.status === "publicado"
-                      ? (detail.cut.project_snapshot.name ?? project.name)
+                      ? (detail.cut.project_snapshot.name ?? "Nombre histórico no disponible")
                       : project.name}
                   </h1>
                   <p>
@@ -520,10 +521,12 @@ function App() {
                   project={project}
                   onEdit={(r) => setEdit(structuredClone(r))}
                   onWeekly={() => navigate("weekly")}
-                  onData={() => navigate("data")}
+                  onData={(target = "actividades") => { setTableSection(target); navigate("data"); }}
+                  onProject={() => navigate("summary")}
                 />
               ) : view === "data" && detail ? (
                 <Workbench
+                  initialSection={tableSection}
                   key={cutId}
                   detail={detail}
                   reload={() => load()}

@@ -847,3 +847,10 @@
     display: none;
   }
 }
+.report-notice {
+  padding: 8px 12px;
+  background: #fff4d9;
+  color: #684600;
+  border-left: 3px solid #d99c20;
+  font-size: 13px;
+}

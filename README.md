@@ -4,11 +4,17 @@ Producto PMO con un catálogo maestro de proyectos y Seguimiento Ejecutivo dentr
 
 ## Estado
 
-Fases 0–3 completadas el 2 de octubre de 2026. Versión 0.3.0, esquema SQLite 5: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
+Fases 0–4 completadas el 5 de octubre de 2026. Versión 0.4.0, esquema SQLite 5: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
 
 Desde **Catálogo y responsables** administra el estado actual. Al crear un corte puedes partir del catálogo o copiar una semana anterior. Revisa y acepta los registros; en **Conciliar con el catálogo** vincula los riesgos, dependencias, hitos y actividades antes de publicar. Vincular no sobrescribe los valores semanales. Traer datos actuales vuelve a dejar el registro pendiente; aplicar cambios al catálogo exige revisar y guardar el formulario. **Auditoría del proyecto** reúne los eventos históricos.
 
-Pendientes: consolidación del reporte (fase 4) y Board, Gantt, Roadmap, presupuesto, equipos, agenda, documentos y migración de datos del PMO antiguo (fase 5). Actividades es la base maestra inicial; no incluye aún jerarquías completas de WorkItem. Los ZIP originales permanecen intactos.
+Pendientes de fase 5: Board, Gantt, Roadmap, presupuesto, equipos, agenda, documentos y migración de datos del PMO antiguo (fase 5). Actividades es la base maestra inicial; no incluye aún jerarquías completas de WorkItem. Los ZIP originales permanecen intactos.
+
+## Reporte ejecutivo
+
+Los indicadores se toman del resumen semanal guardado. La gráfica muestra publicaciones anteriores y el corte actual; las series importadas se consultan por separado y nunca sustituyen cifras oficiales. Cero es un dato válido; campos ausentes siguen sin definir. Los borradores muestran solo registros aceptados inicialmente, con una opción explícita para incluir pendientes y dudosos. Los reportes publicados usan únicamente datos históricos.
+
+Desde el reporte puedes abrir el resumen, consultar/editar registros, ir a sus tablas o volver al proyecto. La marca y plantilla continúan configurándose por corte. Validación: `npm --prefix frontend test`, `npm --prefix frontend run build` y `python -m pytest -q` con el entorno virtual activado. Véase docs/VERIFICATION_PHASE4.md.
 
 ## Inicio en este equipo
 

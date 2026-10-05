@@ -1,6 +1,6 @@
 # Plan de integración de Project Office Hub
 
-Fecha: 2026-10-02. Estado actualizado: fases 0–3 completadas. Base unificada, flujo semanal y conciliación maestra implementados; fases 4–5 pendientes. Véase VERIFICATION.md para resultados y límites de validación.
+Fecha: 2026-10-05. Estado actualizado: fases 0–4 completadas. Base unificada, flujo semanal, conciliación maestra y reporte consolidado; fase 5 pendiente. Véase VERIFICATION.md para resultados y límites de validación.
 
 Las secciones de arquitectura observada describen los paquetes originales; ARCHITECTURE.md y DATA_MODEL.md describen la implementación actual.
 
@@ -182,3 +182,7 @@ Baseline ejecutado: ambos builds terminan y las 10 pruebas semanales originales 
 ## Cierre de fase 3
 
 Implementado en esquema 5: catálogo común master_items para RAID, Milestone y Activity (base inicial de WorkItem), personas/asignación por proyecto, snapshots semanales, conciliación explícita y auditoría agregada. Las jerarquías y vistas avanzadas de planificación quedan en fase 5. No se infieren identidades por nombre ni se convierten importaciones automáticamente en maestros. Código único por proyecto y vínculo único por entidad/corte. Véase VERIFICATION_PHASE3.md.
+
+## Cierre de fase 4
+
+Reporte oficial basado en resumen y registros del corte, sin relleno desde el maestro actual en publicaciones. Gráfica oficial separada de fuentes de consulta; borradores ajenos y fechas futuras excluidos del histórico. Datos ausentes se conservan como ausentes; cero y variación negativa se muestran correctamente. Revisión pendiente optativa en borradores, acceso a resumen/registros/tablas y regreso al proyecto. Plantilla y marca por corte conservadas. Pruebas y límites en VERIFICATION_PHASE4.md.

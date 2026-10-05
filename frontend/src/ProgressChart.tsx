@@ -1,3 +1,4 @@
+import { chartPoints } from "./modules/executive/reportModel";
 export type Point = {
   date: string;
   planned: number | null;
@@ -5,12 +6,13 @@ export type Point = {
   status?: string;
 };
 export function ProgressChart({
-  points,
+  points: rawPoints,
   compact = false,
 }: {
   points: Point[];
   compact?: boolean;
 }) {
+  const points = chartPoints(rawPoints);
   const w = 800,
     h = compact ? 195 : 260,
     left = 45,
@@ -26,9 +28,7 @@ export function ProgressChart({
     high === low
       ? (w + left - right) / 2
       : left + ((stamps[i] - low) / (high - low)) * (w - left - right);
-  const y = (v: number) =>
-    top +
-    (((compact ? 120 : 100) - v) / (compact ? 120 : 100)) * (h - top - bottom);
+  const y = (v: number) => top + ((100 - v) / 100) * (h - top - bottom);
   const path = (key: "planned" | "actual") => {
     let pen = false;
     return points
@@ -51,7 +51,7 @@ export function ProgressChart({
     return (
       <p className="report-empty">
         No hay avances para graficar. Captura los porcentajes en Actualización
-        semanal o selecciona una serie importada.
+        semanal. Las series importadas se consultan por separado.
       </p>
     );
   return (
@@ -66,22 +66,20 @@ export function ProgressChart({
           Avance planeado frente a real. Los datos ausentes no se representan
           como cero.
         </title>
-        {(compact ? [0, 20, 40, 60, 80, 100, 120] : [0, 25, 50, 75, 100]).map(
-          (v) => (
-            <g key={v}>
-              <line
-                x1={left}
-                x2={w - right}
-                y1={y(v)}
-                y2={y(v)}
-                stroke="#dce5ee"
-              />
-              <text x={left - 8} y={y(v) + 4} textAnchor="end">
-                {v}%
-              </text>
-            </g>
-          ),
-        )}
+        {[0, 25, 50, 75, 100].map((v) => (
+          <g key={v}>
+            <line
+              x1={left}
+              x2={w - right}
+              y1={y(v)}
+              y2={y(v)}
+              stroke="#dce5ee"
+            />
+            <text x={left - 8} y={y(v) + 4} textAnchor="end">
+              {v}%
+            </text>
+          </g>
+        ))}
         {(["planned", "actual"] as const).map((key, k) => (
           <g key={key}>
             <path
@@ -111,8 +109,7 @@ export function ProgressChart({
         ))}
         {points.map(
           (p, i) =>
-            (compact ||
-              i === 0 ||
+            (i === 0 ||
               i === points.length - 1 ||
               i % Math.max(1, Math.ceil(points.length / 6)) === 0) && (
               <text

@@ -1,4 +1,9 @@
 import {
+  reportModel,
+  percentage as num,
+  validDate,
+} from "./modules/executive/reportModel";
+import {
   ClipboardList,
   CalendarDays,
   Target,
@@ -30,8 +35,6 @@ const text = (value: unknown) =>
   value === null || value === undefined || value === ""
     ? "Sin definir"
     : String(value);
-const num = (v: unknown): number | null =>
-  typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 100 ? v : null;
 const normalize = (v: unknown) =>
   String(v ?? "")
     .normalize("NFD")
@@ -65,21 +68,25 @@ export function ExecutiveReport({
   onEdit,
   onWeekly,
   onData,
+  onProject,
 }: {
   detail: Detail;
   project: Project;
   onEdit: (r: Row) => void;
   onWeekly: () => void;
-  onData: () => void;
+  onData: (section?: string) => void;
+  onProject: () => void;
 }) {
   const [history, setHistory] = useState<Point[]>([]),
     [error, setError] = useState(""),
-    [preview, setPreview] = useState(detail.cut.status !== "publicado"),
-    [series, setSeries] = useState("auto"),
+    [preview, setPreview] = useState(false),
+    [series, setSeries] = useState("history"),
     [indicator, setIndicator] = useState("");
   useEffect(() => {
     let active = true;
-    api("/cuts/" + detail.cut.id + "/report-history")
+    setHistory([]);
+    setError("");
+    api(`/projects/${project.id}/cuts/${detail.cut.id}/report-history`)
       .then((rows) => {
         if (active) setHistory(rows);
       })
@@ -89,34 +96,20 @@ export function ExecutiveReport({
     return () => {
       active = false;
     };
-  }, [detail.cut.id, detail.cut.version]);
+  }, [project.id, detail.cut.id, detail.cut.version]);
   const locked = detail.cut.status === "publicado",
     meta = detail.cut.metadata;
-  const shown = locked
-    ? { ...project, ...detail.cut.project_snapshot }
-    : project;
-  const rows = detail.records.filter(
-    (r) =>
-      r.review === "aceptado" ||
-      (!locked && preview && ["pendiente", "dudoso"].includes(r.review)),
+  const { shown, rows, planned, actual, variance, official } = reportModel(
+    detail,
+    project,
+    history,
+    preview,
   );
   const section = (name: string) => rows.filter((r) => r.section === name);
-  const imported = section("avance").filter(
-    (r) => r.current.date && /^\d{4}-\d{2}-\d{2}/.test(String(r.current.date)),
-  );
+  const imported = section("avance").filter((r) => validDate(r.current.date));
   const sourceIds = [...new Set(imported.map((r) => r.source_id ?? "manual"))];
-  const official = history.filter(
-    (p) => p.status === "publicado" || (!locked && preview),
-  );
-  const hasOfficial = official.some(
-    (p) => p.planned !== null || p.actual !== null,
-  );
   const selectedSeries =
-    series === "auto"
-      ? hasOfficial
-        ? "history"
-        : (sourceIds[0] ?? "history")
-      : series;
+    series === "history" || sourceIds.includes(series) ? series : "history";
   const points: Point[] =
     selectedSeries === "history"
       ? official
@@ -130,8 +123,6 @@ export function ExecutiveReport({
           }))
           .sort((a, b) => a.date.localeCompare(b.date));
   const selected = rows.find((r) => r.id === indicator);
-  const planned = num(selected ? selected.current.planned : meta.planned),
-    actual = num(selected ? selected.current.actual : meta.actual);
   const activities = section("actividades");
   const done = activities.filter((r) =>
     [
@@ -177,10 +168,6 @@ export function ExecutiveReport({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  const variance =
-    planned === null || actual === null
-      ? null
-      : Math.round((actual - planned) * 100) / 100;
   const summary = String(
     meta.executive_comment ||
       section("general").find((r) =>
@@ -210,11 +197,12 @@ export function ExecutiveReport({
       .split("\n")[0]
       .replace(/^\d+[.)]\s*/, "");
   const date = (v: unknown) =>
-    v
-      ? new Date(String(v).slice(0, 10) + "T12:00:00").toLocaleDateString(
-          "es-MX",
-          { day: "2-digit", month: "short", year: "numeric" },
-        )
+    validDate(v)
+      ? new Date(v + "T12:00:00").toLocaleDateString("es-MX", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
       : "Sin definir";
   const reportRows = [
     {
@@ -228,7 +216,7 @@ export function ExecutiveReport({
       title: "Estado Cronograma",
       body:
         planned === null || actual === null
-          ? "Avance pendiente de selección o captura."
+          ? "Avance pendiente de captura en el resumen semanal."
           : `Avance planeado ${planned}% vs avance real ${actual}%. Variación ${variance} pp.`,
       state: pmp.schedule,
     },
@@ -269,10 +257,20 @@ export function ExecutiveReport({
           <button onClick={() => setFit(!fit)}>
             {fit ? "Tamaño real" : "Ajustar a pantalla"}
           </button>
-          <button onClick={onWeekly}>Editar reporte y marca</button>
-          <button onClick={onData}>Volver a tablas</button>
+          <button onClick={onWeekly}>
+            {locked ? "Consultar resumen y marca" : "Editar reporte y marca"}
+          </button>
+          <button onClick={() => onData()}>Volver a tablas</button>
+          <button onClick={onProject}>Volver al proyecto</button>
         </div>
       </div>
+      {!locked && (
+        <p role="status" className="report-notice">
+          {preview
+            ? "Vista de revisión: incluye registros pendientes y dudosos. No es una publicación."
+            : "Borrador: se muestran registros aceptados y cifras guardadas del resumen semanal."}
+        </p>
+      )}
       <details className="report-options">
         <summary>Fuentes, indicadores y opciones de revisión</summary>
         <div className="report-options-grid">
@@ -287,12 +285,12 @@ export function ExecutiveReport({
             </label>
           )}
           <label>
-            Indicadores mostrados
+            Observación importada para comparar
             <select
               value={indicator}
               onChange={(e) => setIndicator(e.target.value)}
             >
-              <option value="">Resumen semanal guardado</option>
+              <option value="">Sin observación seleccionada</option>
               {section("avance")
                 .filter(
                   (r) =>
@@ -308,12 +306,12 @@ export function ExecutiveReport({
             </select>
           </label>
           <label>
-            Datos de la gráfica
+            Serie de consulta
             <select
               value={selectedSeries}
               onChange={(e) => setSeries(e.target.value)}
             >
-              <option value="history">Histórico de cortes guardados</option>
+              <option value="history">Avance oficial del proyecto</option>
               {sourceIds.map((id) => (
                 <option key={id} value={id}>
                   Serie importada ·{" "}
@@ -329,7 +327,30 @@ export function ExecutiveReport({
           indicadores guardados. Los campos sin información permanecen sin
           definir.
         </p>
-        <ProgressChart points={points} />
+        {selected && (
+          <p role="status">
+            Observación de consulta: planeado{" "}
+            {num(selected.current.planned) === null
+              ? "Sin dato"
+              : `${num(selected.current.planned)}%`}{" "}
+            · real{" "}
+            {num(selected.current.actual) === null
+              ? "Sin dato"
+              : `${num(selected.current.actual)}%`}
+            . El reporte conserva el resumen semanal guardado.
+          </p>
+        )}
+        {selectedSeries !== "history" && (
+          <p className="message">
+            Serie importada de consulta; puede incluir proyecciones. No modifica
+            la gráfica oficial del reporte.
+          </p>
+        )}
+        {error && selectedSeries === "history" ? (
+          <p role="alert">{error}</p>
+        ) : (
+          <ProgressChart points={points} />
+        )}
       </details>
       <div
         ref={sheetRef}
@@ -354,11 +375,18 @@ export function ExecutiveReport({
             <div className="sheet-title">
               <div>
                 REPORTE EJECUTIVO SEMANAL –{" "}
-                {String(meta.report_title || shown.name)}
+                {String(
+                  meta.report_title ||
+                    shown.name ||
+                    "Proyecto sin nombre histórico",
+                )}
               </div>
               <h1>
                 {String(
-                  meta.report_subtitle || shown.description || shown.name,
+                  meta.report_subtitle ||
+                    shown.description ||
+                    shown.name ||
+                    "Sin descripción",
                 )}
               </h1>
             </div>
@@ -506,7 +534,7 @@ export function ExecutiveReport({
                   {error ? (
                     <p role="alert">{error}</p>
                   ) : (
-                    <ProgressChart points={points} compact />
+                    <ProgressChart points={official} compact />
                   )}
                 </div>
                 <div className="sheet-weekly">
@@ -550,7 +578,10 @@ export function ExecutiveReport({
                       </ul>
                       {!items.length && <p>Sin registros</p>}
                       {items.length > 7 && (
-                        <button className="sheet-more" onClick={onData}>
+                        <button
+                          className="sheet-more"
+                          onClick={() => onData(items[0]?.section)}
+                        >
                           Ver {items.length} registros
                         </button>
                       )}
@@ -580,7 +611,10 @@ export function ExecutiveReport({
                   <strong>{text(meta.exposure_comment)}</strong>
                 </button>
                 {risks.length > 5 && (
-                  <button className="sheet-more" onClick={onData}>
+                  <button
+                    className="sheet-more"
+                    onClick={() => onData("riesgos")}
+                  >
                     Ver los {risks.length} riesgos
                   </button>
                 )}
@@ -596,7 +630,10 @@ export function ExecutiveReport({
                   ]}
                   onEdit={originalEdit}
                 />
-                <button className="sheet-strip neutral" onClick={onData}>
+                <button
+                  className="sheet-strip neutral"
+                  onClick={() => onData(associated ? "actividades" : "hitos")}
+                >
                   {associated
                     ? "Hitos asociados al plan · pendientes de consolidar"
                     : String(
@@ -637,9 +674,20 @@ export function ExecutiveReport({
                   </div>
                 </button>
                 {blocked.length > 2 && (
-                  <button className="sheet-more" onClick={onData}>
-                    Ver los {blocked.length} bloqueos y problemas
-                  </button>
+                  <div className="button-row">
+                    <button
+                      className="sheet-more"
+                      onClick={() => onData("bloqueos")}
+                    >
+                      Ver bloqueos
+                    </button>
+                    <button
+                      className="sheet-more"
+                      onClick={() => onData("problemas")}
+                    >
+                      Ver problemas
+                    </button>
+                  </div>
                 )}
               </SheetPanel>
             </div>
@@ -655,9 +703,20 @@ export function ExecutiveReport({
                   onEdit={originalEdit}
                 />
                 {mitigations.length > 6 && (
-                  <button className="sheet-more" onClick={onData}>
-                    Ver todas en tablas ({mitigations.length})
-                  </button>
+                  <div className="button-row">
+                    <button
+                      className="sheet-more"
+                      onClick={() => onData("acciones")}
+                    >
+                      Ver acciones
+                    </button>
+                    <button
+                      className="sheet-more"
+                      onClick={() => onData("riesgos")}
+                    >
+                      Ver mitigaciones de riesgos
+                    </button>
+                  </div>
                 )}
               </SheetPanel>
               <SheetPanel title="⚠ 8. ALERTAS EJECUTIVAS (Top 5)" name="alerts">
@@ -666,7 +725,10 @@ export function ExecutiveReport({
                   onEdit={originalEdit}
                 />
                 {section("alertas").length > 5 && (
-                  <button className="sheet-more" onClick={onData}>
+                  <button
+                    className="sheet-more"
+                    onClick={() => onData("alertas")}
+                  >
                     Ver todas las alertas
                   </button>
                 )}
@@ -680,7 +742,10 @@ export function ExecutiveReport({
                   onEdit={originalEdit}
                 />
                 {section("decisiones").length > 5 && (
-                  <button className="sheet-more" onClick={onData}>
+                  <button
+                    className="sheet-more"
+                    onClick={() => onData("decisiones")}
+                  >
                     Ver todas las decisiones
                   </button>
                 )}
@@ -707,15 +772,8 @@ export function ExecutiveReport({
             {locked
               ? "Corte publicado"
               : "Vista previa · incluye sólo la selección de revisión"}{" "}
-            ·{" "}
-            {selectedSeries === "history"
-              ? "Gráfica: histórico de cortes"
-              : "Gráfica: serie importada, incluye proyecciones"}{" "}
-            ·{" "}
-            {selected
-              ? "Indicadores: observación importada seleccionada"
-              : "Indicadores: resumen semanal"}{" "}
-            · Textos abreviados: haz clic para ver el registro completo.
+            · Gráfica: avance oficial · Indicadores: resumen semanal guardado ·
+            Textos abreviados: haz clic para ver el registro completo.
           </footer>
         </div>
       </div>

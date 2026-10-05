@@ -86,12 +86,14 @@ export function Workbench({
   detail,
   reload,
   onDirty,
+  initialSection = "actividades",
 }: {
+  initialSection?: string;
   detail: Detail;
   reload: () => Promise<void>;
   onDirty: (v: boolean) => void;
 }) {
-  const [section, setSection] = useState("actividades"),
+  const [section, setSection] = useState(initialSection),
     [drafts, setDrafts] = useState<Record<string, Row>>({}),
     [query, setQuery] = useState(""),
     [filter, setFilter] = useState("active"),

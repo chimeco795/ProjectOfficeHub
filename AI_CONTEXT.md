@@ -1,10 +1,10 @@
 # Contexto de Project Office Hub
 
-## Estado al 2026-10-02
+## Estado al 2026-10-05
 
-Fases 0–3 completadas. Repositorio privado chimeco795/ProjectOfficeHub, master. Base React/TypeScript/Vite + FastAPI + SQLite funcional. Proyecto maestro con metodología, prioridad y fechas independientes; portafolio, resumen y acceso a Seguimiento Ejecutivo. Start.ps1 permite iniciar la app local.
+Fases 0–4 completadas. Repositorio privado chimeco795/ProjectOfficeHub, master. Base React/TypeScript/Vite + FastAPI + SQLite funcional. Proyecto maestro con metodología, prioridad y fechas independientes; portafolio, resumen y acceso a Seguimiento Ejecutivo. Start.ps1 permite iniciar la app local.
 
-Baseline: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. Producto nuevo: 39 tests backend correctos y build frontend correcto (versión 0.3.0). Creación, edición, recarga de proyecto/corte y aislamiento entre dos proyectos comprobados en navegador con base temporal.
+Baseline: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. Producto nuevo: 41 tests backend, 6 tests frontend y build correctos (versión 0.4.0). Creación, edición, recarga de proyecto/corte y aislamiento entre dos proyectos comprobados en navegador con base temporal.
 
 ## Reglas
 
@@ -29,8 +29,10 @@ Fuentes: D:/Archivos/Downloads/project-office-hub-v3-1-0 (1).zip y D:/Archivos/C
 
 ## Continuación
 
-Siguiente fase: 4, consolidación del reporte ejecutivo. Fase 3 cerrada con catálogo actual, corte desde maestros, conciliación y snapshots inmutables. Las actividades son la base inicial de WorkItem; jerarquías, tableros y planificación avanzada quedan en fase 5.
+Siguiente fase: 5, resto de módulos PMO y migración de datos validada. Fase 3 cerrada con catálogo actual, corte desde maestros, conciliación y snapshots inmutables. Las actividades son la base inicial de WorkItem; jerarquías, tableros y planificación avanzada quedan en fase 5.
 
 No se migraron datos reales desde los ZIP o el navegador anterior. La base local puede contener proyectos creados por el usuario: conservarlos. Pruebas visuales de fase 3 en .test-data/phase3-browser, separadas de data/pmo.sqlite3.
 
-Ver docs/VERIFICATION_PHASE3.md. No actualizar retrospectivamente una publicación. El servidor se mantiene local y sin autenticación.
+Fase 4: reportModel centraliza indicadores, filtrado y snapshots. Reporte oficial separado de series de consulta; pendientes optativos en borrador. GET por proyecto/corte para histórico; otras semanas en borrador quedan excluidas. Sin cambio de esquema.
+
+Ver docs/VERIFICATION_PHASE4.md. No actualizar retrospectivamente una publicación. El servidor se mantiene local y sin autenticación.

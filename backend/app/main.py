@@ -22,7 +22,7 @@ async def lifespan(app):
     initialize()
     yield
 
-app=FastAPI(title='Project Office Hub',version='0.3.0',lifespan=lifespan)
+app=FastAPI(title='Project Office Hub',version='0.4.0',lifespan=lifespan)
 from .api.projects import router as projects_router
 app.include_router(projects_router)
 from .api.master import router as master_router
@@ -68,7 +68,7 @@ def editable(db,cut_id):
     return row
 
 @app.get('/api/health')
-def health():return {'status':'ok','version':'0.3.0','product':'Project Office Hub'}
+def health():return {'status':'ok','version':'0.4.0','product':'Project Office Hub'}
 
 @app.get('/api/schema')
 def schema():return {'sections':SECTIONS,'aliases':ALIASES}
@@ -295,14 +295,21 @@ def cut_audit(cut_id:str):
         require(db,'cuts',cut_id)
         return [dict(row) for row in db.execute('SELECT * FROM cut_audit WHERE cut_id=? ORDER BY id',(cut_id,))]
 
+@app.get('/api/projects/{project_id}/cuts/{cut_id}/report-history')
+def project_report_history(project_id:str,cut_id:str):
+    with connection() as db:
+        cut=require(db,'cuts',cut_id)
+        if cut['project_id']!=project_id:raise HTTPException(404,'Corte ajeno al proyecto')
+    return report_history(cut_id)
+
 @app.get('/api/cuts/{cut_id}/report-history')
 def report_history(cut_id:str):
     with connection() as db:
         cut=require(db,'cuts',cut_id)
-        if cut['status']=='publicado' and cut['history_snapshot'] is not None:
-            return json.loads(cut['history_snapshot'])
+        if cut['status']=='publicado':
+            return json.loads(cut['history_snapshot']) if cut['history_snapshot'] is not None else []
         from .migrations import history_points
-        return history_points(db,cut_id)
+        return [p for p in history_points(db,cut_id) if p['status']=='publicado' or p['id']==cut_id]
 
 @app.get('/api/cuts/{cut_id}/timeline')
 def timeline(cut_id:str):
