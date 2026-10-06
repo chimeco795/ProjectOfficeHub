@@ -49,3 +49,7 @@ Publicar exige vínculos en riesgos, dependencias, hitos y actividades aceptados
 ## Incremento fase 5 (0.5.0)
 
 SQLite 6 añade planning_periods, work_dependencies, teams/project_teams, memberships, budgets/budget_entries, events, documents y migration_batches/migration_identities. master_items conserva identidad y amplía Activity con tipo, padre, esfuerzos, puntos, iteración y release. El dominio valida ciclos y relaciones dentro del proyecto; publicaciones conservan sus snapshots. Dinero se almacena en centavos, documentos y exportaciones originales como BLOB. Migración v5 respaldada y aditiva; véase VERIFICATION_PHASE5.md.
+
+## Esquema 7 (0.9.0)
+
+people incorpora leader_id (FK a people) y role global. Triggers de inserción/actualización impiden ciclos recursivos. Migración respaldada v6 → v7; versión de persona protege cambios concurrentes de nombre y organización. Comentarios operativos usan audit_events event=comentario, next con text, request_id y author local. Capacidad se calcula sobre memberships, sin almacenamiento duplicado.

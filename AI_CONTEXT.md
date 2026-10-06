@@ -4,7 +4,7 @@
 
 Fases 0–4 completadas. Repositorio privado chimeco795/ProjectOfficeHub, master. Base React/TypeScript/Vite + FastAPI + SQLite funcional. Proyecto maestro con metodología, prioridad y fechas independientes; portafolio, resumen y acceso a Seguimiento Ejecutivo. Start.ps1 permite iniciar la app local.
 
-Baseline: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. Producto nuevo: 58 tests backend, 13 tests frontend y build correctos (versión 0.8.0). Creación, edición, recarga de proyecto/corte y aislamiento entre dos proyectos comprobados en navegador con base temporal.
+Baseline: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. Producto nuevo: 65 tests backend, 13 tests frontend y build correctos (versión 0.9.0). Creación, edición, recarga de proyecto/corte y aislamiento entre dos proyectos comprobados en navegador con base temporal.
 
 ## Reglas
 
@@ -16,7 +16,7 @@ Project Office Hub es el producto maestro. Seguimiento Ejecutivo es un módulo p
 - backend/app/migrations.py: migraciones aditivas v2 → v3 → v4 → v5 → v6 con respaldos. Esquema 4 protege cortes publicados, registros y fuentes con triggers; las modificaciones de contenido incrementan la versión del corte. La publicación congela también la serie histórica oficial.
 - frontend/src/modules/projects: resumen y campos comunes de la ficha.
 - frontend/src/modules/executive: histórico filtrable, avances, pendientes y trazabilidad con valores antes/después. Creación de cortes con periodo explícito y copia desde una semana anterior.
-- Código semanal heredado y sus tres archivos de pruebas preservados. Los tests de migración esperan ahora esquema final 6 y se conservaron sus garantías.
+- Código semanal heredado y sus tres archivos de pruebas preservados. Los tests de migración esperan ahora esquema final 7 y se conservaron sus garantías.
 - La URL guarda project, view y cut y restaura el contexto al cargar; usa replaceState, sin historial por pantalla.
 - Catálogo maestro compartido de RAID, hitos y actividades; personas globales asignadas a proyectos; conciliación explícita, snapshots por registro y auditoría agregada. Ver VERIFICATION_PHASE3.md.
 - Fase 5 implementa planificación sobre master_items, equipos, presupuesto, agenda, documentos e importador schemaVersion 3. No se importaron datos reales. Ver docs/VERIFICATION_PHASE5.md para límites y paridad pendiente.
@@ -42,3 +42,5 @@ Fase 6 solicitada: mejorar forma visual y funcionalidad. Entrega 0.6.0: navegaci
 Incremento 0.7.0: cronograma Schedule con escala, progreso y revisión de dependencias. scheduleModel evalúa fechas incompletas, vencidos y precedencias fin-inicio al día siguiente en días naturales; analiza catálogo completo pese a filtros. No reprograma ni calcula ruta crítica. Ver VERIFICATION_PHASE7.md.
 
 Fase 8 (0.8.0): simulación de fechas y aplicación transaccional desde Cronograma. Backend services/scheduler.py y api/schedule.py; frontend ScheduleSimulation. Conserva duraciones inclusivas, no adelanta, usa días naturales y dependencias fin-inicio. Huella ligada al proyecto/fecha/catálogo; rechazo ante cambios concurrentes. 58 pruebas backend y 13 frontend. Ver VERIFICATION_PHASE8.md para reglas, supuestos y pruebas. No reprogramar datos reales sin acción explícita del usuario.
+
+Entrega 0.9.0: capacidad entre proyectos por vigencias, organigrama global people.leader_id/role (esquema 7, respaldo v6), comentarios append-only en audit_events con request_id idempotente, roadmap por arrastre y selector. 65 pruebas backend, 13 frontend y build correctos. docs/STATUS.md es la matriz vigente. Legacy conserva comentarios/jerarquías en original; aún no mapea esos campos operativos ni attachments. Datos reales .pohub pendientes.

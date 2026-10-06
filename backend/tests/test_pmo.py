@@ -141,7 +141,8 @@ def test_migration_invalid_reference_rolls_back_and_existing_project_not_overwri
 def test_v5_migration_backup_and_published_preservation(tmp_path,monkeypatch):
     monkeypatch.setattr(db,'DATA',tmp_path)
     with monkeypatch.context() as before:
-        before.setattr(migrations,'migrate_pmo',lambda *args:None);db.initialize()
+        before.setattr(migrations,'migrate_pmo',lambda *args:None)
+        before.setattr(migrations,'migrate_organization',lambda *args:None);db.initialize()
     with db.connection() as conn:
         conn.execute("INSERT INTO projects(id,name,description,objective,created_at) VALUES('p','Anterior','','','2026-10-01')")
         conn.execute("INSERT INTO cuts(id,project_id,report_date,created_at,status,metadata,project_snapshot,history_snapshot) VALUES('c','p','2026-10-01','2026-10-01','publicado','{}','{}','[]')")
@@ -150,7 +151,7 @@ def test_v5_migration_backup_and_published_preservation(tmp_path,monkeypatch):
     with db.connection() as conn:
         assert dict(conn.execute('SELECT * FROM cuts').fetchone())==original
         assert conn.execute('PRAGMA foreign_key_check').fetchall()==[]
-        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==6
+        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==7
     backups=list(tmp_path.glob('backup-v5-*.sqlite3'));assert len(backups)==1
     with sqlite3.connect(backups[0]) as conn:assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==5
 

@@ -70,6 +70,7 @@ def test_v2_migration_preserves_published_data(tmp_path, monkeypatch):
         initial.setattr(migrations, 'migrate_weekly', lambda *args: None)
         initial.setattr(migrations, 'migrate_master', lambda *args: None)
         initial.setattr(migrations, 'migrate_pmo', lambda *args: None)
+        initial.setattr(migrations, 'migrate_organization', lambda *args: None)
         db.initialize()
     with db.connection() as connection:
         connection.execute("INSERT INTO projects(id,name,description,objective,created_at) VALUES('p','Original','','','2026-09-01')")
@@ -83,7 +84,7 @@ def test_v2_migration_preserves_published_data(tmp_path, monkeypatch):
         cut = connection.execute('SELECT * FROM cuts').fetchone()
         assert cut['status'] == 'publicado'
         assert json.loads(cut['project_snapshot']) == {'name': 'Nombre histórico'}
-        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 6
+        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 7
     backups = list(tmp_path.glob('backup-v2-*.sqlite3'))
     assert len(backups) == 1
     with sqlite3.connect(backups[0]) as connection:

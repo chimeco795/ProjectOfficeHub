@@ -1,3 +1,5 @@
+import { Roadmap } from "./Roadmap";
+import { WorkComments } from "./WorkComments";
 import { ScheduleSimulation } from "./ScheduleSimulation";
 import { Schedule } from "./Schedule";
 import { useEffect, useState } from "react";
@@ -302,67 +304,29 @@ export function Planning({
           />
         </>
       ) : view === "roadmap" ? (
-        <>
-          <div className="button-row">
-            <button
-              onClick={() =>
-                setPeriod({
-                  id: "",
-                  kind: "Iteration",
-                  name: "",
-                  start_date: null,
-                  end_date: null,
-                  status: "Planned",
-                  description: "",
-                  version: 1,
-                  archived: false,
-                })
-              }
-            >
-              Nueva iteración / release
-            </button>
-          </div>
-          <div className="roadmap-grid">
-            {periods
-              .filter((p) => !!p.archived === archived)
-              .map((p) => (
-                <article className="work-card" key={p.id}>
-                  <h3>
-                    {p.kind === "Iteration" ? "Iteración" : "Release"} ·{" "}
-                    {p.name}
-                  </h3>
-                  <p>
-                    {p.start_date || "Sin inicio"} → {p.end_date || "Sin fin"} ·{" "}
-                    {p.status}
-                  </p>
-                  <button onClick={() => setPeriod(p)}>Editar periodo</button>
-                  <ul>
-                    {visible
-                      .filter(
-                        (i) => i.iteration_id === p.id || i.release_id === p.id,
-                      )
-                      .map((i) => (
-                        <li key={i.id}>
-                          <button onClick={() => setEditing(i)}>
-                            {i.code} · {i.name}
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
-                </article>
-              ))}
-          </div>
-          <h3>Trabajos sin periodo asignado</h3>
-          {visible
-            .filter((i) => !i.iteration_id && !i.release_id)
-            .map((i) => (
-              <p key={i.id}>
-                <button onClick={() => setEditing(i)}>
-                  {i.code} · {i.name}
-                </button>
-              </p>
-            ))}
-        </>
+        <Roadmap
+          items={visible}
+          periods={periods}
+          archived={archived}
+          busy={busy}
+          onEdit={setEditing}
+          onPeriod={setPeriod}
+          onAssign={async (item, key, id) => {
+            setBusy(true);
+            setError("");
+            try {
+              await api(`${base}/items/${item.id}`, {
+                method: "PUT",
+                ...json({ ...item, [key]: id }),
+              });
+              await reload();
+            } catch (e) {
+              setError((e as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
       ) : (
         <div className="planning-table">
           <table>
@@ -413,6 +377,7 @@ export function Planning({
       )}
       {editing && (
         <WorkEditor
+          projectId={project.id}
           initial={editing}
           items={items}
           people={people}
@@ -444,6 +409,7 @@ export function Planning({
   );
 }
 function WorkEditor({
+  projectId,
   initial,
   items,
   people,
@@ -451,6 +417,7 @@ function WorkEditor({
   onClose,
   onSave,
 }: {
+  projectId: string;
   initial: Work;
   items: Work[];
   people: Person[];
@@ -705,6 +672,9 @@ function WorkEditor({
           <button className="primary">Guardar trabajo</button>
         </fieldset>
       </form>
+      {v.id && (
+        <WorkComments projectId={projectId} itemId={v.id} onBusy={setBusy} />
+      )}
     </Dialog>
   );
 }

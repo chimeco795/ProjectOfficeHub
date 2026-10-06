@@ -4,7 +4,7 @@ Producto PMO con un catálogo maestro de proyectos y Seguimiento Ejecutivo dentr
 
 ## Estado
 
-Fases 0–4 completadas el 5 de octubre de 2026. Incremento de diseño y uso cotidiano disponible: versión 0.8.0, esquema SQLite 6: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
+Fases 0–4 completadas el 5 de octubre de 2026. Incremento de diseño y uso cotidiano disponible: versión 0.9.0, esquema SQLite 7: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
 
 Desde **Catálogo y responsables** administra el estado actual. Al crear un corte puedes partir del catálogo o copiar una semana anterior. Revisa y acepta los registros; en **Conciliar con el catálogo** vincula los riesgos, dependencias, hitos y actividades antes de publicar. Vincular no sobrescribe los valores semanales. Traer datos actuales vuelve a dejar el registro pendiente; aplicar cambios al catálogo exige revisar y guardar el formulario. **Auditoría del proyecto** reúne los eventos históricos.
 
@@ -95,3 +95,5 @@ Rama principal: master. El servidor escucha en localhost; este incremento no inc
 El cronograma permite filtrar alertas y revisar fechas que se cruzan con sus predecesores. El análisis orientativo no modifica fechas. Ver docs/VERIFICATION_PHASE7.md.
 
 Desde Cronograma puedes simular fechas y revisar holgura antes de aplicar los cambios. La aplicación actualiza el catálogo en una transacción y conserva los reportes publicados. Modelo: días naturales, duraciones completas, relaciones fin-inicio, sin recursos ni festivos. Ver docs/VERIFICATION_PHASE8.md.
+
+Equipo incluye capacidad por fechas entre proyectos y organigrama compartido. Los trabajos admiten comentarios y asignación a iteraciones/releases mediante arrastre. Estado vigente y pendientes: docs/STATUS.md; verificación: docs/VERIFICATION_PHASE9.md.

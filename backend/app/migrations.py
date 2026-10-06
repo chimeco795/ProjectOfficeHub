@@ -189,3 +189,21 @@ def migrate_pmo(db, data_dir):
                 WHERE a.id=NEW.item_id AND b.id=NEW.predecessor_id AND a.kind='Activity' AND b.kind='Activity')
             BEGIN SELECT RAISE(ABORT,'Dependencia ajena al proyecto'); END''')
     db.execute('INSERT INTO schema_version VALUES(6)')
+
+def migrate_organization(db,data_dir):
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]>=7:return
+    db.commit()
+    if db.execute('SELECT COUNT(*) FROM projects').fetchone()[0]:
+        stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
+        with sqlite3.connect(data_dir/f'backup-v6-{stamp}.sqlite3') as backup:db.backup(backup)
+    db.execute('BEGIN IMMEDIATE')
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]>=7:return
+    db.execute('ALTER TABLE people ADD COLUMN leader_id TEXT REFERENCES people(id)')
+    db.execute("ALTER TABLE people ADD COLUMN role TEXT NOT NULL DEFAULT ''")
+    for action in ('INSERT','UPDATE'):
+        db.execute(f'''CREATE TRIGGER organization_cycle_{action.lower()} BEFORE {action} ON people
+            WHEN NEW.leader_id IS NOT NULL AND EXISTS(
+                WITH RECURSIVE chain(id) AS (SELECT NEW.leader_id UNION SELECT p.leader_id FROM people p JOIN chain c ON p.id=c.id WHERE p.leader_id IS NOT NULL)
+                SELECT 1 FROM chain WHERE id=NEW.id)
+            BEGIN SELECT RAISE(ABORT,'El organigrama no admite ciclos'); END''')
+    db.execute('INSERT INTO schema_version VALUES(7)')

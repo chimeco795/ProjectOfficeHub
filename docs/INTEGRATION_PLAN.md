@@ -194,3 +194,5 @@ Fase 6 añadida por solicitud del usuario: diseño y experiencia de uso. Increme
 Fase 7: incremento 0.7.0 de revisión de cronograma. Escala, progreso y diagnóstico de fechas/dependencias con filtros; sin reprogramación automática. Ver VERIFICATION_PHASE7.md. No supone paridad avanzada completa.
 
 Fase 8 (0.8.0): simulación de reprogramación y rutas críticas bajo modelo simplificado, con revisión previa y aplicación atómica. Ver VERIFICATION_PHASE8.md. Pendientes de paridad real y planificación con recursos siguen abiertos.
+
+Entrega 0.9.0 agrupa capacidad por vigencia, organigrama, comentarios y roadmap arrastrable. Esquema 7 con respaldo. Matriz vigente en STATUS.md, pruebas en VERIFICATION_PHASE9.md; pendientes legacy reales separados de mejoras operativas.

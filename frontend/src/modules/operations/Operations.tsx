@@ -1,3 +1,5 @@
+import { Organization } from "./Organization";
+import { Capacity } from "./Capacity";
 import { Calendar } from "./Calendar";
 import { useEffect, useState } from "react";
 import { api, json } from "../../api";
@@ -686,22 +688,13 @@ export function Operations({
       )}
       {!visible.length && <p>No hay registros en esta selección.</p>}
       {view === "teams" && (
-        <details>
-          <summary>
-            Asignaciones activas acumuladas (sin filtrar por vigencia)
-          </summary>
-          {people.map((p) => {
-            const total = rows
-              .filter((r) => r.person_id === p.id && !r.archived)
-              .reduce((s, r) => s + Number(r.allocation), 0);
-            return (
-              <p key={p.id}>
-                {p.name}: {total}%
-                {total > 100 ? " · Revisar periodos de asignación" : ""}
-              </p>
-            );
-          })}
-        </details>
+        <Capacity
+          projectId={projectId}
+          revision={JSON.stringify([rows, people])}
+        />
+      )}
+      {view === "teams" && (
+        <Organization projectId={projectId} revision={JSON.stringify(people)} />
       )}
       {editing && (
         <RecordEditor
