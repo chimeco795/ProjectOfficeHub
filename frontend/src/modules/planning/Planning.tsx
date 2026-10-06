@@ -1,4 +1,5 @@
-import {Schedule} from "./Schedule";
+import { ScheduleSimulation } from "./ScheduleSimulation";
+import { Schedule } from "./Schedule";
 import { useEffect, useState } from "react";
 import { api, json } from "../../api";
 import type { Project } from "../../types";
@@ -154,8 +155,8 @@ export function Planning({
         <div>
           <h2>{title}</h2>
           <p>
-            Organiza entregables y tareas, asigna responsables y sigue su avance.
-            Metodología: {project.methodology}.
+            Organiza entregables y tareas, asigna responsables y sigue su
+            avance. Metodología: {project.methodology}.
           </p>
         </div>
         <button className="primary" onClick={() => setEditing(blank(project))}>
@@ -292,7 +293,14 @@ export function Planning({
           })}
         </div>
       ) : view === "gantt" ? (
-        <Schedule items={visible} allItems={items} onEdit={setEditing} />
+        <>
+          <Schedule items={visible} allItems={items} onEdit={setEditing} />
+          <ScheduleSimulation
+            projectId={project.id}
+            revision={JSON.stringify(items.map((i) => [i.id, i.version]))}
+            onApplied={reload}
+          />
+        </>
       ) : view === "roadmap" ? (
         <>
           <div className="button-row">

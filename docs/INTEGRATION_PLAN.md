@@ -192,3 +192,5 @@ Fase 5 en curso: incremento 0.5.0 con 50 pruebas backend, 6 frontend y build cor
 Fase 6 añadida por solicitud del usuario: diseño y experiencia de uso. Incremento 0.6.0 implementa navegación agrupada, resumen operativo, filtros, tablero arrastrable y calendario. Ver VERIFICATION_PHASE6.md. Los pendientes de migración real y paridad avanzada de fase 5 permanecen abiertos.
 
 Fase 7: incremento 0.7.0 de revisión de cronograma. Escala, progreso y diagnóstico de fechas/dependencias con filtros; sin reprogramación automática. Ver VERIFICATION_PHASE7.md. No supone paridad avanzada completa.
+
+Fase 8 (0.8.0): simulación de reprogramación y rutas críticas bajo modelo simplificado, con revisión previa y aplicación atómica. Ver VERIFICATION_PHASE8.md. Pendientes de paridad real y planificación con recursos siguen abiertos.
