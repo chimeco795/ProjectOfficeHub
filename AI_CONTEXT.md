@@ -1,10 +1,10 @@
 # Contexto de Project Office Hub
 
-## Estado al 2026-10-05
+## Estado al 2026-10-06
 
 Fases 0–4 completadas. Repositorio privado chimeco795/ProjectOfficeHub, master. Base React/TypeScript/Vite + FastAPI + SQLite funcional. Proyecto maestro con metodología, prioridad y fechas independientes; portafolio, resumen y acceso a Seguimiento Ejecutivo. Start.ps1 permite iniciar la app local.
 
-Baseline: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. Producto nuevo: 65 tests backend, 13 tests frontend y build correctos (versión 0.9.0). Creación, edición, recarga de proyecto/corte y aislamiento entre dos proyectos comprobados en navegador con base temporal.
+Baseline: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. Producto nuevo: 68 tests backend, 16 tests frontend y build correctos (versión 0.10.0). Creación, edición, recarga de proyecto/corte y aislamiento entre dos proyectos comprobados en navegador con base temporal.
 
 ## Reglas
 
@@ -44,3 +44,14 @@ Incremento 0.7.0: cronograma Schedule con escala, progreso y revisión de depend
 Fase 8 (0.8.0): simulación de fechas y aplicación transaccional desde Cronograma. Backend services/scheduler.py y api/schedule.py; frontend ScheduleSimulation. Conserva duraciones inclusivas, no adelanta, usa días naturales y dependencias fin-inicio. Huella ligada al proyecto/fecha/catálogo; rechazo ante cambios concurrentes. 58 pruebas backend y 13 frontend. Ver VERIFICATION_PHASE8.md para reglas, supuestos y pruebas. No reprogramar datos reales sin acción explícita del usuario.
 
 Entrega 0.9.0: capacidad entre proyectos por vigencias, organigrama global people.leader_id/role (esquema 7, respaldo v6), comentarios append-only en audit_events con request_id idempotente, roadmap por arrastre y selector. 65 pruebas backend, 13 frontend y build correctos. docs/STATUS.md es la matriz vigente. Legacy conserva comentarios/jerarquías en original; aún no mapea esos campos operativos ni attachments. Datos reales .pohub pendientes.
+
+
+## Revisión UX/UI 0.10.0 (master, esquema 7)
+
+Alta rápida de seis campos → detalles progresivos. Código automático editable; tipos según metodología. Lista con chips y edición inline explícita; dependencias buscables y chips. Board operativo por defecto con filtros de nivel/tipo. Colores de estado compartidos con Gantt, catálogo y resumen. Gantt jerárquico, línea Hoy y detalle, conservando ScheduleSimulation. Equipo separado por personas disponibles/asignaciones/equipos compartidos/capacidad/organigrama; retirar asignación es archivar, no borrar persona. Documentos agrupa originales de proyecto y fuentes de cortes por hash, sin alterar BLOB ni snapshots; una carga repetida reutiliza el original. Controles compactos y formularios responsive de máximo dos columnas.
+
+68 pruebas backend, 16 frontend y build correctos. Ver `docs/VERIFICATION_PHASE10.md` para decisiones, revisión visual y límites. No hay cambio de arquitectura ni esquema. No se sustituyó el estado actual por snapshots ni se modificaron publicaciones históricas. La migración real de fase 5 continúa pendiente de `.pohub`.
+
+### Requisito pendiente que debe conservarse
+
+**Dashboard personalizable con widgets redimensionables y arrastrables, heredado del PMO anterior.** Widgets: avance, riesgos, bloqueos, ruta crítica, equipo, presupuesto, hitos y próximo corte ejecutivo. El usuario pidió registrarlo, no implementarlo todavía. No omitir este requisito al planificar siguientes fases.

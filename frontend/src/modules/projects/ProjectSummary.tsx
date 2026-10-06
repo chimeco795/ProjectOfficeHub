@@ -1,3 +1,4 @@
+import {stateClass} from "../planning/workPresentation";
 import { dateKey } from "../operations/calendarModel";
 import { useEffect, useState } from "react";
 import {
@@ -168,7 +169,7 @@ export function ProjectSummary({
                     </small>
                     <strong>{i.name}</strong>
                   </span>
-                  <span className="status-pill">
+                  <span className={"field-chip "+stateClass(i.status)}>
                     {i.target_date! < today
                       ? "Vencido"
                       : (

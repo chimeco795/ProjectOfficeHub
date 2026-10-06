@@ -135,6 +135,37 @@ def documents(project_id:str):
         require(db,'projects',project_id)
         return [dict(r) for r in db.execute('SELECT id,filename,size,sha256,related_id,notes,archived,version,created_at FROM documents WHERE project_id=? ORDER BY created_at DESC',(project_id,))]
 
+@router.get('/projects/{project_id}/document-library')
+def document_library(project_id:str):
+    """One presentation entry per content hash; originals and snapshots stay in place."""
+    with connection() as db:
+        require(db,'projects',project_id)
+        grouped={}
+        for row in db.execute('SELECT id,filename,size,sha256,related_id,notes,archived,version,created_at FROM documents WHERE project_id=? ORDER BY archived,created_at DESC',(project_id,)):
+            doc=dict(row)
+            reference={'kind':'document','id':doc['id'],'filename':doc['filename'],'archived':bool(doc['archived']),'related_id':doc['related_id']}
+            if doc['sha256'] not in grouped:
+                grouped[doc['sha256']]={**doc,'document_archived':bool(doc['archived']),'origin':'document','references':[],'download_url':f"/api/projects/{project_id}/documents/{doc['id']}/download"}
+            grouped[doc['sha256']]['references'].append(reference)
+        for row in db.execute("""SELECT s.id,s.filename,s.sha256,length(s.original_file) AS size,s.uploaded_at AS created_at,c.id AS cut_id,c.report_date,c.status
+            FROM sources s JOIN cuts c ON c.id=s.cut_id WHERE c.project_id=? ORDER BY c.report_date DESC,s.id""",(project_id,)):
+            source=dict(row)
+            if source['sha256'] not in grouped:
+                grouped[source['sha256']]={**source,'origin':'source','archived':False,'references':[],'download_url':f"/api/projects/{project_id}/source-files/{source['id']}/download"}
+            entry=grouped[source['sha256']]
+            # A file still used by a report remains discoverable in the active library.
+            entry['archived']=False
+            entry['references'].append({'kind':'source','id':source['id'],'filename':source['filename'],'cut_id':source['cut_id'],'report_date':source['report_date'],'status':source['status']})
+        return sorted(grouped.values(),key=lambda x:x['created_at'],reverse=True)
+
+@router.get('/projects/{project_id}/source-files/{identity}/download')
+def download_source(project_id:str,identity:str):
+    with connection() as db:
+        row=db.execute('SELECT s.* FROM sources s JOIN cuts c ON c.id=s.cut_id WHERE s.id=? AND c.project_id=?',(identity,project_id)).fetchone()
+        if not row:raise HTTPException(404,'Fuente no encontrada en este proyecto')
+        filename=row['filename'].replace('\\','/').split('/')[-1].replace('\r','').replace('\n','') or 'documento'
+        return Response(row['original_file'],media_type='application/octet-stream',headers={'Content-Disposition':"attachment; filename*=UTF-8''"+quote(filename,safe=''),'X-Content-Type-Options':'nosniff'})
+
 @router.post('/projects/{project_id}/documents',status_code=201)
 async def upload_document(project_id:str,file:UploadFile=File(...)):
     content=await file.read(20*1024*1024+1)
@@ -142,6 +173,12 @@ async def upload_document(project_id:str,file:UploadFile=File(...)):
     filename=(file.filename or 'documento').replace('\\','/').split('/')[-1].replace('\r','').replace('\n','')[:240] or 'documento'
     with connection() as db:
         db.execute('BEGIN IMMEDIATE');require(db,'projects',project_id);identity=uid();digest=hashlib.sha256(content).hexdigest()
+        existing=db.execute('SELECT id,filename,archived FROM documents WHERE project_id=? AND sha256=? ORDER BY archived,created_at DESC LIMIT 1',(project_id,digest)).fetchone()
+        if existing:
+            return {'id':existing['id'],'filename':existing['filename'],'sha256':digest,'reused':True,'archived':bool(existing['archived']),'origin':'document'}
+        source=db.execute('SELECT s.id,s.filename FROM sources s JOIN cuts c ON c.id=s.cut_id WHERE c.project_id=? AND s.sha256=? LIMIT 1',(project_id,digest)).fetchone()
+        if source:
+            return {'id':source['id'],'filename':source['filename'],'sha256':digest,'reused':True,'origin':'source'}
         db.execute('INSERT INTO documents(id,project_id,filename,size,sha256,content,created_at) VALUES(?,?,?,?,?,?,?)',(identity,project_id,filename,len(content),digest,content,now()))
         audit(db,project_id,identity,'subir_documento',{}, {'filename':filename,'sha256':digest,'size':len(content)})
         return {'id':identity,'filename':filename,'sha256':digest}

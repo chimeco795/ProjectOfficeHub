@@ -18,7 +18,7 @@ export function Dialog({
     <dialog
       ref={ref}
       className="native-dialog"
-      onCancel={onClose}
+      onCancel={e => { e.preventDefault(); onClose(); }}
       aria-label={title}
     >
       <div className="dialog-head">

@@ -1,0 +1,475 @@
+/* Compact operating workspace; published report layout keeps its own typography. */
+.shell
+  .panel
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select
+  ),
+.native-dialog :is(input:not([type="checkbox"]):not([type="radio"]), select) {
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: 7px;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.shell .panel button,
+.native-dialog button {
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: 13px;
+}
+.native-dialog {
+  width: min(700px, calc(100vw - 32px));
+  max-height: 90dvh;
+  padding: 22px;
+  box-sizing: border-box;
+}
+.native-dialog label {
+  font-size: 12px;
+  gap: 6px;
+}
+.native-dialog fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.native-dialog .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+.native-dialog .form-grid label {
+  margin: 0;
+  min-width: 0;
+}
+.native-dialog :is(input, select, textarea) {
+  width: 100%;
+}
+.native-dialog input[type="checkbox"] {
+  width: auto;
+}
+.native-dialog .form-grid + label {
+  margin-top: 14px;
+}
+.work-sections {
+  margin: 22px 0 16px;
+  display: grid;
+  gap: 8px;
+}
+.work-sections details,
+.work-comments-section {
+  border: 1px solid #dce5e8;
+  border-radius: 9px;
+  padding: 12px;
+}
+.work-sections summary,
+.work-comments-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+.work-sections summary small {
+  font-size: 11px;
+  color: #60747e;
+  font-weight: 400;
+  margin-left: 8px;
+}
+.work-sections details[open] summary {
+  margin-bottom: 16px;
+}
+.editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  border-top: 1px solid #e5eaed;
+  padding-top: 14px;
+}
+.work-comments-section {
+  margin-top: 16px;
+}
+.dependency-chips,
+.state-legend,
+.document-associations {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.dependency-chips {
+  margin-bottom: 10px;
+}
+.dependency-results {
+  list-style: none;
+  padding: 0;
+  max-height: 180px;
+  overflow: auto;
+}
+.dependency-results li button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+}
+.methodology-badge {
+  display: inline-flex;
+  padding: 4px 9px;
+  color: #19645b;
+  background: #e2f0eb;
+  border: 1px solid #c5e0d6;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 5px 0;
+}
+.shell .page-heading h1 {
+  display: inline;
+  margin-right: 12px;
+}
+.state-new {
+  --state-bg: #eef1f4;
+  --state-fg: #4b5866;
+  --state-line: #748190;
+}
+.state-prepared {
+  --state-bg: #e1f2fc;
+  --state-fg: #175a80;
+  --state-line: #4c9cc8;
+}
+.state-active {
+  --state-bg: #e4edff;
+  --state-fg: #17499c;
+  --state-line: #326cce;
+}
+.state-blocked {
+  --state-bg: #ffebea;
+  --state-fg: #a0292a;
+  --state-line: #cf4348;
+}
+.state-resolved {
+  --state-bg: #efebff;
+  --state-fg: #574095;
+  --state-line: #8066bd;
+}
+.state-closed {
+  --state-bg: #e1f2e6;
+  --state-fg: #24633b;
+  --state-line: #469262;
+}
+.state-removed {
+  --state-bg: #f0e8ea;
+  --state-fg: #694650;
+  --state-line: #86606a;
+}
+.shell .field-chip,
+.field-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  background: var(--state-bg, #f0f4f5);
+  color: var(--state-fg, #3e5661);
+  border-radius: 6px;
+  padding: 4px 8px;
+  min-height: 28px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.shell button.field-chip:hover {
+  border-color: var(--state-line, #879da6);
+}
+.shell .field-chip span {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.inline-field {
+  display: inline-block;
+  position: relative;
+  max-width: 100%;
+}
+.inline-popover {
+  display: grid;
+  gap: 8px;
+  min-width: 185px;
+  max-width: 250px;
+  padding: 10px;
+  background: white;
+  border: 1px solid #bdcdd5;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px #233d4d15;
+}
+.inline-popover label {
+  display: grid;
+  gap: 6px;
+  white-space: normal;
+}
+.inline-popover [role="alert"] {
+  white-space: normal;
+  font-size: 12px;
+}
+.inline-actions {
+  display: flex;
+  gap: 5px;
+}
+.shell .planning-filters {
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+}
+.shell .planning-filters label {
+  flex: 1 1 130px;
+  min-width: 0;
+}
+.shell .planning-filters label:has(input[type="checkbox"]) {
+  flex: 0 0 auto;
+  padding-bottom: 9px;
+}
+.shell .planning-table {
+  padding-bottom: 12px;
+}
+.shell .planning-table table {
+  min-width: 850px;
+}
+.shell .planning-table td,
+.shell .planning-table th {
+  padding: 12px 9px;
+}
+.shell .planning-table td:first-child {
+  min-width: 185px;
+  max-width: 260px;
+}
+.shell .planning-table td > button {
+  white-space: normal;
+  text-align: left;
+  line-height: 1.5;
+}
+.shell .kanban-column {
+  border-top: 3px solid var(--state-line);
+  min-width: 245px;
+}
+.shell .work-card {
+  border-left: 3px solid var(--state-line, #dbe5e7);
+}
+.shell .work-card .field-chip {
+  width: auto;
+}
+.state-legend {
+  margin: 12px 0;
+}
+.today-line {
+  position: absolute;
+  top: -12px;
+  bottom: -13px;
+  width: 2px;
+  background: #c06914;
+  z-index: 2;
+  pointer-events: none;
+}
+.shell .schedule-bar {
+  background: var(--state-bg);
+  color: var(--state-fg);
+  border: 1px solid var(--state-line);
+  min-height: 30px;
+}
+.shell .schedule-bar > span {
+  background: var(--state-line);
+  opacity: 0.23;
+}
+.schedule-name {
+  overflow-wrap: anywhere;
+}
+.schedule details > summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+.person-card {
+  border: 1px solid #dbe5e7;
+  border-radius: 12px;
+  padding: 18px;
+  background: white;
+}
+.person-card h3 {
+  margin: 10px 0 6px;
+  font-size: 16px;
+}
+.person-card p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #546c76;
+}
+.person-card small {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-bottom: 12px;
+}
+.person-card button {
+  margin: 6px 6px 0 0;
+}
+.person-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  background: #e8f1ee;
+  color: #346c59;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+}
+.allocation-badge {
+  display: inline-flex;
+  background: #edf3fb;
+  color: #285b91;
+  border-radius: 5px;
+  padding: 0 6px;
+  font-weight: 600;
+}
+.document-card {
+  position: relative;
+  padding-left: 76px !important;
+}
+.document-icon {
+  position: absolute;
+  left: 20px;
+  top: 22px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 42px;
+  border-radius: 8px;
+  background: #eef2f5;
+  color: #586c79;
+}
+.document-word {
+  background: #e8eefb;
+  color: #34579b;
+}
+.document-excel {
+  background: #e4f3eb;
+  color: #237648;
+}
+.document-powerpoint {
+  background: #fff0e7;
+  color: #a54e28;
+}
+.document-pdf {
+  background: #fae9e9;
+  color: #a63535;
+}
+.document-imagen {
+  background: #f0eafa;
+  color: #725496;
+}
+.document-card h3 {
+  overflow-wrap: anywhere;
+}
+.association-chip {
+  font-size: 11px;
+  color: #516c78;
+  background: #eef3f5;
+  border-radius: 5px;
+  padding: 5px 7px;
+  margin: 8px 0;
+}
+@media (max-width: 600px) {
+  .native-dialog {
+    padding: 16px;
+  }
+  .native-dialog .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .work-sections summary small {
+    display: block;
+    margin: 5px 0 0 15px;
+  }
+  .editor-footer {
+    flex-wrap: wrap;
+  }
+  .editor-footer button.primary {
+    flex: 1;
+  }
+  .shell .planning-filters label {
+    flex-basis: 45%;
+  }
+  .team-grid {
+    grid-template-columns: 1fr;
+  }
+  .document-card {
+    padding-left: 62px !important;
+  }
+  .document-icon {
+    left: 14px;
+  }
+}
+
+.work-sections details {
+  margin: 0;
+}
+
+.native-dialog .pmo-editor fieldset {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+.native-dialog .pmo-editor fieldset > label {
+  margin: 0;
+}
+.native-dialog .pmo-editor fieldset > :is(button, [role="alert"]),
+.native-dialog .pmo-editor fieldset > label:has(textarea) {
+  grid-column: 1 / -1;
+}
+.native-dialog .pmo-editor fieldset > button {
+  justify-self: end;
+}
+@media (max-width: 600px) {
+  .native-dialog .pmo-editor fieldset {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shell .planning-filters :is(input:not([type="checkbox"]), select) {
+  width: 100%;
+  min-width: 0;
+}
+.schedule-track {
+  height: auto;
+  min-height: 38px;
+}
+.shell .schedule-bar {
+  top: calc(50% - 15px);
+}
+.document-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.document-list .document-card {
+  border: 1px solid #dbe5e7;
+  border-radius: 12px;
+  padding: 18px;
+  background: white;
+}
+.document-card h3 {
+  font-size: 15px;
+  margin: 2px 0 10px;
+}
+.document-card p {
+  color: #627783;
+  font-size: 12px;
+}
+.document-card a {
+  display: inline-flex;
+  padding: 7px 0;
+  color: #226452;
+  font-size: 13px;
+}

@@ -1,3 +1,4 @@
+import { hierarchy, states, stateClass, types } from "./workPresentation";
 import { useState } from "react";
 import type { Work } from "./Planning";
 import { analyzeSchedule } from "./scheduleModel";
@@ -19,7 +20,11 @@ export function Schedule({
       !onlyWarnings ||
       analysis.find((r) => r.item.id === i.id)?.warnings.length,
   );
-  const dated = rows.filter((i) => i.start_date && i.target_date);
+  const ordered = hierarchy(rows, allItems);
+  const depths = new Map(ordered.map((r) => [r.item.id, r.depth]));
+  const dated = ordered
+    .map((r) => r.item)
+    .filter((i) => i.start_date && i.target_date);
   const stamps = dated.flatMap((i) => [
     Date.parse(i.start_date!),
     Date.parse(i.target_date!),
@@ -33,6 +38,7 @@ export function Schedule({
       .toISOString()
       .slice(0, 10),
   );
+  const todayPosition = ((Date.parse(today) - start) / span) * 100;
   return (
     <div className="schedule">
       <div className="schedule-intro">
@@ -57,6 +63,19 @@ export function Schedule({
         naturales. Son orientativas: no cambian fechas ni calculan una ruta
         crítica.
       </p>
+      <p className="board-hint">
+        Hoy: {today}.{" "}
+        {todayPosition < 0 || todayPosition >= 100
+          ? "Fuera del intervalo visible."
+          : "La línea vertical indica el día actual."}
+      </p>
+      <div className="state-legend">
+        {Object.entries(states).map(([key, label]) => (
+          <span key={key} className={"field-chip " + stateClass(key)}>
+            {label}
+          </span>
+        ))}
+      </div>
       {!!dated.length && (
         <div className="schedule-scroll">
           <div className="schedule-axis">
@@ -71,19 +90,44 @@ export function Schedule({
             const row = analysis.find((r) => r.item.id === item.id);
             return (
               <div className="schedule-row" key={item.id}>
-                <button className="schedule-name" onClick={() => onEdit(item)}>
+                <button
+                  className="schedule-name"
+                  style={{
+                    paddingLeft: `${Math.min(depths.get(item.id) || 0, 8) * 14}px`,
+                  }}
+                  onClick={() => onEdit(item)}
+                >
                   <strong>
                     {item.code} · {item.name}
                   </strong>
-                  <small>{item.owner_name || "Sin responsable"}</small>
+                  <small>
+                    {types[item.work_type]} ·{" "}
+                    {item.owner_name || "Sin responsable"}
+                  </small>
+                  <small>
+                    {states[item.status] || item.status}
+                    {row?.warnings.length ? " · ⚠ Alertas" : ""}
+                  </small>
                 </button>
                 <div className="schedule-track">
+                  {todayPosition >= 0 && todayPosition < 100 && (
+                    <span
+                      className="today-line"
+                      style={{ left: `${todayPosition}%` }}
+                      aria-label={`Hoy ${today}`}
+                    />
+                  )}
                   <button
-                    className={
-                      "schedule-bar " + (row?.warnings.length ? "warning" : "")
-                    }
+                    className={"schedule-bar " + stateClass(item.status)}
                     onClick={() => onEdit(item)}
-                    title={`${item.start_date} → ${item.target_date}`}
+                    aria-label={`Editar ${item.code}: ${states[item.status] || item.status}`}
+                    title={`${item.code} · ${item.name}
+${types[item.work_type]} · ${states[item.status] || item.status}
+Responsable: ${item.owner_name || "Sin asignar"}
+${item.start_date} → ${item.target_date}
+Avance: ${item.progress == null ? "Sin dato" : `${item.progress}%`}
+Predecesores: ${item.dependencies.map((id) => allItems.find((i) => i.id === id)?.code || id).join(", ") || "Ninguno"}
+${row?.warnings.join("; ") || "Sin alertas"}`}
                     style={{
                       left: `${((Date.parse(item.start_date!) - start) / span) * 100}%`,
                       width: `${((Date.parse(item.target_date!) - Date.parse(item.start_date!) + 86400000) / span) * 100}%`,
@@ -102,56 +146,65 @@ export function Schedule({
           })}
         </div>
       )}
-      <div className="schedule-details">
-        {rows.map((item) => {
-          const row = analysis.find((r) => r.item.id === item.id);
-          return (
-            <article key={item.id}>
-              <div className="section-heading">
-                <div>
-                  <strong>
-                    {item.code} · {item.name}
-                  </strong>
-                  <p>
-                    {item.start_date || "Sin inicio"} →{" "}
-                    {item.target_date || "Sin compromiso"}
-                  </p>
+      {rows.length > dated.length && (
+        <p className="board-hint">
+          {rows.length - dated.length} trabajo(s) sin fechas completas. Puedes
+          revisarlos en el detalle.
+        </p>
+      )}
+      <details>
+        <summary>Detalle de fechas y alertas ({rows.length})</summary>
+        <div className="schedule-details">
+          {rows.map((item) => {
+            const row = analysis.find((r) => r.item.id === item.id);
+            return (
+              <article key={item.id}>
+                <div className="section-heading">
+                  <div>
+                    <strong>
+                      {item.code} · {item.name}
+                    </strong>
+                    <p>
+                      {item.start_date || "Sin inicio"} →{" "}
+                      {item.target_date || "Sin compromiso"}
+                    </p>
+                  </div>
+                  <button onClick={() => onEdit(item)}>Revisar trabajo</button>
                 </div>
-                <button onClick={() => onEdit(item)}>Revisar trabajo</button>
-              </div>
-              <p>
-                Predecesores:{" "}
-                {item.dependencies
-                  .map(
-                    (id) =>
-                      allItems.find((i) => i.id === id)?.code ||
-                      "No disponible",
-                  )
-                  .join(", ") || "Ninguno"}
-              </p>
-              {row?.warnings.length ? (
-                <ul className="schedule-alerts">
-                  {row.warnings.map((warning, index) => (
-                    <li key={index}>{warning}</li>
-                  ))}
-                </ul>
-              ) : (
-                <small>
-                  {item.archived
-                    ? "Trabajo archivado: excluido del análisis."
-                    : "Sin alertas de fechas detectadas."}
-                </small>
-              )}
-              {row?.earliest && (
-                <p className="board-hint">
-                  Inicio compatible con los compromisos de sus predecesores:{" "}
-                  {row.earliest} o posterior.
+                <p>
+                  Predecesores:{" "}
+                  {item.dependencies
+                    .map(
+                      (id) =>
+                        allItems.find((i) => i.id === id)?.code ||
+                        "No disponible",
+                    )
+                    .join(", ") || "Ninguno"}
                 </p>
-              )}
-            </article>
-          );
-        })}
-      </div>
+                {row?.warnings.length ? (
+                  <ul className="schedule-alerts">
+                    {row.warnings.map((warning, index) => (
+                      <li key={index}>{warning}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <small>
+                    {item.archived
+                      ? "Trabajo archivado: excluido del análisis."
+                      : "Sin alertas de fechas detectadas."}
+                  </small>
+                )}
+                {row?.earliest && (
+                  <p className="board-hint">
+                    Inicio compatible con los compromisos de sus predecesores:{" "}
+                    {row.earliest} o posterior.
+                  </p>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      </details>
       {!rows.length && <p>No hay trabajos que coincidan con esta selección.</p>}
     </div>
   );

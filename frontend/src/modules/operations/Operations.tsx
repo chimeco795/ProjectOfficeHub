@@ -1,3 +1,4 @@
+import { DocumentIcon, fileKind } from "./DocumentIcon";
 import { Organization } from "./Organization";
 import { Capacity } from "./Capacity";
 import { Calendar } from "./Calendar";
@@ -138,8 +139,12 @@ export function Operations({
     [teams, setTeams] = useState<Value[]>([]),
     [allTeams, setAllTeams] = useState<Value[]>([]),
     [budget, setBudget] = useState<Value>({ baseline: null, totals: {} });
+  const [teamView, setTeamView] = useState("project"),
+    [allPeople, setAllPeople] = useState<Value[]>([]),
+    [addingPerson, setAddingPerson] = useState(false);
   const [agendaView, setAgendaView] = useState("calendar");
-  const [error, setError] = useState(""),
+  const [notice, setNotice] = useState(""),
+    [error, setError] = useState(""),
     [editing, setEditing] = useState<{
       collection: string;
       value: Value;
@@ -154,14 +159,19 @@ export function Operations({
   const collection =
     view === "teams" ? "memberships" : view === "budget" ? "entries" : "events";
   async function reload() {
-    const [r, p, i, t, b, a] = await Promise.all([
-      api(base + (view === "documents" ? "/documents" : "/pmo/" + collection)),
+    const [r, p, i, t, b, a, globalPeople] = await Promise.all([
+      api(
+        base +
+          (view === "documents" ? "/document-library" : "/pmo/" + collection),
+      ),
       api(base + "/people"),
       api(base + "/items"),
       api(base + "/pmo/teams"),
       api(base + "/budget"),
       api("/teams"),
+      api("/people"),
     ]);
+    setAllPeople(globalPeople);
     setRows(r);
     setPeople(p);
     setItems(i);
@@ -367,7 +377,13 @@ export function Operations({
         !!r.archived === archived &&
         (!from || !r.date || r.date >= from) &&
         (!to || !r.date || r.date <= to) &&
-        JSON.stringify(r).toLowerCase().includes(query.toLowerCase()),
+        (
+          JSON.stringify(r) +
+          " " +
+          (people.find((p) => p.id === r.person_id)?.name || "")
+        )
+          .toLowerCase()
+          .includes(query.toLowerCase()),
     )
     .sort((a, b) =>
       `${a.date || ""} ${a.time || ""}`.localeCompare(
@@ -401,7 +417,97 @@ export function Operations({
         }
       </h2>
       {error && <p role="alert">{error}</p>}
+      {notice && <p role="status">{notice}</p>}
       {view === "teams" && (
+        <div className="workspace-tabs" aria-label="Vistas del equipo">
+          {Object.entries({
+            project: "Equipo del proyecto",
+            available: "Personas disponibles",
+            groups: "Equipos compartidos",
+            capacity: "Capacidad",
+            organization: "Organigrama",
+          }).map(([key, label]) => (
+            <button
+              key={key}
+              className={teamView === key ? "selected" : ""}
+              onClick={() => {
+                setTeamView(key);
+                setQuery("");
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {view === "teams" && teamView === "project" && (
+        <div className="section-heading">
+          <p>Roles y dedicación de las personas del proyecto.</p>
+          <button className="primary" onClick={() => setTeamView("available")}>
+            Añadir persona
+          </button>
+        </div>
+      )}
+      {view === "teams" && teamView === "available" && (
+        <>
+          <div className="section-heading">
+            <p>
+              Añade una persona existente o registra una nueva. Después define
+              su rol y asignación.
+            </p>
+            <button className="primary" onClick={() => setAddingPerson(true)}>
+              Crear persona
+            </button>
+          </div>
+          <label>
+            Buscar persona
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+          <div className="team-grid">
+            {allPeople
+              .filter(
+                (p) =>
+                  !people.some((x) => x.id === p.id) &&
+                  `${p.name} ${p.email}`
+                    .toLowerCase()
+                    .includes(query.toLowerCase()),
+              )
+              .map((p) => (
+                <article className="person-card" key={p.id}>
+                  <span className="person-avatar">
+                    {p.name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <h3>{p.name}</h3>
+                  <p>{p.role || "Rol sin definir"}</p>
+                  <small>{p.email}</small>
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      void run(async () => {
+                        await api(base + "/people", {
+                          method: "POST",
+                          ...json({ person_id: p.id }),
+                        });
+                        setTeamView("project");
+                        setQuery("");
+                      })
+                    }
+                  >
+                    Añadir al proyecto
+                  </button>
+                </article>
+              ))}
+          </div>
+          {!allPeople.some((p) => !people.some((x) => x.id === p.id)) && (
+            <p>No hay más personas disponibles en el catálogo.</p>
+          )}
+        </>
+      )}
+      {view === "teams" && teamView === "groups" && (
         <>
           <p>
             Las personas se administran en Catálogo y responsables. Los equipos
@@ -409,6 +515,14 @@ export function Operations({
             proyectos.
           </p>
           <button onClick={() => edit("teams")}>Nuevo equipo</button>
+          <label>
+            <input
+              type="checkbox"
+              checked={archived}
+              onChange={(e) => setArchived(e.target.checked)}
+            />
+            Ver equipos archivados
+          </label>
           <form
             className="pmo-actions"
             onSubmit={(e) => {
@@ -520,50 +634,51 @@ export function Operations({
           invitaciones externas.
         </p>
       )}
-      <div className="pmo-actions">
-        <label>
-          Buscar
-          <input value={query} onChange={(e) => setQuery(e.target.value)} />
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={archived}
-            onChange={(e) => setArchived(e.target.checked)}
-          />
-          Ver archivados
-        </label>
-        {["agenda", "budget"].includes(view) && (
-          <>
-            <label>
-              Desde
-              <input
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
-            </label>
-            <label>
-              Hasta
-              <input
-                type="date"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-              />
-            </label>
-          </>
-        )}
-        {view !== "documents" && (
-          <button onClick={() => edit(collection)}>
-            Nuevo{" "}
-            {view === "teams"
-              ? "registro de asignación"
-              : view === "budget"
-                ? "costo"
-                : "evento"}
-          </button>
-        )}
-      </div>
+      {(view !== "teams" || teamView === "project") && (
+        <div className="pmo-actions">
+          <label>
+            Buscar
+            <input value={query} onChange={(e) => setQuery(e.target.value)} />
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={archived}
+              onChange={(e) => setArchived(e.target.checked)}
+            />
+            Ver archivados
+          </label>
+          {["agenda", "budget"].includes(view) && (
+            <>
+              <label>
+                Desde
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                />
+              </label>
+              <label>
+                Hasta
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                />
+              </label>
+            </>
+          )}
+          {view !== "documents" && (
+            <button onClick={() => edit(collection)}>
+              {view === "teams"
+                ? "Nueva asignación"
+                : view === "budget"
+                  ? "Nuevo costo"
+                  : "Nuevo evento"}
+            </button>
+          )}
+        </div>
+      )}
       {view === "documents" && (
         <form
           className="pmo-actions"
@@ -572,7 +687,24 @@ export function Operations({
             const form = e.currentTarget;
             const payload = new FormData(form);
             void run(async () => {
-              await api(base + "/documents", { method: "POST", body: payload });
+              const result = await api(base + "/documents", {
+                method: "POST",
+                body: payload,
+              });
+              setNotice(
+                result.reused
+                  ? "Este archivo ya existe. Se conserva el original y sus asociaciones."
+                  : "Documento guardado.",
+              );
+              setArchived(
+                !!result.archived &&
+                  !rows.some(
+                    (r) =>
+                      r.sha256 === result.sha256 &&
+                      r.references?.some((ref: Value) => ref.kind === "source"),
+                  ),
+              );
+              setQuery("");
               form.reset();
             });
           }}
@@ -600,100 +732,240 @@ export function Operations({
           </button>
         </div>
       )}
-      {view === "agenda" && agendaView === "calendar" ? (
-        <Calendar
-          events={
-            visible as {
-              id: string;
-              title: string;
-              date: string;
-              time: string;
-              kind: string;
-            }[]
-          }
-          onEdit={(id) =>
-            edit(
-              "events",
-              rows.find((r) => r.id === id),
-            )
-          }
-          onCreate={(date) =>
-            edit("events", {
-              ...defaults.events,
-              date,
-              version: 1,
-              archived: false,
-            })
-          }
-        />
-      ) : (
-        <div className="agenda-list">
-          {visible.map((r) => (
-            <article key={r.id}>
-              <h3>
-                {view === "teams"
-                  ? people.find((p) => p.id === r.person_id)?.name || "Persona"
-                  : r.concept || r.title || r.filename}
-              </h3>
-              {view === "teams" ? (
-                <p>
-                  {r.role} · {r.allocation}% ·{" "}
-                  {teams.find((t) => t.id === r.team_id)?.name || "Sin equipo"}{" "}
-                  · {r.valid_from || "Sin inicio"} → {r.valid_to || "Sin fin"}
-                </p>
-              ) : view === "budget" ? (
-                <p>
-                  {r.kind} · {r.category} · {money(r.amount, r.currency)} ·{" "}
-                  {r.date || "Sin fecha"} · {r.vendor}
-                </p>
-              ) : view === "agenda" ? (
-                <>
-                  <p>
-                    {r.date} · {r.time} · {r.kind} ·{" "}
-                    {people.find((p) => p.id === r.owner_id)?.name ||
-                      "Sin organizador"}
-                  </p>
-                  <p>{r.description}</p>
-                  <p>
-                    Invitados:{" "}
-                    {(r.guests || [])
-                      .map(
-                        (id: string) =>
-                          people.find((p) => p.id === id)?.name || id,
-                      )
-                      .join(", ") || "Sin invitados"}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p>
-                    {Math.ceil(r.size / 1024)} KB · {r.created_at.slice(0, 10)}
-                  </p>
-                  <a href={"/api" + base + "/documents/" + r.id + "/download"}>
-                    Descargar original
-                  </a>
-                </>
-              )}
-              {r.notes && <p>{r.notes}</p>}
-              <button
-                onClick={() =>
-                  edit(view === "documents" ? "documents" : collection, r)
+      {(view !== "teams" || teamView === "project") &&
+        (view === "agenda" && agendaView === "calendar" ? (
+          <Calendar
+            events={
+              visible as {
+                id: string;
+                title: string;
+                date: string;
+                time: string;
+                kind: string;
+              }[]
+            }
+            onEdit={(id) =>
+              edit(
+                "events",
+                rows.find((r) => r.id === id),
+              )
+            }
+            onCreate={(date) =>
+              edit("events", {
+                ...defaults.events,
+                date,
+                version: 1,
+                archived: false,
+              })
+            }
+          />
+        ) : (
+          <div
+            className={
+              view === "teams"
+                ? "team-grid"
+                : view === "documents"
+                  ? "document-list"
+                  : "agenda-list"
+            }
+          >
+            {visible.map((r) => (
+              <article
+                className={
+                  view === "teams"
+                    ? "person-card"
+                    : view === "documents"
+                      ? "document-card"
+                      : ""
                 }
+                key={r.id}
               >
-                Editar
-              </button>
-            </article>
-          ))}
-        </div>
+                {view === "teams" && (
+                  <span className="person-avatar">
+                    {(people.find((p) => p.id === r.person_id)?.name || "P")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </span>
+                )}
+                {view === "documents" && <DocumentIcon filename={r.filename} />}
+                <h3>
+                  {view === "teams"
+                    ? people.find((p) => p.id === r.person_id)?.name ||
+                      "Persona"
+                    : r.concept || r.title || r.filename}
+                </h3>
+                {view === "teams" ? (
+                  <p>
+                    <strong>{r.role}</strong> ·{" "}
+                    <span className="allocation-badge">{r.allocation}%</span> ·{" "}
+                    {teams.find((t) => t.id === r.team_id)?.name ||
+                      "Sin equipo"}{" "}
+                    · {r.valid_from || "Sin inicio"} → {r.valid_to || "Sin fin"}
+                  </p>
+                ) : view === "budget" ? (
+                  <p>
+                    {r.kind} · {r.category} · {money(r.amount, r.currency)} ·{" "}
+                    {r.date || "Sin fecha"} · {r.vendor}
+                  </p>
+                ) : view === "agenda" ? (
+                  <>
+                    <p>
+                      {r.date} · {r.time} · {r.kind} ·{" "}
+                      {people.find((p) => p.id === r.owner_id)?.name ||
+                        "Sin organizador"}
+                    </p>
+                    <p>{r.description}</p>
+                    <p>
+                      Invitados:{" "}
+                      {(r.guests || [])
+                        .map(
+                          (id: string) =>
+                            people.find((p) => p.id === id)?.name || id,
+                        )
+                        .join(", ") || "Sin invitados"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      {fileKind(r.filename)} ·{" "}
+                      {r.size < 1024
+                        ? `${r.size} B`
+                        : `${(r.size / 1024).toFixed(1)} KB`}{" "}
+                      · {r.created_at.slice(0, 10)}
+                    </p>
+                    <a href={r.download_url}>Descargar original</a>
+                    <div className="document-associations">
+                      {r.references?.map((ref: Value) => (
+                        <span
+                          className="association-chip"
+                          key={ref.kind + ref.id}
+                        >
+                          {ref.kind === "source"
+                            ? `Corte ${ref.report_date} · ${ref.status}`
+                            : `Proyecto${ref.related_id ? " · " + (items.find((i) => i.id === ref.related_id)?.code || "Trabajo") : ""}${ref.archived ? " · archivado" : ""}`}{" "}
+                          {ref.filename !== r.filename
+                            ? `· ${ref.filename}`
+                            : ""}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {view === "teams" && (
+                  <p>
+                    Líder:{" "}
+                    {allPeople.find(
+                      (p) =>
+                        p.id ===
+                        (teams.find((t) => t.id === r.team_id)?.lead_id ||
+                          people.find((p) => p.id === r.person_id)?.leader_id),
+                    )?.name || "Sin asignar"}
+                  </p>
+                )}
+                {r.notes && <p>{r.notes}</p>}
+                {(view !== "documents" || r.origin === "document") && (
+                  <button
+                    onClick={() =>
+                      edit(
+                        view === "documents" ? "documents" : collection,
+                        view === "documents"
+                          ? {
+                              ...r,
+                              archived: r.document_archived ?? r.archived,
+                            }
+                          : r,
+                      )
+                    }
+                  >
+                    {view === "teams" ? "Editar rol y asignación" : "Editar"}
+                  </button>
+                )}
+                {view === "teams" && (
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      void run(() =>
+                        api(base + "/pmo/memberships/" + r.id, {
+                          method: "PUT",
+                          ...json({ ...r, archived: !r.archived }),
+                        }),
+                      )
+                    }
+                  >
+                    {r.archived ? "Restaurar asignación" : "Quitar asignación"}
+                  </button>
+                )}
+              </article>
+            ))}
+          </div>
+        ))}
+      {(view !== "teams" || teamView === "project") && !visible.length && (
+        <p>No hay registros en esta selección.</p>
       )}
-      {!visible.length && <p>No hay registros en esta selección.</p>}
-      {view === "teams" && (
+      {view === "teams" && teamView === "project" && !archived && (
+        <>
+          <div className="section-heading">
+            <h3>Personas sin asignación activa</h3>
+          </div>
+          <div className="team-grid">
+            {people
+              .filter(
+                (p) => !rows.some((r) => r.person_id === p.id && !r.archived),
+              )
+              .map((p) => (
+                <article className="person-card" key={p.id}>
+                  <span className="person-avatar">
+                    {p.name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <h3>{p.name}</h3>
+                  <p>{p.role || "Rol pendiente"}</p>
+                  <button
+                    onClick={() =>
+                      edit("memberships", {
+                        ...defaults.memberships,
+                        person_id: p.id,
+                        role: p.role || "",
+                        archived: false,
+                        version: 1,
+                      })
+                    }
+                  >
+                    Definir rol y asignación
+                  </button>
+                </article>
+              ))}
+          </div>
+        </>
+      )}
+      {addingPerson && (
+        <RecordEditor
+          title="Nueva persona"
+          initial={{ name: "", email: "" }}
+          fields={[
+            { key: "name", label: "Nombre", required: true },
+            { key: "email", label: "Correo", type: "email" },
+          ]}
+          onClose={() => setAddingPerson(false)}
+          onSave={async (v) => {
+            const person = await api(base + "/people", {
+              method: "POST",
+              ...json({ new_person: v }),
+            });
+            setPeople((current) => [...current, person]);
+            setAllPeople((current) => [...current, person]);
+            setTeamView("project");
+            setQuery("");
+          }}
+        />
+      )}
+      {view === "teams" && teamView === "capacity" && (
         <Capacity
           projectId={projectId}
           revision={JSON.stringify([rows, people])}
         />
       )}
-      {view === "teams" && (
+      {view === "teams" && teamView === "organization" && (
         <Organization projectId={projectId} revision={JSON.stringify(people)} />
       )}
       {editing && (

@@ -1,3 +1,4 @@
+import {states,stateClass} from "../planning/workPresentation";
 import { useEffect,useState } from "react";
 import { api,json } from "../../api";
 import { Dialog } from "../../Dialog";
@@ -21,7 +22,7 @@ export function MasterCatalog({projectId}: {projectId:string}) {
         <label>Buscar elemento<input value={query} onChange={e=>setQuery(e.target.value)} /></label>
         <label><input type="checkbox" checked={archived} onChange={e=>setArchived(e.target.checked)} /> Ver archivados</label></div>
       <div className="master-cards">{visible.map(item=><article className="master-card" key={item.id}>
-        <span className="eyebrow">{item.code}</span><h3>{item.name}</h3><p>{item.status} · Prioridad {item.executive_priority}</p>
+        <span className="eyebrow">{item.code}</span><h3>{item.name}</h3><p><span className={"field-chip "+stateClass(item.status)}>{states[item.status]||item.status}</span> · Prioridad {item.executive_priority}</p>
         <p>Responsable: {item.owner_name||"Sin asignar"}</p><p>Compromiso: {item.target_date||"Sin definir"}</p>
         {item.response&&<p>{item.response}</p>}<button onClick={()=>setEditing(item)}>Editar {item.code}</button>
       </article>)}</div>{!visible.length&&<p>No hay elementos en esta selección.</p>}

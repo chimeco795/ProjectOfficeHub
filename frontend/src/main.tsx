@@ -33,6 +33,8 @@ import { WeeklyEditor, ProjectEditor } from "./WeeklyEditor";
 import { ProjectSummary } from "./modules/projects/ProjectSummary";
 import { ProjectFields } from "./modules/projects/ProjectFields";
 
+import "./modules/workspace/refinement.css";
+
 const operationViews = ["backlog","board","gantt","roadmap","teams","budget","agenda","documents"];
 const sections: Record<string, string> = {
   general: "Datos generales",
@@ -401,6 +403,7 @@ function App() {
                       ? (detail.cut.project_snapshot.name ?? "Nombre histórico no disponible")
                       : project.name}
                   </h1>
+                  <span className="methodology-badge">◈ {!["summary", "history", "master", "audit", "migration", ...operationViews].includes(view) && detail?.cut.status === "publicado" ? (detail.cut.project_snapshot.methodology || "Metodología histórica no disponible") : ({Agile:"Agile",Waterfall:"Waterfall",Hybrid:"Híbrida"}[project.methodology] || project.methodology)}</span>
                   <p>
                     {(!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado"
                       ? detail.cut.project_snapshot.description

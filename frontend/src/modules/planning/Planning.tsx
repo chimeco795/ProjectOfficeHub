@@ -1,5 +1,7 @@
+import { InlineField } from "./InlineField";
+import { WorkEditor } from "./WorkEditor";
+import { states, types, allowedTypes, stateClass } from "./workPresentation";
 import { Roadmap } from "./Roadmap";
-import { WorkComments } from "./WorkComments";
 import { ScheduleSimulation } from "./ScheduleSimulation";
 import { Schedule } from "./Schedule";
 import { useEffect, useState } from "react";
@@ -30,32 +32,10 @@ export type Period = {
   version: number;
   archived: boolean;
 };
-const states: Record<string, string> = {
-  New: "Nuevo",
-  Prepared: "Preparado",
-  Active: "En ejecución",
-  Resolved: "Resuelto",
-  Closed: "Cerrado",
-  Blocked: "Bloqueado",
-  Removed: "Retirado",
-};
-const types: Record<string, string> = {
-  Epic: "Épica",
-  Feature: "Funcionalidad",
-  EnablerFeature: "Habilitador",
-  UserStory: "Historia",
-  EnablerUserStory: "Historia habilitadora",
-  Task: "Tarea",
-  Bug: "Defecto",
-  Issue: "Incidencia de trabajo",
-  Phase: "Fase",
-  Deliverable: "Entregable",
-  Activity: "Actividad",
-  Document: "Documento de trabajo",
-  Evidence: "Evidencia",
-};
 const blank = (project: Project): Work => ({
   ...emptyItem("Activity"),
+  code:
+    "W-" + crypto.randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase(),
   status: "New",
   work_type: project.methodology === "Agile" ? "Task" : "Activity",
   parent_id: null,
@@ -84,6 +64,8 @@ export function Planning({
     [archived, setArchived] = useState(false),
     [busy, setBusy] = useState(false),
     [owner, setOwner] = useState("all"),
+    [typeFilter, setTypeFilter] = useState("all"),
+    [level, setLevel] = useState("operational"),
     [stateFilter, setStateFilter] = useState("all"),
     [dragging, setDragging] = useState("");
   const base = `/projects/${project.id}`;
@@ -118,6 +100,27 @@ export function Planning({
   const visible = items.filter(
     (i) =>
       !!i.archived === archived &&
+      (typeFilter === "all" || i.work_type === typeFilter) &&
+      (view !== "board" ||
+        level === "all" ||
+        (level === "operational"
+          ? [
+              "UserStory",
+              "EnablerUserStory",
+              "Task",
+              "Bug",
+              "Issue",
+              "Activity",
+              "Document",
+              "Evidence",
+            ].includes(i.work_type)
+          : [
+              "Epic",
+              "Feature",
+              "EnablerFeature",
+              "Phase",
+              "Deliverable",
+            ].includes(i.work_type))) &&
       (owner === "all" ||
         i.owner_id === owner ||
         (owner === "none" && !i.owner_id)) &&
@@ -134,23 +137,34 @@ export function Planning({
       roadmap: "Iteraciones y entregas",
     } as Record<string, string>
   )[view];
-  const stateSelect = (item: Work) => (
-    <label>
-      Estado de {item.code}
-      <select
-        value={item.status}
-        disabled={busy}
-        onChange={(e) => void move(item, e.target.value)}
-      >
-        {!states[item.status] && <option>{item.status}</option>}
-        {Object.entries(states).map(([k, v]) => (
-          <option key={k} value={k}>
-            {v}
-          </option>
-        ))}
-      </select>
-    </label>
+  async function update(item: Work, key: keyof Work, value: string) {
+    const saved = await api(`${base}/items/${item.id}`, {
+      method: "PUT",
+      ...json({ ...item, [key]: value || null }),
+    });
+    setItems((current) => current.map((i) => (i.id === saved.id ? saved : i)));
+  }
+  const inline = (
+    item: Work,
+    key: keyof Work,
+    label: string,
+    options?: Record<string, string>,
+    display?: string,
+  ) => (
+    <InlineField
+      label={`${label} de ${item.code}`}
+      value={String(item[key] ?? "")}
+      display={display}
+      options={options}
+      className={key === "status" ? stateClass(item.status) : ""}
+      onSave={(value) => update(item, key, value)}
+    />
   );
+  const stateSelect = (item: Work) =>
+    inline(item, "status", "Estado", {
+      ...states,
+      ...(!states[item.status] ? { [item.status]: item.status } : {}),
+    });
   return (
     <section className="panel">
       <div className="section-heading">
@@ -203,6 +217,35 @@ export function Planning({
           </select>
         </label>
         <label>
+          Tipo
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
+            <option value="all">Todos los tipos</option>
+            {[
+              ...new Set([
+                ...allowedTypes(project.methodology),
+                ...items.map((i) => i.work_type),
+              ]),
+            ].map((t) => (
+              <option key={t} value={t}>
+                {types[t] || t}
+              </option>
+            ))}
+          </select>
+        </label>
+        {view === "board" && (
+          <label>
+            Nivel
+            <select value={level} onChange={(e) => setLevel(e.target.value)}>
+              <option value="operational">Trabajo operativo</option>
+              <option value="strategic">Épicas y entregables</option>
+              <option value="all">Todos los niveles</option>
+            </select>
+          </label>
+        )}
+        <label>
           <input
             type="checkbox"
             checked={archived}
@@ -226,7 +269,7 @@ export function Planning({
             );
             return (
               <section
-                className="kanban-column"
+                className={"kanban-column " + stateClass(state)}
                 key={state}
                 onDragOver={(e) => {
                   if (state !== "Otros" && !busy) e.preventDefault();
@@ -249,7 +292,7 @@ export function Planning({
                 </h3>
                 {cards.map((i) => (
                   <article
-                    className="work-card"
+                    className={"work-card " + stateClass(i.status)}
                     key={i.id}
                     draggable={!busy}
                     onDragStart={(e) => {
@@ -336,6 +379,7 @@ export function Planning({
                 <th>Tipo / padre</th>
                 <th>Responsable</th>
                 <th>Estado</th>
+                <th>Prioridad</th>
                 <th>Compromiso</th>
                 <th>Avance</th>
                 <th>Predecesores</th>
@@ -350,13 +394,54 @@ export function Planning({
                     </button>
                   </td>
                   <td>
-                    {types[i.work_type]}
+                    {inline(
+                      i,
+                      "work_type",
+                      "Tipo",
+                      Object.fromEntries(
+                        [
+                          ...new Set([
+                            ...allowedTypes(project.methodology),
+                            i.work_type,
+                          ]),
+                        ].map((t) => [t, types[t] || t]),
+                      ),
+                    )}
                     <br />
                     {items.find((x) => x.id === i.parent_id)?.code || "Raíz"}
                   </td>
-                  <td>{i.owner_name || "Sin asignar"}</td>
+                  <td>
+                    {inline(
+                      i,
+                      "owner_id",
+                      "Responsable",
+                      Object.fromEntries([
+                        ["", "Sin asignar"],
+                        ...people.map((p) => [p.id, p.name]),
+                      ]),
+                      i.owner_name || "Sin asignar",
+                    )}
+                  </td>
                   <td>{stateSelect(i)}</td>
-                  <td>{i.target_date || "Sin fecha"}</td>
+                  <td>
+                    {inline(
+                      i,
+                      "executive_priority",
+                      "Prioridad",
+                      Object.fromEntries(
+                        ["Baja", "Media", "Alta", "Crítica"].map((p) => [p, p]),
+                      ),
+                    )}
+                  </td>
+                  <td>
+                    {inline(
+                      i,
+                      "target_date",
+                      "Fecha objetivo",
+                      undefined,
+                      i.target_date || "Sin fecha",
+                    )}
+                  </td>
                   <td>{i.progress == null ? "Sin dato" : `${i.progress}%`}</td>
                   <td>
                     {i.dependencies
@@ -377,6 +462,7 @@ export function Planning({
       )}
       {editing && (
         <WorkEditor
+          methodology={project.methodology}
           projectId={project.id}
           initial={editing}
           items={items}
@@ -384,11 +470,19 @@ export function Planning({
           periods={periods}
           onClose={() => setEditing(null)}
           onSave={async (v) => {
-            await api(base + "/items" + (v.id ? "/" + v.id : ""), {
-              method: v.id ? "PUT" : "POST",
-              ...json(v),
-            });
-            await reload();
+            const saved = await api(
+              base + "/items" + (v.id ? "/" + v.id : ""),
+              {
+                method: v.id ? "PUT" : "POST",
+                ...json(v),
+              },
+            );
+            setItems((current) =>
+              v.id
+                ? current.map((i) => (i.id === saved.id ? saved : i))
+                : [...current, saved],
+            );
+            return saved;
           }}
         />
       )}
@@ -406,276 +500,6 @@ export function Planning({
         />
       )}
     </section>
-  );
-}
-function WorkEditor({
-  projectId,
-  initial,
-  items,
-  people,
-  periods,
-  onClose,
-  onSave,
-}: {
-  projectId: string;
-  initial: Work;
-  items: Work[];
-  people: Person[];
-  periods: Period[];
-  onClose: () => void;
-  onSave: (v: Work) => Promise<void>;
-}) {
-  const [v, setV] = useState(initial),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  const set = (key: keyof Work, value: unknown) => setV({ ...v, [key]: value });
-  return (
-    <Dialog
-      title={v.id ? "Editar trabajo" : "Nuevo trabajo"}
-      onClose={() => {
-        if (!busy) onClose();
-      }}
-    >
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError("");
-          try {
-            await onSave(v);
-            onClose();
-          } catch (e) {
-            setError((e as Error).message);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <fieldset disabled={busy}>
-          <div className="form-grid">
-            <label>
-              Código
-              <input
-                required
-                value={v.code}
-                onChange={(e) => set("code", e.target.value)}
-              />
-            </label>
-            <label>
-              Tipo de trabajo
-              <select
-                value={v.work_type}
-                onChange={(e) => set("work_type", e.target.value)}
-              >
-                {Object.entries(types).map(([k, label]) => (
-                  <option key={k} value={k}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Nombre
-              <input
-                required
-                value={v.name}
-                onChange={(e) => set("name", e.target.value)}
-              />
-            </label>
-            <label>
-              Estado
-              <select
-                value={v.status}
-                onChange={(e) => set("status", e.target.value)}
-              >
-                {!states[v.status] && <option>{v.status}</option>}
-                {Object.entries(states).map(([k, label]) => (
-                  <option key={k} value={k}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Padre
-              <select
-                value={v.parent_id || ""}
-                onChange={(e) => set("parent_id", e.target.value || null)}
-              >
-                <option value="">Sin padre</option>
-                {items
-                  .filter((i) => i.id !== v.id)
-                  .map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.code} · {i.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label>
-              Responsable
-              <select
-                value={v.owner_id || ""}
-                onChange={(e) => set("owner_id", e.target.value || null)}
-              >
-                <option value="">Sin asignar</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {(
-              [
-                ["start_date", "Inicio"],
-                ["target_date", "Compromiso"],
-              ] as const
-            ).map(([k, label]) => (
-              <label key={k}>
-                {label}
-                <input
-                  type="date"
-                  value={v[k] || ""}
-                  onChange={(e) => set(k, e.target.value || null)}
-                />
-              </label>
-            ))}
-            {(
-              [
-                ["progress", "Avance (%)"],
-                ["original_effort", "Esfuerzo original (horas)"],
-                ["remaining_effort", "Esfuerzo restante (horas)"],
-                ["completed_effort", "Esfuerzo completado (horas)"],
-                ["points", "Puntos"],
-              ] as const
-            ).map(([k, label]) => (
-              <label key={k}>
-                {label}
-                <input
-                  type="number"
-                  min="0"
-                  max={k === "progress" ? 100 : undefined}
-                  step="any"
-                  value={v[k] ?? ""}
-                  onChange={(e) =>
-                    set(
-                      k,
-                      e.target.value === "" ? null : Number(e.target.value),
-                    )
-                  }
-                />
-              </label>
-            ))}
-            <label>
-              Prioridad
-              <select
-                value={v.executive_priority}
-                onChange={(e) => set("executive_priority", e.target.value)}
-              >
-                {["Baja", "Media", "Alta", "Crítica"].map((x) => (
-                  <option key={x}>{x}</option>
-                ))}
-              </select>
-            </label>
-            {(
-              [
-                ["iteration_id", "Iteration", "Iteración"],
-                ["release_id", "Release", "Release"],
-              ] as const
-            ).map(([key, kind, label]) => (
-              <label key={key}>
-                {label}
-                <select
-                  value={v[key] || ""}
-                  onChange={(e) => set(key, e.target.value || null)}
-                >
-                  <option value="">Sin asignar</option>
-                  {periods
-                    .filter(
-                      (p) =>
-                        p.kind === kind && (!p.archived || p.id === v[key]),
-                    )
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            ))}
-          </div>
-          <label>
-            Descripción
-            <textarea
-              value={v.description}
-              onChange={(e) => set("description", e.target.value)}
-            />
-          </label>
-          <label>
-            Predecesores
-            <select
-              multiple
-              value={v.dependencies}
-              onChange={(e) =>
-                set(
-                  "dependencies",
-                  Array.from(e.target.selectedOptions, (o) => o.value),
-                )
-              }
-            >
-              {items
-                .filter((i) => i.id !== v.id)
-                .map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.code} · {i.name}
-                  </option>
-                ))}
-            </select>
-            <small>Ctrl para seleccionar varios. No se permiten ciclos.</small>
-          </label>
-          <button
-            type="button"
-            disabled={
-              !(Number(v.completed_effort) + Number(v.remaining_effort) > 0)
-            }
-            onClick={() =>
-              set(
-                "progress",
-                Math.round(
-                  (Number(v.completed_effort) /
-                    (Number(v.completed_effort) + Number(v.remaining_effort))) *
-                    100,
-                ),
-              )
-            }
-          >
-            Calcular avance desde esfuerzo
-          </button>
-          <label>
-            <input
-              type="checkbox"
-              checked={!!v.include_in_report}
-              onChange={(e) => set("include_in_report", e.target.checked)}
-            />
-            Incluir en nuevos cortes desde catálogo
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={!!v.archived}
-              onChange={(e) => set("archived", e.target.checked)}
-            />
-            Archivado
-          </label>
-          {error && <p role="alert">{error}</p>}
-          <button className="primary">Guardar trabajo</button>
-        </fieldset>
-      </form>
-      {v.id && (
-        <WorkComments projectId={projectId} itemId={v.id} onBusy={setBusy} />
-      )}
-    </Dialog>
   );
 }
 function PeriodEditor({
