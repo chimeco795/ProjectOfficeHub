@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { SearchPicker } from "../../components/SearchPicker";
 export function InlineField({
   label,
   value,
   display,
   options,
+  searchable = false,
   className = "",
   onSave,
 }: {
@@ -11,6 +13,7 @@ export function InlineField({
   value: string;
   display?: string;
   options?: Record<string, string>;
+  searchable?: boolean;
   className?: string;
   onSave: (value: string) => Promise<void>;
 }) {
@@ -62,31 +65,43 @@ export function InlineField({
             }
           }}
         >
-          <label>
-            {label}
-            {options ? (
-              <select
-                autoFocus
-                disabled={busy}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-              >
-                {Object.entries(options).map(([v, t]) => (
-                  <option value={v} key={v}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                autoFocus
-                disabled={busy}
-                type="date"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-              />
-            )}
-          </label>
+          {searchable && options ? (
+            <SearchPicker
+              label={label}
+              value={draft}
+              options={Object.entries(options).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+              onChange={(v) => setDraft(String(v))}
+            />
+          ) : (
+            <label>
+              {label}
+              {options ? (
+                <select
+                  autoFocus
+                  disabled={busy}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                >
+                  {Object.entries(options).map(([v, t]) => (
+                    <option value={v} key={v}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  autoFocus
+                  disabled={busy}
+                  type="date"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                />
+              )}
+            </label>
+          )}
           <div className="inline-actions">
             <button className="primary" disabled={busy}>
               Guardar

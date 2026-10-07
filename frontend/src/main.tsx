@@ -1,3 +1,4 @@
+import {LocalIdentity} from "./components/LocalIdentity";
 import {WorkspaceNav, WorkspaceTabs, viewLabel} from "./modules/workspace/Navigation";
 import "./modules/workspace/workspace.css";
 import { Migration } from "./modules/operations/Migration";
@@ -244,7 +245,7 @@ function App() {
   const filteredProjects=projects.filter(p=>(projectStatus==="all"||p.status===projectStatus)&&`${p.name} ${p.description}`.toLowerCase().includes(projectSearch.toLowerCase()));
   return (
     <div
-      className={"shell " + (project && view === "report" ? "report-mode" : "")}
+      className={"shell " + (project && view === "report" ? "report-workspace" : "")}
     >
       <aside>
         <div className="brand">
@@ -274,7 +275,7 @@ function App() {
           <FolderKanban size={19} /> Portafolio
         </button>
         <button className={"nav "+(view==="migration"?"active":"")} onClick={()=>navigate("migration")}><Files size={19}/>Migrar archivo .pohub</button>
-        {project && <><div className="workspace-label">PROYECTO ACTUAL</div><div className="workspace-project"><span>{project.name.slice(0,2).toUpperCase()}</span><div><strong>{project.name}</strong><small>{project.methodology} · {project.status}</small></div></div><WorkspaceNav view={view} onNavigate={navigate}/></>}
+        {project && <><div className="workspace-label">PROYECTO ACTUAL</div><div className="workspace-project"><span>{project.name.slice(0,2).toUpperCase()}</span><div><strong>{project.name}</strong><small>{project.methodology} · {project.status}</small></div></div><WorkspaceNav view={view} onNavigate={navigate}/><LocalIdentity/></>}
         <div className="side-bottom">
           <ShieldCheck size={19} />
           <div>
@@ -286,7 +287,7 @@ function App() {
         <header className="topbar">
           <span>
             Gestión de proyectos <ChevronRight size={14} />{" "}
-            {view === "migration" ? "Migración .pohub" : operationViews.includes(view) && project ? "Planificación y operación" : project ? (view === "master" ? "Catálogo y responsables" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
+            {view === "migration" ? "Migración .pohub" : operationViews.includes(view) && project ? (["teams","budget"].includes(view) ? "Gestión" : ["agenda","documents"].includes(view) ? "Operación" : "Planificación") : project ? (view === "master" ? "Catálogo y responsables" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
           </span>
           <span className="phase">{project ? viewLabel(view) : "Espacio de trabajo"}</span>
         </header>
@@ -396,7 +397,7 @@ function App() {
                       ? "FUENTES DEL REPORTE"
                       : view === "history"
                         ? "ARCHIVO DEL PROYECTO"
-                        : ["backlog","board","gantt","roadmap","teams","budget","agenda","documents"].includes(view) ? "PLANIFICACIÓN Y OPERACIÓN" : "REVISIÓN DEL CORTE"}
+                        : ["backlog","board","gantt","roadmap","teams","budget","agenda","documents"].includes(view) ? (["teams","budget"].includes(view) ? "GESTIÓN" : ["agenda","documents"].includes(view) ? "OPERACIÓN" : "PLANIFICACIÓN") : "REVISIÓN DEL CORTE"}
                   </div>
                   <h1>
                     {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado"

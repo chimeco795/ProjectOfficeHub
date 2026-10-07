@@ -16,7 +16,7 @@ Project Office Hub es el producto maestro. Seguimiento Ejecutivo es un módulo p
 - backend/app/migrations.py: migraciones aditivas v2 → v3 → v4 → v5 → v6 con respaldos. Esquema 4 protege cortes publicados, registros y fuentes con triggers; las modificaciones de contenido incrementan la versión del corte. La publicación congela también la serie histórica oficial.
 - frontend/src/modules/projects: resumen y campos comunes de la ficha.
 - frontend/src/modules/executive: histórico filtrable, avances, pendientes y trazabilidad con valores antes/después. Creación de cortes con periodo explícito y copia desde una semana anterior.
-- Código semanal heredado y sus tres archivos de pruebas preservados. Los tests de migración esperan ahora esquema final 7 y se conservaron sus garantías.
+- Código semanal heredado y sus tres archivos de pruebas preservados. Los tests de migración esperan ahora esquema final 8 y se conservaron sus garantías.
 - La URL guarda project, view y cut y restaura el contexto al cargar; usa replaceState, sin historial por pantalla.
 - Catálogo maestro compartido de RAID, hitos y actividades; personas globales asignadas a proyectos; conciliación explícita, snapshots por registro y auditoría agregada. Ver VERIFICATION_PHASE3.md.
 - Fase 5 implementa planificación sobre master_items, equipos, presupuesto, agenda, documentos e importador schemaVersion 3. No se importaron datos reales. Ver docs/VERIFICATION_PHASE5.md para límites y paridad pendiente.
@@ -29,7 +29,7 @@ Fuentes: D:/Archivos/Downloads/project-office-hub-v3-1-0 (1).zip y D:/Archivos/C
 
 ## Continuación
 
-Fase actual: 5, incremento funcional implementado; falta validar datos reales y completar paridad indicada en VERIFICATION_PHASE5.md. El usuario confirmó que todavía no tiene la exportación .pohub. Fase 3 cerrada con catálogo actual, corte desde maestros, conciliación y snapshots inmutables. Las actividades incorporan WorkItem, jerarquía y precedencias; no crear otro catálogo.
+Fase actual: 11, revision UX implementada; verificaciones visuales pendientes en VERIFICATION_PHASE11.md. La migracion real y paridad legacy de fase 5 siguen pendientes. El usuario confirmó que todavía no tiene la exportación .pohub. Fase 3 cerrada con catálogo actual, corte desde maestros, conciliación y snapshots inmutables. Las actividades incorporan WorkItem, jerarquía y precedencias; no crear otro catálogo.
 
 No se migraron datos reales desde los ZIP o el navegador anterior. La base local puede contener proyectos creados por el usuario: conservarlos. Pruebas visuales de fase 3 en .test-data/phase3-browser, separadas de data/pmo.sqlite3.
 
@@ -55,3 +55,9 @@ Alta rápida de seis campos → detalles progresivos. Código automático editab
 ### Requisito pendiente que debe conservarse
 
 **Dashboard personalizable con widgets redimensionables y arrastrables, heredado del PMO anterior.** Widgets: avance, riesgos, bloqueos, ruta crítica, equipo, presupuesto, hitos y próximo corte ejecutivo. El usuario pidió registrarlo, no implementarlo todavía. No omitir este requisito al planificar siguientes fases.
+
+## Estado vigente 2026-10-07: 0.11.0, esquema 8
+
+Ficha de lectura display-to-edit; responsable/predecesores buscables; lista jerarquica; rol/dedicacion inline; usuario local elegido del catalogo. Agenda con duracion, estado, relacion, notas/documentos, movimiento confirmado y deshacer. Documentos con descripcion/autor y referencia a bytes de fuentes. Reporte dentro del workspace, Full Screen opcional y PDF/PNG proporcionales. 72 tests backend, 17 frontend y TypeScript/Vite correctos. Migracion normal: respaldo y 23 tablas con valores anteriores intactos.
+
+Ver docs/VERIFICATION_PHASE11.md para alcance y comprobaciones visuales pendientes por bloqueo de la pestaña interna de error. Dashboard sigue pendiente: arrastrar, redimensionar, reordenar, ocultar/configurar tamaño; incluir estado general y proximos hitos. Drag/resize del Gantt pendiente. No dar por cerrada la migracion real .pohub ni la paridad legacy. Las secciones anteriores describen entregas historicas.

@@ -63,7 +63,13 @@ class Event(Versioned):
     owner_id:str|None=None
     description:str=Field(default='',max_length=10000)
     guests:list[str]=Field(default_factory=list,max_length=200)
+    duration_minutes:int|None=Field(default=None,ge=1,le=10080)
+    related_id:str|None=None
+    status:Literal['Programado','Confirmado','Completado','Cancelado']='Programado'
+    notes:str=Field(default='',max_length=10000)
+    document_ids:list[str]=Field(default_factory=list,max_length=100)
 
 class DocumentUpdate(Versioned):
+    author_id:str|None=None
     related_id:str|None=None
     notes:str=Field(default='',max_length=10000)

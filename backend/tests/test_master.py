@@ -75,6 +75,7 @@ def test_v4_migration_preserves_published_cuts(tmp_path,monkeypatch):
     from app import migrations
     monkeypatch.setattr(db,'DATA',tmp_path)
     with monkeypatch.context() as before:
+        before.setattr(migrations,'migrate_operation_details',lambda *args:None)
         before.setattr(migrations,'migrate_master',lambda *args:None)
         before.setattr(migrations,'migrate_pmo',lambda *args:None)
         before.setattr(migrations,'migrate_organization',lambda *args:None)

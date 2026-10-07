@@ -29,7 +29,6 @@ export function allowedTypes(methodology: string): string[] {
     "Feature",
     "EnablerFeature",
     "UserStory",
-    "EnablerUserStory",
     "Task",
     "Bug",
     "Issue",
@@ -40,8 +39,6 @@ export function allowedTypes(methodology: string): string[] {
     "Activity",
     "Document",
     "Evidence",
-    "Task",
-    "Issue",
   ];
   return methodology === "Agile"
     ? agile

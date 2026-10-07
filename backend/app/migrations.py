@@ -207,3 +207,25 @@ def migrate_organization(db,data_dir):
                 SELECT 1 FROM chain WHERE id=NEW.id)
             BEGIN SELECT RAISE(ABORT,'El organigrama no admite ciclos'); END''')
     db.execute('INSERT INTO schema_version VALUES(7)')
+
+
+def migrate_operation_details(db,data_dir):
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]>=8:return
+    db.commit()
+    if db.execute('SELECT COUNT(*) FROM projects').fetchone()[0]:
+        stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
+        with sqlite3.connect(data_dir/f'backup-v7-{stamp}.sqlite3') as backup:db.backup(backup)
+    db.execute('BEGIN IMMEDIATE')
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]>=8:return
+    for column in ['duration_minutes INTEGER CHECK(duration_minutes BETWEEN 1 AND 10080)', 'related_id TEXT REFERENCES master_items(id)', "status TEXT NOT NULL DEFAULT 'Programado'", "notes TEXT NOT NULL DEFAULT ''", "document_ids TEXT NOT NULL DEFAULT '[]'"]:
+        db.execute('ALTER TABLE events ADD COLUMN '+column)
+    db.execute('ALTER TABLE documents ADD COLUMN author_id TEXT REFERENCES people(id)')
+    db.execute('ALTER TABLE documents ADD COLUMN source_id TEXT REFERENCES sources(id)')
+    for action in ('INSERT','UPDATE'):
+        db.execute(f'''CREATE TRIGGER event_detail_scope_{action.lower()} BEFORE {action} ON events
+            WHEN NEW.related_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM master_items WHERE id=NEW.related_id AND project_id=NEW.project_id)
+            BEGIN SELECT RAISE(ABORT,'Evento relacionado ajeno al proyecto'); END''')
+        db.execute(f'''CREATE TRIGGER document_source_scope_{action.lower()} BEFORE {action} ON documents
+            WHEN NEW.source_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM sources s JOIN cuts c ON c.id=s.cut_id WHERE s.id=NEW.source_id AND c.project_id=NEW.project_id)
+            BEGIN SELECT RAISE(ABORT,'Fuente ajena al proyecto'); END''')
+    db.execute('INSERT INTO schema_version VALUES(8)')

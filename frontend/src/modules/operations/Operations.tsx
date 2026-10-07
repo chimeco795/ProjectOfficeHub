@@ -1,3 +1,6 @@
+import { DocumentWorkspace } from "./DocumentWorkspace";
+import { ContextField } from "../../components/ContextField";
+import { AgendaWorkspace } from "./AgendaWorkspace";
 import { DocumentIcon, fileKind } from "./DocumentIcon";
 import { Organization } from "./Organization";
 import { Capacity } from "./Capacity";
@@ -125,7 +128,16 @@ export function RecordEditor({
     </Dialog>
   );
 }
-export function Operations({
+export function Operations(props: { projectId: string; view: string }) {
+  return props.view === "documents" ? (
+    <DocumentWorkspace projectId={props.projectId} />
+  ) : props.view === "agenda" ? (
+    <AgendaWorkspace projectId={props.projectId} />
+  ) : (
+    <OperationsContent {...props} />
+  );
+}
+function OperationsContent({
   projectId,
   view,
 }: {
@@ -795,13 +807,52 @@ export function Operations({
                     : r.concept || r.title || r.filename}
                 </h3>
                 {view === "teams" ? (
-                  <p>
-                    <strong>{r.role}</strong> ·{" "}
-                    <span className="allocation-badge">{r.allocation}%</span> ·{" "}
+                  <div>
+                    <ContextField
+                      label="Rol"
+                      value={r.role}
+                      required
+                      disabled={busy}
+                      onSave={async (value) => {
+                        const saved = await api(
+                          base + "/pmo/memberships/" + r.id,
+                          { method: "PUT", ...json({ ...r, role: value }) },
+                        );
+                        setRows((current) =>
+                          current.map((row) =>
+                            row.id === saved.id ? saved : row,
+                          ),
+                        );
+                      }}
+                    />{" "}
+                    <ContextField
+                      label="Dedicación (%)"
+                      value={r.allocation}
+                      type="number"
+                      min={0}
+                      max={100}
+                      required
+                      disabled={busy}
+                      onSave={async (value) => {
+                        const saved = await api(
+                          base + "/pmo/memberships/" + r.id,
+                          {
+                            method: "PUT",
+                            ...json({ ...r, allocation: Number(value) }),
+                          },
+                        );
+                        setRows((current) =>
+                          current.map((row) =>
+                            row.id === saved.id ? saved : row,
+                          ),
+                        );
+                      }}
+                    />
+                    ·{" "}
                     {teams.find((t) => t.id === r.team_id)?.name ||
                       "Sin equipo"}{" "}
                     · {r.valid_from || "Sin inicio"} → {r.valid_to || "Sin fin"}
-                  </p>
+                  </div>
                 ) : view === "budget" ? (
                   <p>
                     {r.kind} · {r.category} · {money(r.amount, r.currency)} ·{" "}
@@ -881,6 +932,26 @@ export function Operations({
                     {view === "teams" ? "Editar rol y asignación" : "Editar"}
                   </button>
                 )}
+                {view === "teams" &&
+                  r.team_id &&
+                  teams.find((t) => t.id === r.team_id)?.lead_id !==
+                    r.person_id && (
+                    <button
+                      disabled={busy || !!r.archived}
+                      onClick={() =>
+                        void run(async () => {
+                          const team = teams.find((t) => t.id === r.team_id);
+                          if (team)
+                            await api(base + "/pmo/teams/" + team.id, {
+                              method: "PUT",
+                              ...json({ ...team, lead_id: r.person_id }),
+                            });
+                        })
+                      }
+                    >
+                      Marcar líder del equipo compartido
+                    </button>
+                  )}
                 {view === "teams" && (
                   <button
                     disabled={busy}

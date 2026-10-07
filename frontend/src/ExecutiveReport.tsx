@@ -1,3 +1,4 @@
+import {exportReport} from "./modules/executive/exportReport";
 import {
   reportModel,
   percentage as num,
@@ -157,6 +158,10 @@ export function ExecutiveReport({
       })),
   ];
   const sheetRef = useRef<HTMLDivElement>(null);
+  const reportNode = useRef<HTMLDivElement>(null);
+  const [fullScreen,setFullScreen]=useState(false),[exporting,setExporting]=useState(false),[exportError,setExportError]=useState('');
+  useEffect(()=>{const handler=(event:KeyboardEvent)=>{if(event.key==='Escape')setFullScreen(false)};window.addEventListener('keydown',handler);return()=>window.removeEventListener('keydown',handler)},[]);
+  async function download(format:'png'|'pdf'){if(!reportNode.current)return;setExporting(true);setExportError('');try{await exportReport(reportNode.current,format,'reporte-'+detail.cut.report_date)}catch(e){setExportError('No se pudo exportar: '+(e as Error).message)}finally{setExporting(false)}}
   const [fit, setFit] = useState(true),
     [scale, setScale] = useState(1);
   useEffect(() => {
@@ -243,7 +248,7 @@ export function ExecutiveReport({
   ];
   const pmpIcons = [CalendarDays, Target, Award, TriangleAlert, Users, Link];
   return (
-    <div className="executive-report reference-report">
+    <div className={"executive-report reference-report "+(fullScreen?"report-fullscreen":"")}>
       <div className="report-controls">
         <div>
           <strong>Reporte ejecutivo semanal</strong>
@@ -254,6 +259,9 @@ export function ExecutiveReport({
           </span>
         </div>
         <div className="button-row">
+          <button onClick={()=>setFullScreen(!fullScreen)}>{fullScreen?'Salir de pantalla completa':'Pantalla completa'}</button>
+          <button disabled={exporting} onClick={()=>void download('pdf')}>Exportar PDF</button>
+          <button disabled={exporting} onClick={()=>void download('png')}>Exportar imagen</button>
           <button onClick={() => setFit(!fit)}>
             {fit ? "Tamaño real" : "Ajustar a pantalla"}
           </button>
@@ -264,6 +272,7 @@ export function ExecutiveReport({
           <button onClick={onProject}>Volver al proyecto</button>
         </div>
       </div>
+      {exporting&&<p role="status">Preparando exportación…</p>}{exportError&&<p role="alert">{exportError}</p>}
       {!locked && (
         <p role="status" className="report-notice">
           {preview
@@ -358,6 +367,7 @@ export function ExecutiveReport({
         style={fit ? { height: 1024 * scale } : undefined}
       >
         <div
+          ref={reportNode}
           className="report-sheet"
           style={fit ? { transform: `scale(${scale})` } : undefined}
         >

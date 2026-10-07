@@ -66,6 +66,7 @@ def test_v2_migration_preserves_published_data(tmp_path, monkeypatch):
     from app import migrations
     monkeypatch.setattr(db, 'DATA', tmp_path)
     with monkeypatch.context() as initial:
+        initial.setattr(migrations,'migrate_operation_details',lambda *args:None)
         initial.setattr(migrations, 'migrate_projects', lambda *args: None)
         initial.setattr(migrations, 'migrate_weekly', lambda *args: None)
         initial.setattr(migrations, 'migrate_master', lambda *args: None)
@@ -84,7 +85,7 @@ def test_v2_migration_preserves_published_data(tmp_path, monkeypatch):
         cut = connection.execute('SELECT * FROM cuts').fetchone()
         assert cut['status'] == 'publicado'
         assert json.loads(cut['project_snapshot']) == {'name': 'Nombre histórico'}
-        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 7
+        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 8
     backups = list(tmp_path.glob('backup-v2-*.sqlite3'))
     assert len(backups) == 1
     with sqlite3.connect(backups[0]) as connection:

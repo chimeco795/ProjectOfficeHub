@@ -1,6 +1,12 @@
 import { InlineField } from "./InlineField";
 import { WorkEditor } from "./WorkEditor";
-import { states, types, allowedTypes, stateClass } from "./workPresentation";
+import {
+  states,
+  types,
+  allowedTypes,
+  stateClass,
+  hierarchy,
+} from "./workPresentation";
 import { Roadmap } from "./Roadmap";
 import { ScheduleSimulation } from "./ScheduleSimulation";
 import { Schedule } from "./Schedule";
@@ -156,6 +162,7 @@ export function Planning({
       value={String(item[key] ?? "")}
       display={display}
       options={options}
+      searchable={key === "owner_id"}
       className={key === "status" ? stateClass(item.status) : ""}
       onSave={(value) => update(item, key, value)}
     />
@@ -386,10 +393,14 @@ export function Planning({
               </tr>
             </thead>
             <tbody>
-              {visible.map((i) => (
+              {hierarchy(visible, items).map(({ item: i, depth }) => (
                 <tr key={i.id}>
                   <td>
-                    <button onClick={() => setEditing(i)}>
+                    <button
+                      style={{ paddingLeft: Math.min(depth, 5) * 12 }}
+                      title={`${i.code} · ${i.name}`}
+                      onClick={() => setEditing(i)}
+                    >
                       {i.code} · {i.name}
                     </button>
                   </td>

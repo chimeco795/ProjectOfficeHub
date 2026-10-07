@@ -1,6 +1,6 @@
 # Estado actual y pendientes
 
-Actualizado: 2026-10-06 · versión 0.10.0 · esquema SQLite 7.
+Actualizado: 2026-10-07 · versión 0.11.0 · esquema SQLite 8.
 
 | Área | Disponible | Pendiente o límite |
 |---|---|---|
@@ -16,6 +16,10 @@ Actualizado: 2026-10-06 · versión 0.10.0 · esquema SQLite 7.
 | Documentos | Biblioteca agrupada por contenido, originales del proyecto y fuentes ejecutivas, iconos y asociaciones | Formato de adjuntos legacy por verificar |
 | Migración | Preview, mapa de proyectos, aplicación atómica e identidades | Exportación real pendiente; no retirar datos anteriores |
 
-Los números de fase describen incrementos entregados, no un compromiso de cierre total de paridad. Ver VERIFICATION_PHASE5 a VERIFICATION_PHASE10 para alcance y pruebas. La migración real necesita el archivo del usuario; no sustituirlo por los ZIP de código.
+Los números de fase describen incrementos entregados, no un compromiso de cierre total de paridad. Ver VERIFICATION_PHASE5 a VERIFICATION_PHASE11 para alcance y pruebas. La migración real necesita el archivo del usuario; no sustituirlo por los ZIP de código.
 
-Dashboard personalizable pendiente: widgets arrastrables y redimensionables de avance, riesgos, bloqueos, ruta crítica, equipo, presupuesto, hitos y próximo corte ejecutivo. Registrado expresamente por el usuario; no implementado en 0.10.0.
+Dashboard personalizable pendiente: widgets arrastrables y redimensionables de avance, riesgos, bloqueos, ruta crítica, equipo, presupuesto, hitos y próximo corte ejecutivo. Registrado expresamente por el usuario; no implementado en 0.11.0.
+
+Fase vigente: 11. Ficha de lectura/edición contextual; rol/dedicación inline; usuario local; agenda con duración, relaciones, notas/documentos y movimiento confirmado/deshacer; documentos con descripción/autor; reporte dentro del workspace y PDF/PNG. 72 pruebas backend y 17 frontend correctas. Ver VERIFICATION_PHASE11.md para comprobaciones visuales pendientes.
+
+Dashboard: debe permitir además reordenar, ocultar y configurar tamaño; incluir estado general y próximos hitos. Drag/resize del Gantt pendiente.

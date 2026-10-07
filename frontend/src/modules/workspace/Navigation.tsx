@@ -2,9 +2,7 @@ import {
   LayoutDashboard,
   KanbanSquare,
   Users,
-  Wallet,
   CalendarDays,
-  FolderOpen,
   FileBarChart2,
   History,
 } from "lucide-react";
@@ -25,19 +23,21 @@ export const groups = [
     ],
   },
   {
-    label: "Equipo",
+    label: "Gestión",
     icon: Users,
     views: [
-      ["teams", "Equipos y asignaciones"],
-      ["master", "Catálogo y personas"],
+      ["master", "RAID e hitos"],
+      ["teams", "Equipo y roles"],
+      ["budget", "Presupuesto"],
     ],
   },
-  { label: "Presupuesto", icon: Wallet, views: [["budget", "Presupuesto"]] },
-  { label: "Agenda", icon: CalendarDays, views: [["agenda", "Agenda"]] },
   {
-    label: "Documentos",
-    icon: FolderOpen,
-    views: [["documents", "Documentos"]],
+    label: "Operación",
+    icon: CalendarDays,
+    views: [
+      ["agenda", "Agenda"],
+      ["documents", "Documentos"],
+    ],
   },
   {
     label: "Seguimiento ejecutivo",
