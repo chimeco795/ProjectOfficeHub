@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -16,10 +16,27 @@ def get(db, project_id):
 
 def list_projects():
     with connection() as db:
-        return [dict(row) for row in db.execute('''
+        result = [dict(row) for row in db.execute('''
             SELECT p.*, (SELECT COUNT(*) FROM cuts c WHERE c.project_id=p.id) cut_count
             FROM projects p ORDER BY created_at DESC, id
         ''')]
+        today = date.today().isoformat()
+        for project in result:
+            facts = db.execute('''SELECT
+                SUM(CASE WHEN target_date < ? THEN 1 ELSE 0 END) overdue,
+                SUM(CASE WHEN kind='Risk' AND executive_priority IN ('Alta','Crítica') THEN 1 ELSE 0 END) risks,
+                SUM(CASE WHEN lower(status) IN ('blocked','bloqueado') THEN 1 ELSE 0 END) blocked
+                FROM master_items WHERE project_id=? AND archived=0
+                AND lower(status) NOT IN ('closed','cerrado','resolved','resuelto','removed','retirado')''', (today, project['id'])).fetchone()
+            project['attention'] = {key: facts[key] or 0 for key in ('overdue', 'risks', 'blocked')}
+            project['attention']['late'] = bool(project['status'] != 'Cerrado' and project['target_date'] and project['target_date'] < today)
+            last = db.execute("SELECT metadata FROM cuts WHERE project_id=? ORDER BY report_date DESC, created_at DESC LIMIT 1", (project['id'],)).fetchone()
+            if last:
+                import json
+                value = json.loads(last['metadata'])
+                actual, planned = value.get('actual'), value.get('planned')
+                project['attention']['deviation'] = type(actual) in (int, float) and type(planned) in (int, float) and actual < planned
+        return result
 
 
 def get_project(project_id):

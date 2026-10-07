@@ -108,6 +108,6 @@ def test_organization_schema_migration_backup(tmp_path,monkeypatch):
         row=dict(conn.execute('SELECT * FROM people').fetchone())
         assert row['name']=='Ana' and row['leader_id'] is None and row['role']==''
         assert conn.execute('PRAGMA foreign_key_check').fetchall()==[]
-        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==8
+        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==9
     backups=list(tmp_path.glob('backup-v6-*.sqlite3'));assert len(backups)==1
     with sqlite3.connect(backups[0]) as conn:assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==6

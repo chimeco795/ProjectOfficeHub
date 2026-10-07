@@ -229,3 +229,18 @@ def migrate_operation_details(db,data_dir):
             WHEN NEW.source_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM sources s JOIN cuts c ON c.id=s.cut_id WHERE s.id=NEW.source_id AND c.project_id=NEW.project_id)
             BEGIN SELECT RAISE(ABORT,'Fuente ajena al proyecto'); END''')
     db.execute('INSERT INTO schema_version VALUES(8)')
+
+def migrate_executive_links(db,data_dir):
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]!=8:return
+    db.commit()
+    if db.execute('SELECT COUNT(*) FROM projects').fetchone()[0]:
+        stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
+        with sqlite3.connect(data_dir/f'backup-v8-{stamp}.sqlite3') as backup:db.backup(backup)
+    db.execute('BEGIN IMMEDIATE')
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]>=9:return
+    db.execute('ALTER TABLE events ADD COLUMN propose_executive INTEGER NOT NULL DEFAULT 0 CHECK(propose_executive IN (0,1))')
+    for action in ('INSERT','UPDATE'):
+        db.execute(f'''CREATE TRIGGER executive_event_link_{action.lower()} BEFORE {action} ON events
+            WHEN NEW.propose_executive=1 AND NEW.related_id IS NULL
+            BEGIN SELECT RAISE(ABORT,'Propuesta ejecutiva requiere relación'); END''')
+    db.execute('INSERT INTO schema_version VALUES(9)')

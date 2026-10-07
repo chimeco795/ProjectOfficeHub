@@ -2,7 +2,7 @@ import { dateKey } from "./calendarModel";
 import { useEffect, useState } from "react";
 import { api, json } from "../../api";
 import { Dialog } from "../../Dialog";
-import { SearchPicker } from "../../components/SearchPicker";
+import { SearchPicker, personChoices } from "../../components/SearchPicker";
 import { localPersonId } from "../../components/LocalIdentity";
 import { Calendar } from "./Calendar";
 export type AgendaEvent = {
@@ -21,6 +21,7 @@ export type AgendaEvent = {
   notes: string;
   document_ids: string[];
   archived: boolean;
+  propose_executive: boolean;
 };
 export function AgendaWorkspace({ projectId }: { projectId: string }) {
   const base = "/projects/" + projectId;
@@ -121,6 +122,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
       notes: "",
       document_ids: [],
       archived: false,
+      propose_executive: false,
     });
   const move = async (
     value: { event: AgendaEvent; date: string; time: string },
@@ -175,6 +177,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
         <dd>{related(current.related_id)}</dd>
       </dl>
       <p>{current.notes || "Sin notas adicionales"}</p>
+      {current.propose_executive && <p>Propuesto para Seguimiento Ejecutivo · {related(current.related_id)}</p>}
       <div>
         {current.document_ids.map((id) => {
           const doc = documents.find((d) => d.id === id);
@@ -445,14 +448,14 @@ function EventEditor({
           <SearchPicker
             label="Organizador"
             value={v.owner_id || ""}
-            options={people.map((p) => ({ value: p.id, label: p.name }))}
+            options={personChoices(people)}
             onChange={(value) => set("owner_id", value || null)}
           />
           <SearchPicker
             label="Invitados"
             multiple
             value={v.guests}
-            options={people.map((p) => ({ value: p.id, label: p.name }))}
+            options={personChoices(people)}
             onChange={(value) => set("guests", value)}
           />
           <SearchPicker
@@ -462,7 +465,7 @@ function EventEditor({
               value: i.id,
               label: `${i.code} · ${i.name}`,
             }))}
-            onChange={(value) => set("related_id", value || null)}
+            onChange={(value) => setV({...v,related_id:String(value)||null,propose_executive:!!value && v.propose_executive})}
           />
           <details>
             <summary>Notas y documentos</summary>
@@ -484,6 +487,8 @@ function EventEditor({
               onChange={(value) => set("document_ids", value)}
             />
           </details>
+          <label className="executive-event-label"><input type="checkbox" checked={!!v.propose_executive} disabled={!v.related_id} onChange={e=>set("propose_executive",e.target.checked)}/> Proponer el elemento relacionado para Seguimiento Ejecutivo</label>
+          <small className="executive-event-help">Vincula un trabajo o RAID. El siguiente corte propondrá ese elemento para revisión; no copiará las notas de la reunión.</small>
           <label>
             <input
               type="checkbox"

@@ -1,3 +1,4 @@
+import { SearchPicker, personChoices } from "../../components/SearchPicker";
 import { useEffect, useState } from "react";
 import { api, json } from "../../api";
 import { Dialog } from "../../Dialog";
@@ -161,27 +162,7 @@ export function Organization({
                   }
                 />
               </label>
-              <label>
-                Líder directo
-                <select
-                  value={editing.leader_id || ""}
-                  onChange={(e) =>
-                    setEditing({
-                      ...editing,
-                      leader_id: e.target.value || null,
-                    })
-                  }
-                >
-                  <option value="">Sin líder</option>
-                  {people
-                    .filter((p) => p.id !== editing.id)
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
+              <SearchPicker label="Líder directo" value={editing.leader_id||""} options={personChoices(people.filter(p=>p.id!==editing.id))} onChange={value=>setEditing({...editing,leader_id:String(value)||null})}/>
               {error && <p role="alert">{error}</p>}
               <button className="primary">Guardar estructura</button>
             </fieldset>

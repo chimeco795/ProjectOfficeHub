@@ -181,6 +181,8 @@
   grid-template-rows: 425px 249px 202px;
   gap: 10px;
 }
+.report-sheet.has-pmo { height: 1072px; }
+.has-pmo .sheet-content { height: 964px; grid-template-rows: 38px 425px 249px 202px; }
 .sheet-top,
 .sheet-middle,
 .sheet-bottom {

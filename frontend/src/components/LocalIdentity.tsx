@@ -1,9 +1,22 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { Dialog } from "../Dialog";
-import { SearchPicker } from "./SearchPicker";
+import { SearchPicker, personChoices } from "./SearchPicker";
 export const localPersonId = () =>
   localStorage.getItem("pohub.local-person") || "";
+export function useLocalPersonId() {
+  const [person, setPerson] = useState(localPersonId);
+  useEffect(() => {
+    const update = () => setPerson(localPersonId());
+    window.addEventListener("pohub-person", update);
+    window.addEventListener("storage", update);
+    return () => {
+      window.removeEventListener("pohub-person", update);
+      window.removeEventListener("storage", update);
+    };
+  }, []);
+  return person;
+}
 export function LocalIdentity() {
   const [people, setPeople] = useState<{ id: string; name: string }[]>([]),
     [value, setValue] = useState(localPersonId),
@@ -34,7 +47,7 @@ export function LocalIdentity() {
           </p>
           <SearchPicker
             label="Persona del catálogo"
-            options={people.map((p) => ({ value: p.id, label: p.name }))}
+            options={personChoices(people)}
             value={value}
             onChange={(v) => setValue(String(v))}
           />
@@ -43,6 +56,7 @@ export function LocalIdentity() {
             className="primary"
             onClick={() => {
               localStorage.setItem("pohub.local-person", value);
+              window.dispatchEvent(new Event("pohub-person"));
               setOpen(false);
             }}
           >

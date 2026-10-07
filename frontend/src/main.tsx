@@ -103,6 +103,7 @@ function App() {
     [query, setQuery] = useState(""),
     [status, setStatus] = useState("all"),
     [sort, setSort] = useState("source");
+  const [projectStep, setProjectStep] = useState(1);
   const [modal, setModal] = useState(""),
     [edit, setEdit] = useState<Row | null>(null),
     [error, setError] = useState(""),
@@ -275,7 +276,7 @@ function App() {
           <FolderKanban size={19} /> Portafolio
         </button>
         <button className={"nav "+(view==="migration"?"active":"")} onClick={()=>navigate("migration")}><Files size={19}/>Migrar archivo .pohub</button>
-        {project && <><div className="workspace-label">PROYECTO ACTUAL</div><div className="workspace-project"><span>{project.name.slice(0,2).toUpperCase()}</span><div><strong>{project.name}</strong><small>{project.methodology} · {project.status}</small></div></div><WorkspaceNav view={view} onNavigate={navigate}/><LocalIdentity/></>}
+        {project && <><div className="workspace-label">PROYECTO ACTUAL</div><div className="workspace-project"><span>{project.name.slice(0,2).toUpperCase()}</span><div><strong>{project.name}</strong><small>{project.methodology} · {project.status}</small></div></div><WorkspaceNav methodology={project.methodology} view={view} onNavigate={navigate}/><LocalIdentity/></>}
         <div className="side-bottom">
           <ShieldCheck size={19} />
           <div>
@@ -289,7 +290,7 @@ function App() {
             Gestión de proyectos <ChevronRight size={14} />{" "}
             {view === "migration" ? "Migración .pohub" : operationViews.includes(view) && project ? (["teams","budget"].includes(view) ? "Gestión" : ["agenda","documents"].includes(view) ? "Operación" : "Planificación") : project ? (view === "master" ? "Catálogo y responsables" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
           </span>
-          <span className="phase">{project ? viewLabel(view) : "Espacio de trabajo"}</span>
+          <span className="phase">{project ? viewLabel(view, project.methodology) : "Espacio de trabajo"}</span>
         </header>
         <div className="content">
           {error && (
@@ -315,7 +316,7 @@ function App() {
                   <h1>Proyectos</h1>
                   <p>Organiza tus proyectos y consulta su seguimiento ejecutivo.</p>
                 </div>
-                <button className="primary" onClick={() => setModal("project")}>
+                <button className="primary" onClick={() => (setProjectStep(1), setModal("project"))}>
                   <Plus size={18} /> Crear proyecto
                 </button>
               </div>
@@ -347,6 +348,7 @@ function App() {
                       <FolderKanban />
                     </span>
                     <span className="project-title">{p.name}</span>
+                    {p.attention && <span className="portfolio-attention">{p.attention.late && <small>Retrasado</small>}{p.attention.deviation && <small>Desviación</small>}{!!p.attention.risks && <small>En riesgo · {p.attention.risks}</small>}{!!p.attention.overdue && <small>Vencidos · {p.attention.overdue}</small>}{!!p.attention.blocked && <small>Bloqueados · {p.attention.blocked}</small>}</span>}
                     <p>{p.description || "Sin descripción"}</p>
                     <div className="project-meta">
                       <span>{p.methodology} · {p.status}</span>
@@ -365,7 +367,7 @@ function App() {
                   <p>Crea un proyecto para definir sus objetivos, fechas y metodología.</p>
                   <button
                     className="primary"
-                    onClick={() => setModal("project")}
+                    onClick={() => (setProjectStep(1), setModal("project"))}
                   >
                     Crear proyecto
                   </button>
@@ -424,7 +426,7 @@ function App() {
                   </button>}
                 </div>
               </div>
-              <WorkspaceTabs view={view} onNavigate={navigate}/>
+              <WorkspaceTabs methodology={project.methodology} view={view} onNavigate={navigate}/>
               {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && <div className="cutbar">
                 <label>
                   Corte de reporte{" "}
@@ -470,10 +472,10 @@ function App() {
                 </div>
               )}
               {view === "summary" ? (
-                <ProjectSummary onNavigate={navigate} project={project} cuts={cuts} onExecutive={() => navigate("history")} onEdit={() => setEditingProject(true)} />
+                <ProjectSummary onSave={async value=>{const saved=await api("/projects/"+project.id,{method:"PUT",...json(value)});setProject(saved);setProjects(all=>all.map(p=>p.id===saved.id?saved:p));}} onNavigate={navigate} project={project} cuts={cuts} onExecutive={() => navigate("history")} onEdit={() => setEditingProject(true)} />
 
               ) : ["backlog","board","gantt","roadmap"].includes(view) ? (
-                <Planning key={project.id} project={project} view={view}/>
+                <Planning key={project.id} project={project} view={view} onViewChange={navigate}/>
               ) : ["teams","budget","agenda","documents"].includes(view) ? (
                 <Operations key={project.id+view} projectId={project.id} view={view}/>
               ) : view === "master" ? (
@@ -878,6 +880,10 @@ function App() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
+                if (modal === "project" && projectStep === 1) {
+                  if (!String(new FormData(e.currentTarget).get("name") || "").trim()) { setError("Escribe el nombre del proyecto."); return; }
+                  setError(""); setProjectStep(2); return;
+                }
                 const values = Object.fromEntries(
                   new FormData(e.currentTarget),
                 );
@@ -903,14 +909,16 @@ function App() {
                     setCuts(await api("/projects/" + project!.id + "/cuts"));
                     setCutId(c.id);
                     await load(c.id);
-                    setView(values.copy_from ? "data" : "import");
+                    setView(values.copy_from === "__master__" ? "weekly" : values.copy_from ? "data" : "import");
                   }
                   setModal("");
                 });
               }}
             >
               {modal === "project" ? (
-                <>
+                <div className="project-wizard">
+                  <div className="wizard-steps"><span className={projectStep === 1 ? "active" : ""}>1 · Identidad</span><span className={projectStep === 2 ? "active" : ""}>2 · Prioridad y fechas</span></div>
+                  <div hidden={projectStep !== 1}>
                   <label>
                     Nombre del proyecto
                     <input name="name" required maxLength={200} autoFocus />
@@ -923,8 +931,10 @@ function App() {
                     Objetivo
                     <textarea name="objective" rows={2} />
                   </label>
-                  <ProjectFields />
-                </>
+                  <label>Metodología<select name="methodology" defaultValue="Hybrid"><option>Agile</option><option>Waterfall</option><option>Hybrid</option></select></label>
+                  </div><div hidden={projectStep !== 2}><p>Las fechas y el objetivo son opcionales. Puedes completarlos después.</p><ProjectFields excludeMethodology /></div>
+                  {projectStep === 2 && <button type="button" onClick={() => setProjectStep(1)}>Anterior</button>}
+                </div>
               ) : (
                 <>
                   <p>
@@ -941,8 +951,8 @@ function App() {
                   </div>
                   <label>
                     Origen del nuevo corte
-                    <select name="copy_from" defaultValue="">
-                      <option value="">Comenzar vacío</option><option value="__master__">Estado actual del catálogo (elementos seleccionados)</option>
+                    <select name="copy_from" defaultValue="__master__">
+                      <option value="">Comenzar vacío</option><option value="__master__">Captura actual del PMO + propuestas para revisión</option>
                       {cuts.map((c) => (
                         <option key={c.id} value={c.id}>
                           {fmt(c.report_date)} · {c.status}
@@ -951,7 +961,7 @@ function App() {
                     </select>
                     <small>
                       Se copian los registros activos para revisión. El avance y
-                      el resumen semanal empiezan vacíos.
+                      la narrativa requieren revisión. Desde PMO se captura evidencia y se propone avance solo con cobertura completa.
                     </small>
                   </label>
                 </>
@@ -962,7 +972,7 @@ function App() {
                 </p>
               )}
               <button className="primary" disabled={busy}>
-                {busy ? "Guardando…" : "Crear"}
+                {busy ? "Guardando…" : modal === "project" && projectStep === 1 ? "Siguiente" : "Crear"}
               </button>
             </form>
           </section>

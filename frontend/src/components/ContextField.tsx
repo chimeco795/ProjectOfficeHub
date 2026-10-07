@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { SearchPicker, type Choice } from "./SearchPicker";
 export function ContextField({
   label,
@@ -15,6 +15,8 @@ export function ContextField({
   className = "",
   onSave,
   onEditing,
+  showLabel = true,
+  confirm = false,
 }: {
   label: string;
   value: any;
@@ -30,15 +32,47 @@ export function ContextField({
   className?: string;
   onSave: (value: any) => Promise<void>;
   onEditing?: (editing: boolean) => void;
+  showLabel?: boolean;
+  confirm?: boolean;
 }) {
   const [open, setOpen] = useState(false),
     [draft, setDraft] = useState(value),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const form = useRef<HTMLFormElement>(null),
+    saving = useRef(false);
+  const explicit = confirm || multiple || type === "textarea";
   const close = () => {
     setOpen(false);
     onEditing?.(false);
   };
+  async function commit(next = draft) {
+    if (saving.current) return;
+    if (form.current && !form.current.checkValidity()) {
+      setError("Revisa el valor antes de guardar.");
+      return;
+    }
+    if (required && (next == null || String(next).trim() === "")) {
+      setError("Este campo es obligatorio.");
+      return;
+    }
+    if (JSON.stringify(next) === JSON.stringify(value)) {
+      close();
+      return;
+    }
+    saving.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      await onSave(next);
+      close();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      saving.current = false;
+      setBusy(false);
+    }
+  }
   const text =
     display ??
     (options
@@ -51,7 +85,7 @@ export function ContextField({
     String(value ?? "");
   return (
     <div className="context-field">
-      <span className="control-label">{label}</span>
+      {showLabel && <span className="control-label">{label}</span>}
       {!open ? (
         <button
           type="button"
@@ -66,40 +100,47 @@ export function ContextField({
             onEditing?.(true);
           }}
         >
-          {text || "Sin definir"} <span aria-hidden="true">✎</span>
+          {text || "Sin definir"}
         </button>
       ) : (
         <form
+          ref={form}
           className="context-editor"
+          onBlur={(e) => {
+            if (!explicit && !e.currentTarget.contains(e.relatedTarget as Node))
+              void commit();
+          }}
           onKeyDown={(e) => {
             if (e.key === "Escape" && !busy) {
               e.stopPropagation();
               e.preventDefault();
               close();
             }
+            if (e.key === "Enter" && !explicit && !e.defaultPrevented) {
+              e.preventDefault();
+              void commit();
+            }
           }}
           onSubmit={async (e) => {
             e.preventDefault();
-            setBusy(true);
-            setError("");
-            try {
-              await onSave(draft);
-              close();
-            } catch (e) {
-              setError((e as Error).message);
-            } finally {
-              setBusy(false);
-            }
+            void commit();
           }}
         >
           {search && options ? (
             <SearchPicker
+              autoFocus
+              onEscape={() => {
+                if (!busy) close();
+              }}
               disabled={busy}
               label={label}
               value={draft ?? (multiple ? [] : "")}
               options={options}
               multiple={multiple}
-              onChange={setDraft}
+              onChange={(next) => {
+                setDraft(next);
+                if (!explicit) void commit(next);
+              }}
             />
           ) : options ? (
             <select
@@ -138,14 +179,17 @@ export function ContextField({
               onChange={(e) => setDraft(e.target.value)}
             />
           )}
-          <div className="inline-actions">
-            <button disabled={busy} className="primary">
-              Guardar
-            </button>
-            <button disabled={busy} type="button" onClick={close}>
-              Cancelar
-            </button>
-          </div>
+          {explicit && (
+            <div className="inline-actions">
+              <button disabled={busy} className="primary">
+                Guardar
+              </button>
+              <button disabled={busy} type="button" onClick={close}>
+                Cancelar
+              </button>
+            </div>
+          )}
+          {busy && <small role="status">Guardando…</small>}
           {error && <p role="alert">{error}</p>}
         </form>
       )}

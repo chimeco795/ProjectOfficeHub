@@ -1,3 +1,4 @@
+import { PmoEvidence } from "./modules/executive/PmoEvidence";
 import {exportReport} from "./modules/executive/exportReport";
 import {
   reportModel,
@@ -132,13 +133,16 @@ export function ExecutiveReport({
       "completada",
       "finalizado",
       "terminado",
+      "closed", "resolved", "cerrado", "resuelto",
     ].includes(normalize(r.current.status)),
   );
   const inProgress = activities.filter((r) =>
-    ["en progreso", "en proceso", "en ejecucion"].includes(
+    ["en progreso", "en proceso", "en ejecucion", "active"].includes(
       normalize(r.current.status),
     ),
   );
+  const upcomingActivities=activities.filter(r=>['new','prepared','nuevo','preparado'].includes(normalize(r.current.status)));
+  const blockedActivities=activities.filter(r=>['blocked','bloqueado'].includes(normalize(r.current.status)));
   const risks = section("riesgos").sort(
     (a, b) =>
       Number(b.current.executive_priority === true) -
@@ -194,7 +198,7 @@ export function ExecutiveReport({
           },
         }))
     : milestoneRows;
-  const blocked = [...section("bloqueos"), ...section("problemas")];
+  const blocked = [...section("bloqueos"), ...section("problemas"), ...blockedActivities];
   const originalEdit = (r: Row) =>
     onEdit(detail.records.find((original) => original.id === r.id) ?? r);
   const short = (v: unknown) =>
@@ -364,11 +368,11 @@ export function ExecutiveReport({
       <div
         ref={sheetRef}
         className={"sheet-viewport " + (fit ? "fit" : "actual")}
-        style={fit ? { height: 1024 * scale } : undefined}
+        style={fit ? { height: (detail.cut.project_snapshot.pmo ? 1072 : 1024) * scale } : undefined}
       >
         <div
           ref={reportNode}
-          className="report-sheet"
+          className={"report-sheet" + (detail.cut.project_snapshot.pmo ? " has-pmo" : "")}
           style={fit ? { transform: `scale(${scale})` } : undefined}
         >
           <header className="sheet-header">
@@ -416,6 +420,7 @@ export function ExecutiveReport({
             </div>
           </header>
           <div className="sheet-content">
+            <PmoEvidence value={detail.cut.project_snapshot.pmo} compact/>
             <div className="sheet-top">
               <SheetPanel title="1. RESUMEN EJECUTIVO" name="summary">
                 <div className="summary-rows">
@@ -549,7 +554,7 @@ export function ExecutiveReport({
                 </div>
                 <div className="sheet-weekly">
                   {[
-                    { label: "Completadas", icon: CircleCheck, items: done },
+                    { label: detail.cut.project_snapshot.pmo ? "Terminadas al corte" : "Completadas", icon: CircleCheck, items: done },
                     {
                       label: "En ejecución",
                       icon: Settings,
@@ -558,7 +563,7 @@ export function ExecutiveReport({
                     {
                       label: "Próximos pasos",
                       icon: Clock,
-                      items: section("proximos_pasos"),
+                      items: [...section("proximos_pasos"), ...upcomingActivities],
                     },
                     {
                       label: "Logros / entregables",

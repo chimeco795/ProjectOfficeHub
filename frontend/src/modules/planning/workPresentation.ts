@@ -7,6 +7,7 @@ export const states: Record<string, string> = {
   Blocked: "Bloqueado",
   Removed: "Retirado",
 };
+export const iterationLabel = (methodology: string) => methodology === 'Agile' ? 'Sprint' : methodology === 'Hybrid' ? 'Iteración / Sprint' : 'Periodo';
 export const types: Record<string, string> = {
   Epic: "Épica",
   Feature: "Funcionalidad",

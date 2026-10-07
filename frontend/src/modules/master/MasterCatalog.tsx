@@ -1,3 +1,4 @@
+import { SearchPicker, personChoices } from "../../components/SearchPicker";
 import {states,stateClass} from "../planning/workPresentation";
 import { useEffect,useState } from "react";
 import { api,json } from "../../api";
@@ -7,6 +8,7 @@ import "./master.css";
 
 export function MasterCatalog({projectId}: {projectId:string}) {
   const [items,setItems]=useState<Item[]>([]),[people,setPeople]=useState<Person[]>([]),[all,setAll]=useState<Person[]>([]);
+  const [assignPerson,setAssignPerson]=useState("");
   const [kind,setKind]=useState("Risk"),[query,setQuery]=useState(""),[archived,setArchived]=useState(false);
   const [editing,setEditing]=useState<Item|null>(null),[person,setPerson]=useState<Person|null>(null);
   const [error,setError]=useState(""),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
@@ -31,8 +33,8 @@ export function MasterCatalog({projectId}: {projectId:string}) {
       <form className="master-filters" onSubmit={e=>{e.preventDefault();const form=e.currentTarget;const values=Object.fromEntries(new FormData(form));void run(async()=>{await api(`/projects/${projectId}/people`,{method:"POST",...json({new_person:values})});form.reset();});}}>
         <label>Nombre de persona<input name="name" required /></label><label>Correo de persona<input name="email" type="email" /></label><button disabled={busy}>Crear y asignar persona</button>
       </form>
-      <form className="master-filters" onSubmit={e=>{e.preventDefault();const values=Object.fromEntries(new FormData(e.currentTarget));void run(async()=>{await api(`/projects/${projectId}/people`,{method:"POST",...json(values)});});}}>
-        <label>Persona existente<select name="person_id" required defaultValue=""><option value="" disabled>Seleccionar del catálogo</option>{all.filter(p=>!people.some(x=>x.id===p.id)).map(p=><option key={p.id} value={p.id}>{p.name} · {p.email||"Sin correo"}</option>)}</select></label><button disabled={busy}>Asignar persona existente</button>
+      <form className="master-filters" onSubmit={e=>{e.preventDefault();if(!assignPerson){setError("Selecciona una persona");return;}void run(async()=>{await api(`/projects/${projectId}/people`,{method:"POST",...json({person_id:assignPerson})});setAssignPerson("");});}}>
+        <SearchPicker label="Persona existente" value={assignPerson} options={personChoices(all.filter(p=>!people.some(x=>x.id===p.id)))} onChange={v=>setAssignPerson(String(v))}/><button disabled={busy}>Asignar persona existente</button>
       </form>
       <ul>{people.map(p=><li key={p.id}>{p.name} · {p.email||"Sin correo"} <button onClick={()=>setPerson(p)}>Editar persona</button></li>)}</ul>
     </section>

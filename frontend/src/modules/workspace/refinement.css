@@ -524,6 +524,12 @@
   min-width: 0;
 }
 .search-picker ul {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  box-shadow: 0 8px 25px #17374426;
   list-style: none;
   padding: 5px;
   margin: 4px 0;
@@ -534,11 +540,28 @@
   background: white;
 }
 .search-picker li > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   border: 0;
   width: 100%;
   text-align: left;
   white-space: normal;
 }
+.picker-avatar { flex: 0 0 28px; height: 28px; border-radius: 50%; background: #e3ecef; display: grid; place-items: center; font-size: 11px; }
+.picker-control { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; border: 1px solid #cedce3; border-radius: 6px; padding: 3px; background: white; }
+.executive-event-label, .executive-event-help { display: block; margin: 10px 0; }
+.picker-control input { flex: 1; width: 80px; min-width: 60px; border: 0; padding: 5px; }
+.picker-control .dependency-chips { margin: 0; }
+.context-field .field-chip:disabled { opacity: 1; }
+.search-picker li small { display: block; color: #627783; font-size: 11px; }
+.search-picker .dependency-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.shell .context-field .field-chip, .native-dialog .context-field .field-chip { border: 1px solid transparent; background-color: transparent; padding: 4px 6px; box-shadow: none; }
+.shell .context-field .field-chip:hover, .native-dialog .context-field .field-chip:hover { border-color: #d6e1e5; background-color: #f1f6f8; }
+.context-editor { padding: 0; background: transparent; border: 0; gap: 3px; width: fit-content; min-width: 140px; max-width: 360px; }
+.context-editor .search-picker { margin: 0; }
+.context-editor .search-picker > .control-label { display: none; }
+.work-detail-heading .context-field .field-chip { font-size: 22px; font-weight: 650; }
 .search-picker [aria-selected="true"] {
   background: #e6f1ed;
 }

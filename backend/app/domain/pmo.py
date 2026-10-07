@@ -56,6 +56,7 @@ class Entry(Versioned):
     notes:str=Field(default='',max_length=10000)
 
 class Event(Versioned):
+    propose_executive:bool=False
     title:str=Field(min_length=1,max_length=300)
     date:Date
     time:Time
@@ -68,6 +69,10 @@ class Event(Versioned):
     status:Literal['Programado','Confirmado','Completado','Cancelado']='Programado'
     notes:str=Field(default='',max_length=10000)
     document_ids:list[str]=Field(default_factory=list,max_length=100)
+    @model_validator(mode='after')
+    def executive_link(self):
+        if self.propose_executive and not self.related_id:raise ValueError('Relaciona un trabajo o RAID antes de proponerlo al seguimiento ejecutivo')
+        return self
 
 class DocumentUpdate(Versioned):
     author_id:str|None=None

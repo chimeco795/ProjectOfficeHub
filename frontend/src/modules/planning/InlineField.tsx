@@ -1,14 +1,16 @@
-import { useState } from "react";
-import { SearchPicker } from "../../components/SearchPicker";
+import type { Choice } from "../../components/SearchPicker";
+import { ContextField } from "../../components/ContextField";
 export function InlineField({
   label,
   value,
   display,
   options,
+  choices,
   searchable = false,
   className = "",
   onSave,
 }: {
+  choices?: Choice[];
   label: string;
   value: string;
   display?: string;
@@ -17,106 +19,22 @@ export function InlineField({
   className?: string;
   onSave: (value: string) => Promise<void>;
 }) {
-  const [open, setOpen] = useState(false),
-    [draft, setDraft] = useState(value),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
   return (
-    <span className="inline-field">
-      {!open ? (
-        <button
-          className={"field-chip " + className}
-          aria-label={
-            "Editar " +
-            label +
-            ": " +
-            (display || options?.[value] || value || "Sin fecha")
-          }
-          onClick={() => {
-            setDraft(value);
-            setError("");
-            setOpen(true);
-          }}
-        >
-          {display || options?.[value] || value || "Sin fecha"}
-          <span aria-hidden="true">⌄</span>
-        </button>
-      ) : (
-        <form
-          className="inline-popover"
-          aria-label={label}
-          onKeyDown={(e) => {
-            if (e.key === "Escape" && !busy) {
-              e.stopPropagation();
-              setOpen(false);
-            }
-          }}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setBusy(true);
-            setError("");
-            try {
-              if (draft !== value) await onSave(draft);
-              setOpen(false);
-            } catch (e) {
-              setError((e as Error).message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {searchable && options ? (
-            <SearchPicker
-              label={label}
-              value={draft}
-              options={Object.entries(options).map(([value, label]) => ({
-                value,
-                label,
-              }))}
-              onChange={(v) => setDraft(String(v))}
-            />
-          ) : (
-            <label>
-              {label}
-              {options ? (
-                <select
-                  autoFocus
-                  disabled={busy}
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                >
-                  {Object.entries(options).map(([v, t]) => (
-                    <option value={v} key={v}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  autoFocus
-                  disabled={busy}
-                  type="date"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                />
-              )}
-            </label>
-          )}
-          <div className="inline-actions">
-            <button className="primary" disabled={busy}>
-              Guardar
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setOpen(false)}
-            >
-              Cancelar
-            </button>
-          </div>
-          {error && <span role="alert">{error}</span>}
-        </form>
-      )}
-    </span>
+    <ContextField
+      label={label}
+      value={value}
+      display={display}
+      options={
+        choices ||
+        (options
+          ? Object.entries(options).map(([value, label]) => ({ value, label }))
+          : undefined)
+      }
+      search={searchable}
+      className={className}
+      type={options ? "text" : "date"}
+      showLabel={false}
+      onSave={onSave}
+    />
   );
 }

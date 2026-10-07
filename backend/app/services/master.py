@@ -98,8 +98,9 @@ def bind(db,project_id,record,master,master_snapshot=None):
     cut_event(db,record['cut_id'],'vincular',dict(before) if before else {},{'record_id':record['id'],'code':master['code'],'master_item_id':master['id']})
     return dict(db.execute('SELECT * FROM weekly_item_snapshots WHERE record_id=?',(record['id'],)).fetchone())
 
-def from_master(db,project_id,cut_id):
-    for raw in db.execute('SELECT id FROM master_items WHERE project_id=? AND archived=0 AND include_in_report=1 ORDER BY code',(project_id,)).fetchall():
+def from_master(db,project_id,cut_id,extra_ids=()):
+    for raw in db.execute('SELECT id,include_in_report FROM master_items WHERE project_id=? AND archived=0 ORDER BY code',(project_id,)).fetchall():
+        if not raw['include_in_report'] and raw['id'] not in extra_ids:continue
         master=item(db,project_id,raw['id']);identity=uid()
         db.execute('''INSERT INTO records(id,cut_id,section,location,original,current,review)
             VALUES(?,?,?,'Estado maestro del proyecto','{}',?,'pendiente')''',(identity,cut_id,SECTIONS[master['kind']],encode(weekly_values(master))))

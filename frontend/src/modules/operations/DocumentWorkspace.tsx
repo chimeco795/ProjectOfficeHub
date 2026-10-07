@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, json } from "../../api";
 import { Dialog } from "../../Dialog";
-import { SearchPicker } from "../../components/SearchPicker";
+import { SearchPicker, personChoices } from "../../components/SearchPicker";
 import { ContextField } from "../../components/ContextField";
 import { localPersonId } from "../../components/LocalIdentity";
 import { DocumentIcon, fileKind } from "./DocumentIcon";
@@ -216,7 +216,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
               <SearchPicker
                 label="Autor (usuario local)"
                 value={author}
-                options={people.map((p) => ({ value: p.id, label: p.name }))}
+                options={personChoices(people)}
                 onChange={(v) => setAuthor(String(v))}
               />
               <SearchPicker
@@ -257,7 +257,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
               label="Autor"
               search
               value={selected.author_id || ""}
-              options={people.map((p) => ({ value: p.id, label: p.name }))}
+              options={personChoices(people)}
               disabled={busy}
               onSave={(v) => update("author_id", v || null)}
             />

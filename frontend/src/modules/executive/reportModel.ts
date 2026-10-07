@@ -46,7 +46,7 @@ export function reportModel(
   const actual = percentage(detail.cut.metadata.actual);
   return {
     // Published fields must never fall back to the current project.
-    shown: locked ? detail.cut.project_snapshot : project,
+    shown: locked || detail.cut.project_snapshot.pmo ? detail.cut.project_snapshot : project,
     rows,
     planned,
     actual,

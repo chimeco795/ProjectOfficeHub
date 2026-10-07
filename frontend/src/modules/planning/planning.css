@@ -6,6 +6,20 @@
   flex-wrap: wrap;
   margin: 16px 0;
 }
+.planning-actions,.view-switch,.columns-panel{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.planning-actions button{display:inline-flex;align-items:center;gap:6px}
+.view-switch{gap:0;border:1px solid #dde3ec;border-radius:8px;overflow:hidden}
+.view-switch button{border:0;border-radius:0}
+.view-switch button[aria-pressed=true]{background:#e7effa;color:#194f87}
+.planning-filters{padding:12px;background:#f6f8fc;border-radius:8px;gap:10px;align-items:end}
+.planning-filters label{flex:1;min-width:120px;font-size:12px}
+.planning-filters input,.planning-filters select{min-height:32px}
+.columns-panel{padding:12px;background:#f6f8fc;border-radius:8px;margin:12px 0}
+.columns-panel label{display:flex;align-items:center;gap:5px;font-size:13px}
+.kanban-column h3{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.kanban-column.column-collapsed{min-width:44px;max-width:44px;padding:8px;flex:0 0 44px}
+.column-collapsed h3{writing-mode:vertical-rl;margin:0;gap:12px}
+.kanban-column{min-width:210px}
 .kanban {
   display: flex;
   gap: 14px;
@@ -13,7 +27,7 @@
   padding-bottom: 16px;
 }
 .kanban-column {
-  min-width: 260px;
+  min-width: 210px;
   flex: 1;
   background: #f2f5f9;
   border-radius: 10px;
@@ -113,6 +127,16 @@
 .pmo-editor select[multiple] {
   min-height: 100px;
 }
+.gantt-body { position: relative; min-width: 760px; }
+.gantt-body .schedule-row { height: 74px; min-height: 74px; }
+.gantt-name { display: flex; align-items: center; min-width: 0; }
+.gantt-toggle { padding: 3px; border: none; background: transparent; }
+.gantt-name .schedule-name { min-width: 0; flex: 1; text-align: left; }
+.gantt-links { position: absolute; left: 260px; width: calc(100% - 275px); top: 0; height: 100%; pointer-events: none; overflow: visible; }
+.gantt-name strong, .gantt-name small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gantt-links path { fill: none; stroke: #607d8b; stroke-width: 1.5; opacity: .7; }
+.schedule-bar.gantt-critical { outline: 2px solid #c43046; outline-offset: 2px; }
+.gantt-simulation { padding: 8px 12px; background: #fff5df; border-radius: 5px; }
 .schedule-intro {
   display: flex;
   justify-content: space-between;
@@ -474,3 +498,23 @@
     display: none;
   }
 }
+.stage-plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.stage-card{padding:16px;border:1px solid #dde3ec;border-radius:10px;background:#f8fafc}
+.stage-child{display:flex;justify-content:space-between;gap:12px;width:100%;margin-top:8px;text-align:left}
+.stage-card p,.stage-card small{font-size:12px;color:#63758b}
+.gantt-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.gantt-tools label{display:flex;align-items:center;gap:6px;font-size:12px}
+.gantt-tools select{width:110px;min-height:32px}
+.schedule-axis>div{position:relative;height:26px;display:block}
+.schedule-axis time{position:absolute;white-space:nowrap;font-size:11px;border-left:1px solid #c8d5e5;padding-left:4px}
+.gantt-canvas .schedule-track{background-image:linear-gradient(90deg,#dfe7f1 1px,transparent 1px);background-size:12.5% 100%}
+.shell .kanban .kanban-column{min-width:200px}
+.shell .kanban .kanban-column.column-collapsed{min-width:44px}
+.shell .planning-actions{flex:0 0 auto;justify-content:flex-end}
+.shell .planning-actions button{font-size:12px;padding:7px 9px}
+@media(max-width:900px){.shell .planning-actions{flex:1 1 100%;justify-content:flex-start}}
+.board-count{display:block;color:#63758b;margin-bottom:12px}
+.shell .planning-table table{min-width:1050px}
+.shell .planning-table td:nth-child(5) .field-chip,.shell .planning-table td:nth-child(6) .field-chip{white-space:nowrap;overflow-wrap:normal}
+.shell .roadmap>.section-heading,.shell .methodology-plan>.section-heading{align-items:center;gap:12px;margin-bottom:12px}
+.shell .roadmap>.section-heading>.workspace-tabs,.shell .methodology-plan>.section-heading>.workspace-tabs{margin:0;padding:0;flex:1}

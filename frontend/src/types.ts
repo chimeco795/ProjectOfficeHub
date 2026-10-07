@@ -1,4 +1,5 @@
 export type Project = {
+  attention?: { overdue: number; risks: number; blocked: number; late: boolean; deviation?: boolean };
   id: string;
   name: string;
   description: string;
@@ -22,7 +23,7 @@ export type Cut = {
   status: "borrador" | "publicado";
   version: number;
   metadata: Record<string, unknown>;
-  project_snapshot: Partial<Project>;
+  project_snapshot: Partial<Project> & {pmo?:import('./modules/executive/PmoEvidence').PmoEvidenceData};
   published_at: string | null;
   updated_at: string;
   record_count?: number;

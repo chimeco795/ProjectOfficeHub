@@ -11,3 +11,6 @@
 
 .audit-values dd { margin:6px 0 16px; overflow-wrap:anywhere; }
 .audit-values dt { font-weight:600; color:#475467; }
+.pmo-evidence { background: #f2f7fa; border-radius: 7px; padding: 12px; margin: 12px 0; font-size: 12px; }
+.pmo-evidence-facts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 6px 0; }
+.pmo-evidence.compact { font-size: 11px; padding: 5px 10px; margin: 0 0 6px; }

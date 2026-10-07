@@ -4,7 +4,7 @@ import { Dialog } from "../../Dialog";
 import type { Person } from "../master/ItemEditor";
 import type { Work, Period } from "./Planning";
 import { states, types, allowedTypes } from "./workPresentation";
-import { SearchPicker } from "../../components/SearchPicker";
+import { SearchPicker, personChoices } from "../../components/SearchPicker";
 export function WorkEditor({
   projectId,
   methodology,
@@ -136,7 +136,7 @@ export function WorkEditor({
             <SearchPicker
               label="Responsable"
               value={v.owner_id || ""}
-              options={people.map((p) => ({ value: p.id, label: p.name }))}
+              options={personChoices(people)}
               onChange={(value) => set("owner_id", String(value) || null)}
             />
             {select("status", "Estado", {

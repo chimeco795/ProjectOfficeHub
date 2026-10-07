@@ -1,4 +1,5 @@
 import { DocumentWorkspace } from "./DocumentWorkspace";
+import { SearchPicker, personChoices, type Choice } from "../../components/SearchPicker";
 import { ContextField } from "../../components/ContextField";
 import { AgendaWorkspace } from "./AgendaWorkspace";
 import { DocumentIcon, fileKind } from "./DocumentIcon";
@@ -10,7 +11,7 @@ import { api, json } from "../../api";
 import { Dialog } from "../../Dialog";
 import "../planning/planning.css";
 type Value = Record<string, any>;
-type Option = { value: string; label: string };
+type Option = Choice;
 type Field = {
   key: string;
   label: string;
@@ -54,6 +55,8 @@ export function RecordEditor({
         className="pmo-editor"
         onSubmit={async (e) => {
           e.preventDefault();
+          const missing=fields.find(f=>f.required && !v[f.key] && ['person_id','owner_id','lead_id'].includes(f.key));
+          if(missing){setError('Selecciona '+missing.label);return;}
           setBusy(true);
           setError("");
           try {
@@ -67,7 +70,7 @@ export function RecordEditor({
         }}
       >
         <fieldset disabled={busy}>
-          {fields.map((f) => (
+          {fields.map((f) => f.options && ['person_id','owner_id','lead_id'].includes(f.key) ? <SearchPicker key={f.key} label={f.label} value={v[f.key]||''} options={f.options} onChange={value=>set(f.key,value||(f.nullable?null:''))}/> : (
             <label key={f.key}>
               {f.label}
               {f.type === "checkbox" ? (
@@ -194,7 +197,7 @@ function OperationsContent({
   useEffect(() => {
     void reload().catch((e) => setError(e.message));
   }, [base, view]);
-  const personOptions = people.map((p) => ({ value: p.id, label: p.name })),
+  const personOptions = personChoices(people.map(p=>({id:p.id,name:p.name,email:p.email}))),
     itemOptions = items.map((i) => ({
       value: i.id,
       label: `${i.code} · ${i.name}`,
@@ -471,49 +474,7 @@ function OperationsContent({
               Crear persona
             </button>
           </div>
-          <label>
-            Buscar persona
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </label>
-          <div className="team-grid">
-            {allPeople
-              .filter(
-                (p) =>
-                  !people.some((x) => x.id === p.id) &&
-                  `${p.name} ${p.email}`
-                    .toLowerCase()
-                    .includes(query.toLowerCase()),
-              )
-              .map((p) => (
-                <article className="person-card" key={p.id}>
-                  <span className="person-avatar">
-                    {p.name.slice(0, 2).toUpperCase()}
-                  </span>
-                  <h3>{p.name}</h3>
-                  <p>{p.role || "Rol sin definir"}</p>
-                  <small>{p.email}</small>
-                  <button
-                    disabled={busy}
-                    onClick={() =>
-                      void run(async () => {
-                        await api(base + "/people", {
-                          method: "POST",
-                          ...json({ person_id: p.id }),
-                        });
-                        setTeamView("project");
-                        setQuery("");
-                      })
-                    }
-                  >
-                    Añadir al proyecto
-                  </button>
-                </article>
-              ))}
-          </div>
+          <SearchPicker label="Buscar persona del catálogo" value="" disabled={busy} options={personChoices(allPeople.filter(p=>!people.some(x=>x.id===p.id)).map(p=>({id:p.id,name:p.name,email:p.email})))} onChange={value=>{if(value) void run(async()=>{await api(base+'/people',{method:'POST',...json({person_id:String(value)})});setTeamView('project');setQuery('');});}}/>
           {!allPeople.some((p) => !people.some((x) => x.id === p.id)) && (
             <p>No hay más personas disponibles en el catálogo.</p>
           )}

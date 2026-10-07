@@ -1,3 +1,4 @@
+import { SearchPicker, personChoices } from "../../components/SearchPicker";
 import { useState } from "react";
 import { Dialog } from "../../Dialog";
 
@@ -28,7 +29,7 @@ export function ItemEditor({ initial, people, items, title, onClose, onSave }: {
     <label>Detalle<textarea value={value.description} onChange={e=>set("description",e.target.value)} /></label>
     <div className="form-grid">
       <label>Estado<input required value={value.status} onChange={e=>set("status",e.target.value)} /></label>
-      <label>Responsable<select value={value.owner_id||""} onChange={e=>set("owner_id",e.target.value||null)}><option value="">Sin asignar</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}{p.email ? ` · ${p.email}` : ""}</option>)}</select></label>
+      <SearchPicker label="Responsable" value={value.owner_id||""} options={personChoices(people)} onChange={v=>set("owner_id",String(v)||null)}/>
       <label>Inicio<input type="date" value={value.start_date||""} onChange={e=>set("start_date",e.target.value||null)} /></label>
       <label>Compromiso / fecha del hito<input type="date" value={value.target_date||""} onChange={e=>set("target_date",e.target.value||null)} /></label>
       <label>Probabilidad<input value={value.probability} onChange={e=>set("probability",e.target.value)} /></label>

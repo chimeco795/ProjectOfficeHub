@@ -1,3 +1,4 @@
+import { planningViews, roadmapLabel } from "../planning/methodology";
 import {
   LayoutDashboard,
   KanbanSquare,
@@ -58,7 +59,9 @@ export const groups = [
 export function WorkspaceNav({
   view,
   onNavigate,
+  methodology = "Hybrid",
 }: {
+  methodology?: string;
   view: string;
   onNavigate: (view: string) => void;
 }) {
@@ -71,7 +74,13 @@ export function WorkspaceNav({
             key={g.label}
             className={"nav " + (selected ? "active" : "")}
             aria-current={selected ? "page" : undefined}
-            onClick={() => onNavigate(g.views[0][0])}
+            onClick={() =>
+              onNavigate(
+                g.label === "Planificación" && methodology === "Waterfall"
+                  ? "gantt"
+                  : g.views[0][0],
+              )
+            }
           >
             <g.icon size={18} />
             {g.label}
@@ -82,21 +91,34 @@ export function WorkspaceNav({
   );
 }
 export function WorkspaceTabs({
+  methodology = "Hybrid",
   view,
   onNavigate,
 }: {
   view: string;
   onNavigate: (view: string) => void;
+  methodology?: string;
 }) {
   const group = groups.find((g) => g.views.some(([id]) => id === view));
   if (!group || group.views.length < 2) return null;
   return (
     <nav className="workspace-tabs" aria-label={group.label}>
-      {group.views.map(([id, label]) => (
+      {(group.label === "Planificación"
+        ? planningViews(methodology)
+        : group.views
+      ).map(([id, label]) => (
         <button
           key={id}
-          aria-current={id === view ? "page" : undefined}
-          className={id === view ? "selected" : ""}
+          aria-current={
+            id === view || (id === "board" && view === "backlog")
+              ? "page"
+              : undefined
+          }
+          className={
+            id === view || (id === "board" && view === "backlog")
+              ? "selected"
+              : ""
+          }
           onClick={() => onNavigate(id)}
         >
           {label}
@@ -105,6 +127,8 @@ export function WorkspaceTabs({
     </nav>
   );
 }
-export const viewLabel = (view: string) =>
-  groups.flatMap((g) => g.views).find(([id]) => id === view)?.[1] ||
-  "Portafolio";
+export const viewLabel = (view: string, methodology = "Hybrid") =>
+  view === "roadmap"
+    ? roadmapLabel(methodology)
+    : groups.flatMap((g) => g.views).find(([id]) => id === view)?.[1] ||
+      "Portafolio";

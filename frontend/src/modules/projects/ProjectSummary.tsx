@@ -1,4 +1,6 @@
-import {stateClass} from "../planning/workPresentation";
+import { Dashboard } from "./Dashboard";
+import { ContextField } from "../../components/ContextField";
+import { stateClass } from "../planning/workPresentation";
 import { dateKey } from "../operations/calendarModel";
 import { useEffect, useState } from "react";
 import {
@@ -22,7 +24,9 @@ export function ProjectSummary({
   onExecutive,
   onEdit,
   onNavigate,
+  onSave,
 }: {
+  onSave: (project: Project) => Promise<void>;
   project: Project;
   cuts: Cut[];
   onExecutive: () => void;
@@ -69,7 +73,7 @@ export function ProjectSummary({
           {error}
         </p>
       )}
-      <div className="overview-metrics" aria-busy={loading}>
+      <Dashboard projectId={project.id}>
         {[
           {
             label: "Trabajos activos",
@@ -117,8 +121,6 @@ export function ProjectSummary({
             <ArrowUpRight className="metric-arrow" size={16} />
           </button>
         ))}
-      </div>
-      <div className="overview-columns">
         <section className="panel">
           <div className="section-heading">
             <div>
@@ -169,7 +171,7 @@ export function ProjectSummary({
                     </small>
                     <strong>{i.name}</strong>
                   </span>
-                  <span className={"field-chip "+stateClass(i.status)}>
+                  <span className={"field-chip " + stateClass(i.status)}>
                     {i.target_date! < today
                       ? "Vencido"
                       : (
@@ -223,8 +225,6 @@ export function ProjectSummary({
             Abrir cortes <ArrowUpRight size={16} />
           </button>
         </section>
-      </div>
-      <div className="overview-columns">
         <section className="panel">
           <div className="section-heading">
             <div>
@@ -238,18 +238,35 @@ export function ProjectSummary({
               "Añade el objetivo para que el equipo tenga claro el resultado esperado."}
           </p>
           <dl className="project-facts">
-            {[
-              ["Metodología", project.methodology],
-              ["Prioridad", project.priority],
-              ["Estado", project.status],
-              ["Inicio", project.start_date],
-              ["Fecha objetivo", project.target_date],
-              ["Go Live", project.go_live],
-              ["Cierre", project.close_date],
-            ].map(([label, value]) => (
-              <div key={label}>
+            {(
+              [
+                [
+                  "methodology",
+                  "Metodología",
+                  ["Agile", "Waterfall", "Hybrid"],
+                ],
+                ["priority", "Prioridad", ["Baja", "Media", "Alta", "Crítica"]],
+                ["status", "Estado", ["Activo", "En pausa", "Cerrado"]],
+                ["start_date", "Inicio"],
+                ["target_date", "Fecha objetivo"],
+                ["go_live", "Go Live"],
+                ["close_date", "Cierre"],
+              ] as [keyof Project, string, string[]?][]
+            ).map(([key, label, choices]) => (
+              <div key={key}>
                 <dt>{label}</dt>
-                <dd>{value || "Sin definir"}</dd>
+                <dd>
+                  <ContextField
+                    showLabel={false}
+                    label={label}
+                    value={project[key] || ""}
+                    options={choices?.map((value) => ({ value, label: value }))}
+                    type={choices ? "text" : "date"}
+                    onSave={(value) =>
+                      onSave({ ...project, [key]: value || null })
+                    }
+                  />
+                </dd>
               </div>
             ))}
           </dl>
@@ -278,7 +295,7 @@ export function ProjectSummary({
             ))}
           </div>
         </section>
-      </div>
+      </Dashboard>
     </div>
   );
 }

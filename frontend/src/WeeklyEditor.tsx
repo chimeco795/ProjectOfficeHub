@@ -1,4 +1,5 @@
 import { ProjectFields } from "./modules/projects/ProjectFields";
+import { PmoEvidence } from "./modules/executive/PmoEvidence";
 import { pmpLabels } from "./ExecutiveReport";
 import { useEffect, useState } from "react";
 import { api, json } from "./api";
@@ -77,6 +78,7 @@ export function WeeklyEditor({
           {notice}
         </p>
       )}
+      <PmoEvidence value={detail.cut.project_snapshot.pmo}/>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -254,7 +256,7 @@ export function WeeklyEditor({
             </div>
           </div>
           <label>
-            Resumen ejecutivo
+            Resumen ejecutivo · MANUAL
             <textarea
               rows={6}
               value={String(value.executive_comment ?? "")}

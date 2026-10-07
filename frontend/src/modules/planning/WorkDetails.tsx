@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Dialog } from "../../Dialog";
 import { ContextField } from "../../components/ContextField";
+import { personChoices } from "../../components/SearchPicker";
+import { iterationLabel } from "./workPresentation";
 import { WorkComments } from "./WorkComments";
 import { states, types, allowedTypes, stateClass } from "./workPresentation";
 import type { Work, Period } from "./Planning";
@@ -49,11 +51,13 @@ export function WorkDetails({
       label={label}
       value={work[key]}
       options={
-        options
+        key === 'owner_id' ? personChoices(people) : options
           ? Object.entries(options).map(([value, label]) => ({ value, label }))
           : undefined
       }
       type={type}
+      showLabel={key !== 'name'}
+      confirm={key === 'archived'}
       search={search}
       required={["name", "code"].includes(key)}
       min={type === "number" ? 0 : undefined}
@@ -96,17 +100,16 @@ export function WorkDetails({
       }}
     >
       <div className="work-detail-heading">
-        <span className="eyebrow">{work.code}</span>
-        <h3>{work.name}</h3>
+        <span className="eyebrow">{work.code} · {types[work.work_type] || work.work_type}</span>
+        <h3>{field("name", "Nombre")}</h3>
         <span className={"field-chip " + stateClass(work.status)}>
           {states[work.status] || work.status}
         </span>
       </div>
       {editing && (
-        <p role="status">Guarda o cancela el campo activo para continuar.</p>
+        <p role="status">Enter o salir del campo guarda · Escape cancela.</p>
       )}
       <div className="detail-grid">
-        {field("name", "Nombre")}
         {field("status", "Estado", {
           ...states,
           ...(!states[work.status] ? { [work.status]: work.status } : {}),
@@ -129,14 +132,15 @@ export function WorkDetails({
           ),
         )}
         {field("target_date", "Fecha compromiso", undefined, "date")}
+        {field("start_date", "Inicio", undefined, "date")}
+        {field("progress", "Avance (%)", undefined, "number")}
+        {field("iteration_id", iterationLabel(methodology), Object.fromEntries([["", "Sin asignar"], ...periods.filter(p=>p.kind==='Iteration').map(p=>[p.id,p.name])]),"text",true)}
       </div>
       <div className="work-sections">
         <details>
           <summary>Planificación</summary>
           <div className="detail-grid">
             {field("code", "Código")}
-            {field("start_date", "Inicio", undefined, "date")}
-            {field("progress", "Avance (%)", undefined, "number")}
             {field(
               "parent_id",
               "Padre",
@@ -153,10 +157,10 @@ export function WorkDetails({
               "text",
               true,
             )}
-            {(["Iteration", "Release"] as const).map((kind) =>
+            {(["Release"] as const).map((kind) =>
               field(
-                kind === "Iteration" ? "iteration_id" : "release_id",
-                kind === "Iteration" ? "Iteración" : "Release",
+                "release_id",
+                "Release",
                 Object.fromEntries([
                   ["", "Sin asignar"],
                   ...periods

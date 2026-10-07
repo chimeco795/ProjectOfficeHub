@@ -52,6 +52,25 @@ def test_project_routes_reject_foreign_cut(client):
     assert client.get('/api/projects/missing').status_code == 404
 
 
+def test_portfolio_attention_uses_current_evidence_and_project_scope(client):
+    a = client.post('/api/projects', json={'name': 'Atención', 'target_date': '2000-01-01'}).json()
+    b = client.post('/api/projects', json={'name': 'Otro'}).json()
+    base = '/api/projects/' + a['id']
+    for code, kind, status, priority, archived in [('R', 'Risk', 'New', 'Alta', False), ('T', 'Activity', 'Blocked', 'Media', False), ('C', 'Activity', 'Closed', 'Alta', False), ('A', 'Risk', 'New', 'Crítica', True)]:
+        response = client.post(base + '/items', json={'code': code, 'name': code, 'kind': kind, 'status': status, 'executive_priority': priority, 'target_date': '2000-01-01', 'archived': archived})
+        assert response.status_code == 201, response.text
+    cut = client.post(base + '/cuts', json={'report_date': '2026-10-07'}).json()
+    with db.connection() as conn:
+        conn.execute('UPDATE cuts SET metadata=? WHERE id=?', (json.dumps({'actual': 20, 'planned': 40}), cut['id']))
+    result = {p['id']: p for p in client.get('/api/projects').json()}
+    assert result[a['id']]['attention'] == {'overdue': 2, 'risks': 1, 'blocked': 1, 'late': True, 'deviation': True}
+    assert result[b['id']]['attention'] == {'overdue': 0, 'risks': 0, 'blocked': 0, 'late': False}
+    saved = client.put(base, json={**a, 'close_date': '2099-01-01'}).json()
+    assert next(p for p in client.get('/api/projects').json() if p['id'] == a['id'])['attention']['late']
+    assert client.put(base, json={**saved, 'status': 'Cerrado'}).status_code == 200
+    assert not next(p for p in client.get('/api/projects').json() if p['id'] == a['id'])['attention']['late']
+
+
 @pytest.mark.parametrize('fields', [
     {'name': '  '}, {'methodology': 'Unknown'}, {'priority': 'Invalid'},
     {'status': 'Invalid'}, {'start_date': '2026-10-02', 'target_date': '2026-10-01'},
@@ -85,7 +104,7 @@ def test_v2_migration_preserves_published_data(tmp_path, monkeypatch):
         cut = connection.execute('SELECT * FROM cuts').fetchone()
         assert cut['status'] == 'publicado'
         assert json.loads(cut['project_snapshot']) == {'name': 'Nombre histórico'}
-        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 8
+        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 9
     backups = list(tmp_path.glob('backup-v2-*.sqlite3'))
     assert len(backups) == 1
     with sqlite3.connect(backups[0]) as connection:

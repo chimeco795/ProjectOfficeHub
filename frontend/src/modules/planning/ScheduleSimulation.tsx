@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, json } from "../../api";
 import { dateKey } from "../operations/calendarModel";
-type Proposal = {
+export type Proposal = {
   fingerprint: string;
   errors: string[];
   finish: string | null;
@@ -25,10 +25,12 @@ export function ScheduleSimulation({
   projectId,
   revision,
   onApplied,
+  onPreview,
 }: {
   projectId: string;
   revision: string;
   onApplied: () => Promise<void>;
+  onPreview: (proposal: Proposal | null) => void;
 }) {
   const [anchor, setAnchor] = useState(dateKey(new Date())),
     [proposal, setProposal] = useState<Proposal | null>(null),
@@ -38,6 +40,7 @@ export function ScheduleSimulation({
   useEffect(() => {
     setProposal(null);
   }, [revision, projectId]);
+  useEffect(() => { onPreview(proposal); }, [proposal, onPreview]);
   async function preview() {
     setBusy(true);
     setError("");
@@ -129,14 +132,14 @@ export function ScheduleSimulation({
         <>
           <div className="pmo-metrics">
             <span>
-              Final simulado<strong>{proposal.finish || "Sin trabajos"}</strong>
+              Final simulado<strong>{proposal.errors.length ? "No calculable" : proposal.finish || "Sin trabajos"}</strong>
             </span>
             <span>
-              Trabajos con cambios<strong>{proposal.changes}</strong>
+              Trabajos con cambios<strong>{proposal.errors.length ? "—" : proposal.changes}</strong>
             </span>
             <span>
               Trabajos sin holgura
-              <strong>{proposal.rows.filter((r) => r.critical).length}</strong>
+              <strong>{proposal.errors.length ? "—" : proposal.rows.filter((r) => r.critical).length}</strong>
             </span>
           </div>
           {!!proposal.errors.length && (

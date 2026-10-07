@@ -1,13 +1,14 @@
 # Estado actual y pendientes
 
-Actualizado: 2026-10-07 · versión 0.11.0 · esquema SQLite 8.
+Actualizado: 2026-10-07 · versión 0.13.0 · esquema SQLite 9.
 
 | Área | Disponible | Pendiente o límite |
 |---|---|---|
-| Proyectos y portafolio | Ficha única, filtros, resumen operativo | Sin datos reales antiguos importados |
+| Proyectos y portafolio | Ficha única, indicadores objetivos y wizard de dos pasos | Sin datos reales antiguos importados |
+| Vista general | Ocho widgets, lectura/diseño, arrastre/resize, ocultar/agregar/restaurar, preferencias por persona/proyecto | LocalStorage del navegador; widgets adicionales legacy pendientes |
 | Seguimiento ejecutivo | Importación/revisión, conciliación, cortes y snapshots publicados | Mantener publicaciones históricas independientes |
-| Planificación | Alta rápida y edición progresiva, chips inline, Board operativo, Gantt jerárquico, simulación y aplicación atómica | Días naturales; sin festivos, capacidad ni avance restante en el cálculo |
-| Roadmap | Iteraciones/releases, asignación por arrastre y selector | El arrastre asigna periodos, no mueve sus fechas |
+| Planificación | Tablero/Lista comparten contexto, filtros ocultos, columnas configurables/colapsables, inline, Gantt con cuatro zooms y simulación atómica | Orden manual/drag de barras pendientes; días naturales sin festivos/capacidad |
+| Roadmap | Agile sprints/releases, Waterfall fases/entregables/hitos, Hybrid periodos + entregables, catálogo compartido | Arrastre de periodos asigna trabajo, no mueve fechas; no convierte periodos heredados en fases |
 | Personas y equipos | Personas compartidas, organigrama, equipos, roles y vigencias | La estructura se configura explícitamente |
 | Capacidad | Asignaciones por fechas y entre proyectos, alertas sobre 100% | No redistribuye tareas automáticamente |
 | Comentarios | Notas por trabajo, fecha y auditoría, reintentos sin duplicados | Comentarios legacy todavía solo en original importado |
@@ -16,10 +17,10 @@ Actualizado: 2026-10-07 · versión 0.11.0 · esquema SQLite 8.
 | Documentos | Biblioteca agrupada por contenido, originales del proyecto y fuentes ejecutivas, iconos y asociaciones | Formato de adjuntos legacy por verificar |
 | Migración | Preview, mapa de proyectos, aplicación atómica e identidades | Exportación real pendiente; no retirar datos anteriores |
 
-Los números de fase describen incrementos entregados, no un compromiso de cierre total de paridad. Ver VERIFICATION_PHASE5 a VERIFICATION_PHASE11 para alcance y pruebas. La migración real necesita el archivo del usuario; no sustituirlo por los ZIP de código.
+Los números de fase describen incrementos entregados, no un compromiso de cierre total de paridad. Ver VERIFICATION_PHASE5 a VERIFICATION_PHASE13 para alcance y pruebas. La migración real necesita el archivo del usuario; no sustituirlo por los ZIP de código.
 
-Dashboard personalizable pendiente: widgets arrastrables y redimensionables de avance, riesgos, bloqueos, ruta crítica, equipo, presupuesto, hitos y próximo corte ejecutivo. Registrado expresamente por el usuario; no implementado en 0.11.0.
+Dashboard personalizable entregado para los ocho widgets actuales. Widgets adicionales de avance ponderado, riesgos, ruta crítica, equipo, presupuesto e hitos del PMO anterior continúan registrados para posteriores incrementos.
 
-Fase vigente: 11. Ficha de lectura/edición contextual; rol/dedicación inline; usuario local; agenda con duración, relaciones, notas/documentos y movimiento confirmado/deshacer; documentos con descripción/autor; reporte dentro del workspace y PDF/PNG. 72 pruebas backend y 17 frontend correctas. Ver VERIFICATION_PHASE11.md para comprobaciones visuales pendientes.
+Fase vigente: 13. Dashboard configurable, wizard, planificación adaptativa y zoom del Gantt; conserva edición inline, personas predictivas, dependencias/simulación y captura PMO para el corte. 76 pruebas backend, 25 frontend y TypeScript/Vite correctos; ocho pantallas desktop y PDF/PNG reales revisados. Ver VERIFICATION_PHASE13.md, VERIFICATION_PHASE12.md y EXECUTIVE_SOURCE_MAP.md para reglas y límites.
 
-Dashboard: debe permitir además reordenar, ocultar y configurar tamaño; incluir estado general y próximos hitos. Drag/resize del Gantt pendiente.
+Drag/resize de barras y orden manual del Gantt pendientes. Móvil completo, agenda semanal por arrastre y estrés con cientos de conexiones no se certificaron en este incremento.

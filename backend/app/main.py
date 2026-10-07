@@ -22,7 +22,7 @@ async def lifespan(app):
     initialize()
     yield
 
-app=FastAPI(title='Project Office Hub',version='0.11.0',lifespan=lifespan)
+app=FastAPI(title='Project Office Hub',version='0.13.0',lifespan=lifespan)
 from .api.projects import router as projects_router
 app.include_router(projects_router)
 from .api.master import router as master_router
@@ -76,7 +76,7 @@ def editable(db,cut_id):
     return row
 
 @app.get('/api/health')
-def health():return {'status':'ok','version':'0.11.0','product':'Project Office Hub'}
+def health():return {'status':'ok','version':'0.13.0','product':'Project Office Hub'}
 
 @app.get('/api/schema')
 def schema():return {'sections':SECTIONS,'aliases':ALIASES}
@@ -114,7 +114,13 @@ def create_cut(project_id:str,value:Cut):
                 db.execute('INSERT INTO records(id,cut_id,source_id,section,location,original,current,generated,review,modified,parent_record_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)',(uid(),id,source_ids.get(row['source_id']),row['section'],row['location'],row['original'],row['current'],row['generated'],'pendiente',row['modified'],row['id']))
             db.execute('INSERT INTO cut_audit(cut_id,changed_at,event,previous,next) VALUES(?,?,?,?,?)',(id,now(),'copiar',encode({'copy_from':value.copy_from}),'{}'))
         if value.copy_from:master_service.copy_bindings(db,id)
-        if value.from_master:master_service.from_master(db,project_id,id)
+        if value.from_master:
+            from .services.executive import capture
+            pmo=capture(db,project_id,value.report_date)
+            project['pmo']=pmo
+            metadata={'actual':pmo['progress']['proposed']} if pmo['progress']['proposed'] is not None else {}
+            db.execute('UPDATE cuts SET project_snapshot=?,metadata=? WHERE id=?',(encode(project),encode(metadata),id))
+            master_service.from_master(db,project_id,id,[e['related_id'] for e in pmo['meeting_proposals']])
         db.execute('UPDATE cuts SET updated_at=? WHERE id=?',(now(),id))
         db.execute('INSERT INTO cut_audit(cut_id,changed_at,event,previous,next) VALUES(?,?,?,?,?)',(id,now(),'crear','{}',encode(value.model_dump(mode='json'))))
         return dict(require(db,'cuts',id))
@@ -288,6 +294,8 @@ def publish_cut(cut_id:str,value:Version):
         if pending:raise HTTPException(422,f'Revisa los {pending} registros pendientes o dudosos antes de publicar.')
         master_service.freeze(db,cut_id)
         snapshot=dict(require(db,'projects',old['project_id']))
+        captured=json.loads(old['project_snapshot']).get('pmo')
+        if captured is not None:snapshot=json.loads(old['project_snapshot'])
         from .migrations import history_points
         points=[p for p in history_points(db,cut_id) if p['status']=='publicado' or p['id']==cut_id]
         for point in points:

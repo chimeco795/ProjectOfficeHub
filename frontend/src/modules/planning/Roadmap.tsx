@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { ContextField } from "../../components/ContextField";
+import { iterationLabel } from "./workPresentation";
+import { useState, type ReactNode } from "react";
 import type { Work, Period } from "./Planning";
 export function Roadmap({
+  methodology,
+  deliverables,
   items,
   periods,
   archived,
@@ -9,6 +13,8 @@ export function Roadmap({
   onPeriod,
   onAssign,
 }: {
+  methodology: string;
+  deliverables?: ReactNode;
   items: Work[];
   periods: Period[];
   archived: boolean;
@@ -21,8 +27,15 @@ export function Roadmap({
     id: string | null,
   ) => Promise<void>;
 }) {
+  const [showDeliverables, setShowDeliverables] = useState(false);
   const [kind, setKind] = useState<"Iteration" | "Release">("Iteration"),
     [dragging, setDragging] = useState("");
+  const label =
+    kind === "Iteration"
+      ? iterationLabel(methodology)
+      : methodology === "Hybrid"
+        ? "Entrega"
+        : "Release";
   const key = kind === "Iteration" ? "iteration_id" : "release_id";
   const columns = periods.filter(
     (p) => p.kind === kind && !!p.archived === archived,
@@ -59,26 +72,21 @@ export function Roadmap({
             {item.owner_name || "Sin responsable"} ·{" "}
             {item.progress == null ? "Avance sin definir" : `${item.progress}%`}
           </p>
-          <label>
-            {kind === "Iteration" ? "Iteración" : "Release"} de {item.code}
-            <select
-              disabled={busy || archived}
-              value={item[key] || ""}
-              onChange={(e) => void onAssign(item, key, e.target.value || null)}
-            >
-              <option value="">Sin asignar</option>
-              {periods
+          <ContextField
+            label={label + " de " + item.code}
+            value={item[key] || ""}
+            search
+            disabled={busy || archived}
+            options={[
+              { value: "", label: "Sin asignar" },
+              ...periods
                 .filter(
                   (p) => p.kind === kind && (!p.archived || p.id === item[key]),
                 )
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                    {p.archived ? " (archivado)" : ""}
-                  </option>
-                ))}
-            </select>
-          </label>
+                .map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            onSave={async (value) => onAssign(item, key, value || null)}
+          />
         </article>
       ));
   }
@@ -86,7 +94,7 @@ export function Roadmap({
     const item = items.find((i) => i.id === dragging);
     setDragging("");
     if (item && !busy && !archived && item[key] !== id)
-      void onAssign(item, key, id);
+      void onAssign(item, key, id).catch(() => {});
   }
   const inactive = items.filter(
     (i) => i[key] && !columns.some((p) => p.id === i[key]),
@@ -96,84 +104,108 @@ export function Roadmap({
       <div className="section-heading">
         <div className="workspace-tabs">
           <button
-            className={kind === "Iteration" ? "selected" : ""}
-            onClick={() => setKind("Iteration")}
+            className={
+              !showDeliverables && kind === "Iteration" ? "selected" : ""
+            }
+            onClick={() => {
+              setShowDeliverables(false);
+              setKind("Iteration");
+            }}
           >
-            Iteraciones
+            {iterationLabel(methodology)}
           </button>
           <button
-            className={kind === "Release" ? "selected" : ""}
-            onClick={() => setKind("Release")}
+            className={
+              !showDeliverables && kind === "Release" ? "selected" : ""
+            }
+            onClick={() => {
+              setShowDeliverables(false);
+              setKind("Release");
+            }}
           >
-            Releases
+            {methodology === "Hybrid" ? "Entregas" : "Releases"}
           </button>
+          {deliverables && (
+            <button
+              className={showDeliverables ? "selected" : ""}
+              onClick={() => setShowDeliverables(true)}
+            >
+              Entregables e hitos
+            </button>
+          )}
         </div>
-        <button onClick={() => onPeriod(blank)}>
-          Crear {kind === "Iteration" ? "iteración" : "release"}
-        </button>
+        {!showDeliverables && (
+          <button onClick={() => onPeriod(blank)}>Crear {label}</button>
+        )}
       </div>
-      <p className="board-hint">
-        Arrastra un trabajo al periodo o utiliza su selector. Cambia únicamente
-        esta asignación; conserva fechas, dependencias y el otro tipo de
-        periodo.
-      </p>
-      <div className="roadmap-lanes">
-        <section
-          onDragOver={(e) => {
-            if (!busy && !archived) e.preventDefault();
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            drop(null);
-          }}
-        >
-          <h3>Sin {kind === "Iteration" ? "iteración" : "release"}</h3>
-          {cards(null)}
-          <div className="drop-placeholder">Trabajos por asignar</div>
-        </section>
-        {columns.map((period) => (
-          <section
-            key={period.id}
-            onDragOver={(e) => {
-              if (!busy && !archived) e.preventDefault();
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              drop(period.id);
-            }}
-          >
-            <div className="section-heading">
-              <h3>{period.name}</h3>
-              <button disabled={busy} onClick={() => onPeriod(period)}>
-                Editar
-              </button>
-            </div>
-            <p>
-              {period.start_date || "Sin inicio"} →{" "}
-              {period.end_date || "Sin fin"}
-            </p>
-            <small>
-              {period.status} ·{" "}
-              {items.filter((i) => i[key] === period.id).length} trabajos en
-              esta selección
-            </small>
-            {cards(period.id)}
-            <div className="drop-placeholder">Asignar a {period.name}</div>
-          </section>
-        ))}
-      </div>
-      {!!inactive.length && (
-        <details>
-          <summary>
-            Trabajos vinculados a periodos fuera de esta vista (
-            {inactive.length})
-          </summary>
-          {inactive.map((item) => (
-            <div key={item.id}>
-              {cards(item[key])?.find((card) => card.key === item.id)}
-            </div>
-          ))}
-        </details>
+      {showDeliverables ? (
+        deliverables
+      ) : (
+        <>
+          <p className="board-hint">
+            Arrastra un trabajo al periodo o utiliza su selector. Cambia
+            únicamente esta asignación; conserva fechas, dependencias y el otro
+            tipo de periodo.
+          </p>
+          <div className="roadmap-lanes">
+            <section
+              onDragOver={(e) => {
+                if (!busy && !archived) e.preventDefault();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                drop(null);
+              }}
+            >
+              <h3>Sin {label}</h3>
+              {cards(null)}
+              <div className="drop-placeholder">Trabajos por asignar</div>
+            </section>
+            {columns.map((period) => (
+              <section
+                key={period.id}
+                onDragOver={(e) => {
+                  if (!busy && !archived) e.preventDefault();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  drop(period.id);
+                }}
+              >
+                <div className="section-heading">
+                  <h3>{period.name}</h3>
+                  <button disabled={busy} onClick={() => onPeriod(period)}>
+                    Editar
+                  </button>
+                </div>
+                <p>
+                  {period.start_date || "Sin inicio"} →{" "}
+                  {period.end_date || "Sin fin"}
+                </p>
+                <small>
+                  {period.status} ·{" "}
+                  {items.filter((i) => i[key] === period.id).length} trabajos en
+                  esta selección
+                </small>
+                {cards(period.id)}
+                <div className="drop-placeholder">Asignar a {period.name}</div>
+              </section>
+            ))}
+          </div>
+          {!!inactive.length && (
+            <details>
+              <summary>
+                Trabajos vinculados a periodos fuera de esta vista (
+                {inactive.length})
+              </summary>
+              {inactive.map((item) => (
+                <div key={item.id}>
+                  {cards(item[key])?.find((card) => card.key === item.id)}
+                </div>
+              ))}
+            </details>
+          )}
+        </>
       )}
     </section>
   );
