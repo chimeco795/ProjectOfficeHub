@@ -8,9 +8,9 @@ const {timelineTicks}=await model('../src/modules/planning/timelineModel.ts');
 const {roadmapLabel,planningViews}=await model('../src/modules/planning/methodology.ts');
 test('moving and resizing widgets preserves all widgets and prevents overlap',()=>{
  const before=defaultLayout();const after=arrange(before,{...before[0],x:7,y:2,w:8,h:6});
- assert.equal(after.length,8);assert.deepEqual(before,defaultLayout());assert.equal(after[0].x,4);
+ assert.equal(after.length,8);assert.deepEqual(before,defaultLayout());assert.equal(after[0].x,6);
  for(let i=0;i<after.length;i++)for(let j=i+1;j<after.length;j++)assert.equal(overlaps(after[i],after[j]),false);
- const reduced=arrange(after,{...after[4],x:-10,w:1,h:1,y:-2});assert.equal(reduced[4].w,4);assert.equal(reduced[4].h,4);assert.equal(reduced[4].x,0);
+ const reduced=arrange(after,{...after[4],x:-10,w:1,h:1,y:-2});assert.equal(reduced[4].w,4);assert.equal(reduced[4].h,5);assert.equal(reduced[4].x,0);
 });
 test('restore repairs invalid layouts, hidden widgets and collisions',()=>{
  assert.deepEqual(restoreLayout(null),defaultLayout());
@@ -26,6 +26,6 @@ test('calendar zoom aligns month and quarter boundaries across years',()=>{
  assert.equal(timelineTicks(Date.parse('2026-10-07'),Date.parse('2026-10-14'),'week')[0],'2026-10-12');
 });
 test('methodology has distinct planning priorities and exact roadmap labels',()=>{
- assert.equal(roadmapLabel('Agile'),'Sprints y releases');assert.equal(roadmapLabel('Hybrid'),'Iteraciones y entregas');assert.equal(roadmapLabel('Waterfall'),'Fases y entregables');
+ assert.equal(roadmapLabel('Agile'),'Sprints');assert.equal(roadmapLabel('Hybrid'),'Iteraciones y entregas');assert.equal(roadmapLabel('Waterfall'),'Fases y entregables');
  assert.equal(planningViews('Waterfall')[0][0],'gantt');assert.equal(planningViews('Agile')[0][0],'board');assert.ok(!planningViews('Waterfall').flat().join(' ').includes('Sprint'));
 });

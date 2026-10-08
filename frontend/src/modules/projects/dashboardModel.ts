@@ -22,7 +22,7 @@ export const defaultLayout = (): WidgetLayout[] =>
     x: i < 4 ? i * 3 : i % 2 ? 8 : 0,
     y: i < 4 ? 0 : i < 6 ? 2 : 7,
     w: i < 4 ? 3 : i % 2 ? 4 : 8,
-    h: i < 4 ? 2 : 5,
+    h: i < 4 ? 2 : i === 6 ? 6 : 5,
     visible: true,
   }));
 export const overlaps = (a: WidgetLayout, b: WidgetLayout) =>
@@ -32,15 +32,21 @@ export const overlaps = (a: WidgetLayout, b: WidgetLayout) =>
   b.x < a.x + a.w &&
   a.y < b.y + b.h &&
   b.y < a.y + a.h;
+export function widgetBounds(id: string) {
+  if (widgetIds.indexOf(id) < 4) return { minW: 2, maxW: 6, minH: 2, maxH: 4 };
+  if (id === 'attention') return { minW: 4, maxW: 12, minH: 5, maxH: 10 };
+  if (id === 'objective') return { minW: 4, maxW: 12, minH: 6, maxH: 10 };
+  return { minW: 4, maxW: 12, minH: 5, maxH: 8 };
+}
 export function arrange(
   layout: WidgetLayout[],
   change: WidgetLayout,
 ): WidgetLayout[] {
-  const metric = widgetIds.indexOf(change.id) < 4;
+  const bounds = widgetBounds(change.id);
   const fixed = {
     ...change,
-    w: Math.min(12, Math.max(metric ? 2 : 4, Math.round(change.w))),
-    h: Math.min(50, Math.max(metric ? 2 : 4, Math.round(change.h))),
+    w: Math.min(bounds.maxW, Math.max(bounds.minW, Math.round(change.w))),
+    h: Math.min(bounds.maxH, Math.max(bounds.minH, Math.round(change.h))),
     y: Math.min(500, Math.max(0, Math.round(change.y))),
   };
   fixed.x = Math.max(0, Math.min(12 - fixed.w, Math.round(change.x)));

@@ -137,7 +137,7 @@ function DashboardGrid({
           .map((item) => (
             <div
               key={item.id}
-              className="dashboard-widget"
+              className={'dashboard-widget widget-' + item.id}
               style={{
                 gridColumn: `${item.x + 1} / span ${item.w}`,
                 gridRow: `${item.y + 1} / span ${item.h}`,

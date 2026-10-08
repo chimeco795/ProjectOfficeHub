@@ -49,7 +49,7 @@ export function WorkDetails({
     <ContextField
       key={key}
       label={label}
-      value={work[key]}
+      value={['archived','include_in_report'].includes(key) ? String(!!work[key]) : work[key]}
       options={
         key === 'owner_id' ? personChoices(people) : options
           ? Object.entries(options).map(([value, label]) => ({ value, label }))
@@ -95,6 +95,7 @@ export function WorkDetails({
   return (
     <Dialog
       title="Detalle del trabajo"
+      className="work-detail-dialog"
       onClose={() => {
         if (!busy && !editing) onClose();
       }}
@@ -106,9 +107,6 @@ export function WorkDetails({
           {states[work.status] || work.status}
         </span>
       </div>
-      {editing && (
-        <p role="status">Enter o salir del campo guarda · Escape cancela.</p>
-      )}
       <div className="detail-grid">
         {field("status", "Estado", {
           ...states,
@@ -137,8 +135,8 @@ export function WorkDetails({
         {field("iteration_id", iterationLabel(methodology), Object.fromEntries([["", "Sin asignar"], ...periods.filter(p=>p.kind==='Iteration').map(p=>[p.id,p.name])]),"text",true)}
       </div>
       <div className="work-sections">
-        <details>
-          <summary>Planificación</summary>
+        <section className="work-detail-block">
+          <h4>Planificación</h4>
           <div className="detail-grid">
             {field("code", "Código")}
             {field(
@@ -160,7 +158,7 @@ export function WorkDetails({
             {(["Release"] as const).map((kind) =>
               field(
                 "release_id",
-                "Release",
+                (methodology === "Hybrid" ? "Entrega" : "Release"),
                 Object.fromEntries([
                   ["", "Sin asignar"],
                   ...periods
@@ -176,9 +174,9 @@ export function WorkDetails({
               true: "Archivado",
             })}
           </div>
-        </details>
-        <details>
-          <summary>Esfuerzo</summary>
+        </section>
+        <section className="work-detail-block">
+          <h4>Esfuerzo</h4>
           <div className="detail-grid">
             {field("original_effort", "Original (h)", undefined, "number")}
             {field("remaining_effort", "Restante (h)", undefined, "number")}
@@ -208,9 +206,9 @@ export function WorkDetails({
           >
             Calcular avance desde esfuerzo
           </button>
-        </details>
-        <details>
-          <summary>Dependencias · {work.dependencies.length}</summary>
+        </section>
+        <section className="work-detail-block">
+          <h4>Dependencias · {work.dependencies.length}</h4>
           <ContextField
             label="Predecesores"
             value={work.dependencies}
@@ -227,22 +225,22 @@ export function WorkDetails({
             onEditing={(open) => setEditing(open ? "dependencies" : "")}
             onSave={(v) => save("dependencies", v)}
           />
-        </details>
-        <details>
-          <summary>Reporte ejecutivo</summary>
+        </section>
+        <section className="work-detail-block">
+          <h4>Reporte ejecutivo</h4>
           {field("include_in_report", "Incluir en nuevos cortes", {
             true: "Sí",
             false: "No",
           })}
           <p>Los cortes publicados conservan su información histórica.</p>
-        </details>
+        </section>
       </div>
-      {field("description", "Descripción", undefined, "textarea")}
+      <section className="work-detail-block work-detail-description">{field("description", "Descripción", undefined, "textarea")}</section>
       {error && <p role="alert">{error}</p>}
-      <details className="work-comments-section">
-        <summary>Conversación</summary>
+      <section className="work-comments-section work-detail-block">
+        <h4>Conversación</h4>
         <WorkComments projectId={projectId} itemId={work.id} onBusy={setBusy} />
-      </details>
+      </section>
       <div className="editor-footer">
         <button disabled={busy || !!editing} onClick={onClose}>
           Cerrar

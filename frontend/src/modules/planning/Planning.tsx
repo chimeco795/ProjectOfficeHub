@@ -1,4 +1,5 @@
 import { StagePlan } from "./StagePlan";
+import { restoreColumns, reorderColumn } from './columnModel';
 import {
   Filter,
   Columns3,
@@ -87,7 +88,16 @@ function PlanningWorkspace({
   onViewChange: (view: string) => void;
 }) {
   const [milestones, setMilestones] = useState<Item[]>([]);
+  const [teams, setTeams] = useState<any[]>([]), [members, setMembers] = useState<any[]>([]);
   const [simulation, setSimulation] = useState<Proposal | null>(null);
+  const [shift, setShift] = useState<any>(null);
+  async function previewShift(item: Work, days: number) {
+    if (!days || busy) return;
+    setBusy(true); setError('');
+    try { setShift(await api(`/projects/${project.id}/schedule/items/${item.id}/shift-preview`, {method:'POST',...json({days})})); }
+    catch(e) {setError((e as Error).message);}
+    finally {setBusy(false);}
+  }
   const [items, setItems] = useState<Work[]>([]),
     [people, setPeople] = useState<Person[]>([]),
     [periods, setPeriods] = useState<Period[]>([]),
@@ -108,14 +118,7 @@ function PlanningWorkspace({
   const [columns, setColumns] = useState<string[]>(() => {
     try {
       const value = JSON.parse(localStorage.getItem(preferenceKey) || "null");
-      if (
-        Array.isArray(value) &&
-        value.length &&
-        value.every(
-          (x) => typeof x === "string" && (x in states || x === "Otros"),
-        )
-      )
-        return value;
+      return restoreColumns(value);
     } catch {}
     return ["New", "Prepared", "Active", "Blocked"];
   });
@@ -158,15 +161,18 @@ function PlanningWorkspace({
   };
   const base = `/projects/${project.id}`;
   async function reload() {
-    const [i, p, t] = await Promise.all([
+    const [i, p, t, teamRows, memberRows] = await Promise.all([
       api(base + "/items"),
       api(base + "/people"),
       api(base + "/pmo/periods"),
+      api(base + '/pmo/teams'),
+      api(base + '/pmo/memberships'),
     ]);
     setMilestones(i.filter((x: Item) => x.kind === "Milestone"));
     setItems(i.filter((x: Item) => x.kind === "Activity"));
     setPeople(p);
     setPeriods(t);
+    setTeams(teamRows); setMembers(memberRows);
   }
   useEffect(() => {
     void reload().catch((e) => setError(e.message));
@@ -315,12 +321,12 @@ function PlanningWorkspace({
               <Columns3 size={16} /> Columnas
             </button>
           )}
-          <button
+          {(view !== 'board' || !columns.includes('New')) && <button
             className="primary"
             onClick={() => setEditing(blank(project))}
           >
             Nuevo trabajo
-          </button>
+          </button>}
         </div>
       </div>
       {error && <p role="alert">{error}</p>}
@@ -407,13 +413,11 @@ function PlanningWorkspace({
               <input
                 type="checkbox"
                 checked={columns.includes(state)}
-                disabled={columns.length === 1 && columns.includes(state)}
+                disabled={(columns.length === 1 && columns.includes(state)) || (columns.length >= 4 && !columns.includes(state))}
                 onChange={(e) =>
                   setColumns((old) =>
                     e.target.checked
-                      ? [...Object.keys(states), "Otros"].filter(
-                          (x) => old.includes(x) || x === state,
-                        )
+                      ? old.length < 4 ? [...old, state] : old
                       : old.filter((x) => x !== state),
                   )
                 }
@@ -421,6 +425,14 @@ function PlanningWorkspace({
               {states[state] || state}
             </label>
           ))}
+          <small role="status">Máximo 4 columnas visibles</small>
+          <div className="column-order" aria-label="Orden de columnas">
+            {columns.map((state, index) => <div key={state}>
+              <span>{states[state] || state}</span>
+              <button disabled={index === 0} aria-label={'Mover ' + (states[state] || state) + ' a la izquierda'} onClick={() => setColumns(old => reorderColumn(old, state, -1))}>←</button>
+              <button disabled={index === columns.length - 1} aria-label={'Mover ' + (states[state] || state) + ' a la derecha'} onClick={() => setColumns(old => reorderColumn(old, state, 1))}>→</button>
+            </div>)}
+          </div>
           <button onClick={() => setColumnsOpen(false)}>Cerrar columnas</button>
         </div>
       )}
@@ -499,6 +511,7 @@ function PlanningWorkspace({
                     </button>
                   )}
                 </h3>
+                {state === 'New' && !collapsedColumns.includes(state) && <button className="column-create" onClick={() => setEditing(blank(project))}>+ Nuevo trabajo</button>}
                 {!collapsedColumns.includes(state) &&
                   cards.map((i) => (
                     <article
@@ -554,6 +567,9 @@ function PlanningWorkspace({
             allItems={items}
             onEdit={setEditing}
             simulation={simulation}
+            onShift={previewShift}
+            busy={busy || !!shift}
+            preferenceKey={`pohub.gantt.order.${localPersonId() || 'local'}.${project.id}`}
           />
           <ScheduleSimulation
             projectId={project.id}
@@ -573,6 +589,10 @@ function PlanningWorkspace({
           />
         ) : (
           <Roadmap
+            allItems={items}
+            teams={teams}
+            members={members}
+            people={people}
             deliverables={
               project.methodology === "Hybrid" ? (
                 <StagePlan
@@ -728,6 +748,19 @@ function PlanningWorkspace({
           }}
         />
       )}
+      {shift && <Dialog title="Revisar movimiento del Gantt" onClose={()=>{if(!busy)setShift(null);}}>
+        <p>{items.find(i=>i.id===shift.id)?.name}</p>
+        <p>{shift.old_start} → {shift.start}<br/>{shift.old_end} → {shift.end}</p>
+        <p>La duración se conserva. Este movimiento afecta únicamente este trabajo.</p>
+        {!!shift.errors.length && <div role="alert"><ul>{shift.errors.map((error:string,index:number)=><li key={index}>{error}</li>)}</ul></div>}
+        <button disabled={busy} onClick={()=>setShift(null)}>Cancelar movimiento</button>
+        <button className="primary" disabled={busy || !!shift.errors.length} onClick={async()=>{
+          setBusy(true);setError('');
+          try {await api(`/projects/${project.id}/schedule/items/${shift.id}/shift-apply`,{method:'POST',...json({days:shift.days,fingerprint:shift.fingerprint})});setShift(null);await reload();}
+          catch(e){setError((e as Error).message);setShift(null);}
+          finally{setBusy(false);}
+        }}>Confirmar fechas</button>
+      </Dialog>}
       {period && (
         <PeriodEditor
           initial={period}

@@ -1,9 +1,11 @@
+import { deliveryGroups } from './deliveryModel';
+import { dateKey } from '../operations/calendarModel';
 import { ContextField } from "../../components/ContextField";
 import { iterationLabel } from "./workPresentation";
 import { useState, type ReactNode } from "react";
 import type { Work, Period } from "./Planning";
 export function Roadmap({
-  methodology,
+  methodology, allItems, teams, members, people,
   deliverables,
   items,
   periods,
@@ -14,6 +16,7 @@ export function Roadmap({
   onAssign,
 }: {
   methodology: string;
+  allItems: Work[]; teams: {id:string;name:string}[]; members: any[]; people: {id:string;name:string}[];
   deliverables?: ReactNode;
   items: Work[];
   periods: Period[];
@@ -27,6 +30,9 @@ export function Roadmap({
     id: string | null,
   ) => Promise<void>;
 }) {
+  const [groupBy,setGroupBy]=useState('team'), [collapsed,setCollapsed]=useState<string[]>([]);
+  const today=dateKey(new Date());
+  const groups=deliveryGroups(items,allItems,groupBy,teams,members,today);
   const [showDeliverables, setShowDeliverables] = useState(false);
   const [kind, setKind] = useState<"Iteration" | "Release">("Iteration"),
     [dragging, setDragging] = useState("");
@@ -39,7 +45,7 @@ export function Roadmap({
   const key = kind === "Iteration" ? "iteration_id" : "release_id";
   const columns = periods.filter(
     (p) => p.kind === kind && !!p.archived === archived,
-  );
+  ).sort((a,b)=>(a.start_date||'9999').localeCompare(b.start_date||'9999')||a.name.localeCompare(b.name));
   const blank: Period = {
     id: "",
     kind,
@@ -51,8 +57,8 @@ export function Roadmap({
     archived: false,
     version: 1,
   };
-  function cards(id: string | null) {
-    return items
+  function cards(id: string | null, groupItems: Work[] = items) {
+    return groupItems
       .filter((i) => (i[key] || null) === id)
       .map((item) => (
         <article
@@ -147,51 +153,31 @@ export function Roadmap({
             únicamente esta asignación; conserva fechas, dependencias y el otro
             tipo de periodo.
           </p>
-          <div className="roadmap-lanes">
-            <section
-              onDragOver={(e) => {
-                if (!busy && !archived) e.preventDefault();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                drop(null);
-              }}
-            >
-              <h3>Sin {label}</h3>
-              {cards(null)}
-              <div className="drop-placeholder">Trabajos por asignar</div>
-            </section>
-            {columns.map((period) => (
-              <section
-                key={period.id}
-                onDragOver={(e) => {
-                  if (!busy && !archived) e.preventDefault();
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  drop(period.id);
-                }}
-              >
-                <div className="section-heading">
-                  <h3>{period.name}</h3>
-                  <button disabled={busy} onClick={() => onPeriod(period)}>
-                    Editar
-                  </button>
-                </div>
-                <p>
-                  {period.start_date || "Sin inicio"} →{" "}
-                  {period.end_date || "Sin fin"}
-                </p>
-                <small>
-                  {period.status} ·{" "}
-                  {items.filter((i) => i[key] === period.id).length} trabajos en
-                  esta selección
-                </small>
-                {cards(period.id)}
-                <div className="drop-placeholder">Asignar a {period.name}</div>
-              </section>
-            ))}
+          <label className="delivery-group">Agrupar por <select value={groupBy} onChange={e=>setGroupBy(e.target.value)}><option value="team">Equipo</option><option value="owner">Responsable</option><option value="parent">Epic / Feature / Entregable</option></select></label>
+          <div className="delivery-scroll" tabIndex={0} aria-label="Distribución temporal por periodos" onKeyDown={e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();e.currentTarget.scrollLeft+=e.key==='ArrowRight'?220:-220;}}}>
+            <div className="delivery-matrix" style={{gridTemplateColumns:`180px repeat(${columns.length+1}, minmax(230px,1fr))`}}>
+              <div className="delivery-head">{groupBy==='team'?'Equipo':groupBy==='owner'?'Responsable':'Agrupación'}</div>
+              <div className="delivery-head">Sin {label}</div>
+              {columns.map(period=><div className={'delivery-head'+(period.start_date && period.end_date && period.start_date<=today && today<=period.end_date?' period-today':'')} key={period.id}>
+                <strong>{period.name}</strong><small>{period.start_date || 'Sin inicio'} → {period.end_date || 'Sin fin'}</small>
+                {period.start_date && period.end_date && period.start_date<=today && today<=period.end_date && <span className="delivery-today">Hoy · {today}</span>}
+                <button disabled={busy} onClick={()=>onPeriod(period)}>Editar periodo</button>
+              </div>)}
+              {groups.map(group=><div className="delivery-row" key={group.id}>
+                <button className="delivery-label" aria-expanded={!collapsed.includes(group.id)} onClick={()=>setCollapsed(old=>old.includes(group.id)?old.filter(x=>x!==group.id):[...old,group.id])}>
+                  {collapsed.includes(group.id)?'▸':'▾'} {groupBy==='owner'?people.find(p=>p.id===group.id)?.name || 'Sin responsable':group.name} · {group.items.length}
+                </button>
+                {[null,...columns.map(p=>p.id)].map(id=><section className={'delivery-cell'+(id && columns.some(p=>p.id===id && p.start_date && p.end_date && p.start_date<=today && today<=p.end_date)?' period-today':'')} key={id||'unassigned'}
+                  aria-label={(groupBy==='owner'?people.find(p=>p.id===group.id)?.name || 'Sin responsable':group.name)+' · '+(columns.find(p=>p.id===id)?.name || 'Sin asignar')}
+                  onDragOver={e=>{if(!busy&&!archived&&!collapsed.includes(group.id))e.preventDefault();}}
+                  onDrop={e=>{e.preventDefault();if(!collapsed.includes(group.id))drop(id);}}>
+                  {!collapsed.includes(group.id) && cards(id,group.items)}
+                  {!collapsed.includes(group.id) && !group.items.some(i=>(i[key]||null)===id) && <small>Sin trabajos</small>}
+                </section>)}
+              </div>)}
+            </div>
           </div>
+          {!groups.length && <p>No hay trabajos para distribuir.</p>}
           {!!inactive.length && (
             <details>
               <summary>

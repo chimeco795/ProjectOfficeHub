@@ -510,6 +510,52 @@
 .gantt-canvas .schedule-track{background-image:linear-gradient(90deg,#dfe7f1 1px,transparent 1px);background-size:12.5% 100%}
 .shell .kanban .kanban-column{min-width:200px}
 .shell .kanban .kanban-column.column-collapsed{min-width:44px}
+.shell .kanban{display:flex;overflow-x:hidden;gap:10px;flex-wrap:wrap}
+.shell .kanban .kanban-column{flex:1 1 0;min-width:0;max-width:none;overflow:hidden}
+.shell .kanban .kanban-column.column-collapsed{flex:0 0 44px;max-width:44px;min-width:44px}
+.kanban .work-card button{overflow-wrap:anywhere}
+.kanban .work-card .card-meta{flex-wrap:wrap}
+.column-order{display:flex;gap:8px;flex-basis:100%;flex-wrap:wrap}
+.column-order>div{display:flex;gap:5px;align-items:center}
+.column-order button{padding:4px 8px}
+.column-create{width:100%;text-align:left;border-style:dashed;margin-bottom:8px}
+.native-dialog.work-detail-dialog{width:min(1100px,94vw);max-width:1100px}
+.work-detail-dialog>.detail-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.work-detail-dialog .work-sections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:14px 0}
+.work-detail-block{padding:12px;border-radius:10px;background:#f7f9fc;min-width:0}
+.work-detail-block h4{margin:0 0 10px;color:#50617b;font-size:12px;text-transform:uppercase}
+.work-detail-block .detail-grid{grid-template-columns:1fr;gap:6px}
+.work-detail-description{margin-bottom:12px}
+.timeline-pan{scrollbar-width:none;cursor:grab;touch-action:pan-y}
+.timeline-pan::-webkit-scrollbar{display:none}
+.timeline-pan:active{cursor:grabbing}
+.delivery-group{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:12px}
+.delivery-group select{max-width:250px}
+.delivery-scroll{overflow:auto;max-height:650px}
+.delivery-matrix{display:grid;min-width:max-content;position:relative;border:1px solid #dbe4ee;border-radius:10px;overflow:clip}
+.delivery-row{display:contents}
+.delivery-head{position:sticky;top:0;background:#f1f5fb;padding:12px;z-index:2;border-bottom:1px solid #dbe4ee;display:flex;flex-direction:column;gap:5px}
+.delivery-head button{align-self:flex-start;padding:4px 6px;font-size:11px}
+.delivery-head small,.delivery-cell>small{font-size:11px;color:#64748b}
+.delivery-label{position:sticky;left:0;background:#f8fafc;border-radius:0;text-align:left;align-self:stretch;padding:12px;border-bottom:1px solid #dbe4ee;z-index:1;max-width:180px;overflow-wrap:anywhere}
+.delivery-cell{padding:8px;min-width:230px;max-width:320px;border-left:1px solid #e0e7ef;border-bottom:1px solid #e0e7ef;min-height:44px}
+.delivery-cell .work-card{padding:10px;margin:0 0 8px}
+.delivery-cell .work-card p{font-size:11px;margin:5px 0}
+.delivery-cell .context-field{font-size:11px}
+.delivery-today{color:#bf3b44;font-size:11px;font-weight:600}
+.period-today{border-left:2px solid #da6970;background:#fffafa}
+.native-dialog.work-detail-dialog .work-detail-heading{padding-bottom:8px}
+.native-dialog.work-detail-dialog .detail-grid{margin:10px 0}
+.native-dialog.work-detail-dialog .control-label{font-size:11px;margin:0;line-height:1.2}
+.native-dialog.work-detail-dialog .context-field{display:flex;flex-direction:column;gap:2px}
+.native-dialog.work-detail-dialog .field-chip{min-height:26px;padding:2px 5px;font-size:12px}
+.native-dialog.work-detail-dialog .work-detail-heading .field-chip{font-size:21px}
+.native-dialog.work-detail-dialog .work-detail-block .context-field{display:grid;grid-template-columns:minmax(80px,1fr) minmax(0,1.5fr);align-items:start;gap:5px}
+.native-dialog.work-detail-dialog .work-detail-block .context-field:has(textarea),.native-dialog.work-detail-dialog .work-detail-block .context-field:has(.search-picker){display:block}
+.native-dialog.work-detail-dialog .work-detail-block p{font-size:12px;line-height:1.4;margin:6px 0}
+.shell .state-resolved{--state-bg:#eeebff;--state-color:#5544a0;--state-border:#cbc3ef}
+@media(max-width:900px){.work-detail-dialog .work-sections{grid-template-columns:repeat(2,minmax(0,1fr))}.shell .kanban .kanban-column{flex-basis:40%}}
+@media(max-width:600px){.work-detail-dialog>.detail-grid,.work-detail-dialog .work-sections{grid-template-columns:1fr}.shell .kanban .kanban-column{flex-basis:80%}}
 .shell .planning-actions{flex:0 0 auto;justify-content:flex-end}
 .shell .planning-actions button{font-size:12px;padding:7px 9px}
 @media(max-width:900px){.shell .planning-actions{flex:1 1 100%;justify-content:flex-start}}

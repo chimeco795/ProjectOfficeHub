@@ -1,5 +1,15 @@
 # Contexto de Project Office Hub
 
+## Checkpoint activo — solicitud UX del 2026-10-08
+
+Solicitud: attachments/30adff68-f038-499b-92c5-305f87b5790c/Texto pegado.txt. Sus fases 1–3 NO renumeran fases/versiones oficiales. Continuar en orden, sin reiniciar ni revertir. Base master 47dfd41.
+
+COMPLETADO: fase 1 de la solicitud implementada sobre el código actual: dashboard sin scroll interno, límites por widget, columnas máximo cuatro/reordenables, alta en Nuevo, ficha ancha en bloques, Sprints como etiqueta Agile, matriz por equipo/responsable/agrupación, zoom por botones, pan y movimiento horizontal de barra con validación/confirmación, orden visual de hermanos. Pruebas focalizadas y revisión desktop realizadas; límites y evidencia en docs/VERIFICATION_UX_CONTINUATION.md. Versión oficial permanece 0.13.0 en este checkpoint, esquema 9.
+
+PENDIENTE: fase 2 (roles independientes/asignaciones/contactos/organigrama/disponibilidad/horario, scope usuario de agenda/documentos, relaciones múltiples, semana compartida) y fase 3 (minutas TXT/DOCX, propuestas revisadas sin IA externa, matriz de suficiencia). Resize de duración del Gantt pendiente permitido por solicitud. Suite global al final de las tres fases.
+
+SIGUIENTE PASO EXACTO: leer backend/app/db.py, migrations.py, domain/master.py y frontend/src/modules/operations/TeamWorkspace.tsx; diseñar migración aditiva para catálogo de roles y disponibilidad, conservando people.role/leader_id heredados sin convertir datos reales automáticamente. Reutilizar memberships para dedicación por proyecto. QA en .test-data/phase5-browser, 8015; nunca escribir fixtures en data/pmo.sqlite3.
+
 ## Estado al 2026-10-07
 
 Fases 0–4 completadas. Repositorio privado chimeco795/ProjectOfficeHub, master. Base React/TypeScript/Vite + FastAPI + SQLite funcional. Proyecto maestro con metodología, prioridad y fechas independientes; portafolio, resumen y acceso a Seguimiento Ejecutivo. Start.ps1 permite iniciar la app local.

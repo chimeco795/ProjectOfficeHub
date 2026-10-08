@@ -1,6 +1,6 @@
 export const roadmapLabel = (methodology: string) =>
   methodology === "Agile"
-    ? "Sprints y releases"
+    ? "Sprints"
     : methodology === "Waterfall"
       ? "Fases y entregables"
       : "Iteraciones y entregas";

@@ -65,7 +65,7 @@ export function ProjectSummary({
   const upcoming = open
     .filter((i) => i.target_date)
     .sort((a, b) => a.target_date!.localeCompare(b.target_date!))
-    .slice(0, 5);
+    .slice(0, 3);
   return (
     <div className="overview">
       {error && (
@@ -169,7 +169,7 @@ export function ProjectSummary({
                     <small>
                       {i.code} · {i.owner_name || "Sin responsable"}
                     </small>
-                    <strong>{i.name}</strong>
+                    <strong title={i.name}>{i.name}</strong>
                   </span>
                   <span className={"field-chip " + stateClass(i.status)}>
                     {i.target_date! < today
@@ -233,7 +233,7 @@ export function ProjectSummary({
             </div>
             <button onClick={onEdit}>Editar ficha</button>
           </div>
-          <p>
+          <p className="widget-objective" title={project.objective || ''}>
             {project.objective ||
               "Añade el objetivo para que el equipo tenga claro el resultado esperado."}
           </p>

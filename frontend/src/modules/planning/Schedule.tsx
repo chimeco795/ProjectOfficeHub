@@ -1,5 +1,6 @@
 import { timelineTicks, pixelsPerDay, type Zoom } from "./timelineModel";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { restoreOrder, reorderSibling } from './orderModel';
 import { hierarchy, states, stateClass, types } from "./workPresentation";
 import type { Work } from "./Planning";
 import type { Proposal } from "./ScheduleSimulation";
@@ -11,12 +12,39 @@ export function Schedule({
   allItems,
   onEdit,
   simulation,
+  onShift,
+  busy,
+  preferenceKey,
 }: {
   items: Work[];
   allItems: Work[];
   onEdit: (item: Work) => void;
   simulation?: Proposal | null;
+  onShift: (item:Work,days:number)=>Promise<void>;
+  busy:boolean;
+  preferenceKey:string;
 }) {
+  const scroll = useRef<HTMLDivElement>(null);
+  const [order,setOrder]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem(preferenceKey)||'[]');}catch{return [];}});
+  const [dragOrder,setDragOrder]=useState('');
+  const ordered=restoreOrder(allItems,order);
+  function moveOrder(source:string,target:string) {
+    const next=reorderSibling(ordered,source,target).map(i=>i.id);
+    setOrder(next);localStorage.setItem(preferenceKey,JSON.stringify(next));
+  }
+  const pan = useRef<{x:number;left:number;pointer:number}|null>(null);
+  const suppressClick=useRef(false);
+  const [dragDelta,setDragDelta]=useState<{id:string;days:number}|null>(null);
+  function shiftBar(e:React.PointerEvent<HTMLButtonElement>,item:Work) {
+    if(busy || simulation || item.archived || ['Closed','Resolved','Removed'].includes(item.status))return;
+    e.preventDefault();e.stopPropagation();
+    const target=e.currentTarget, origin=e.clientX, track=target.parentElement!.getBoundingClientRect().width;
+    target.setPointerCapture(e.pointerId);let days=0;
+    const move=(event:PointerEvent)=>{days=Math.round((event.clientX-origin)/track*(span/86400000));setDragDelta({id:item.id,days});};
+    const finish=(event:PointerEvent)=>{target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',finish);target.removeEventListener('pointercancel',cancel);setDragDelta(null);if(days && event.type==='pointerup'){suppressClick.current=true;void onShift(item,days);} };
+    const cancel=(event:PointerEvent)=>{days=0;finish(event);};
+    target.addEventListener('pointermove',move);target.addEventListener('pointerup',finish);target.addEventListener('pointercancel',cancel);
+  }
   const [zoom, setZoom] = useState<Zoom>("week");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set()),
     [links, setLinks] = useState(true),
@@ -36,7 +64,7 @@ export function Schedule({
   );
   const rows = hierarchy(
     visibleHierarchy(filtered, allItems, collapsed),
-    allItems,
+    ordered,
   ).map((r) => {
     const p = proposed.get(r.item.id);
     return {
@@ -74,19 +102,10 @@ export function Schedule({
           </p>
         </div>
         <div className="gantt-tools">
-          <label>
-            Zoom
-            <select
-              aria-label="Zoom temporal"
-              value={zoom}
-              onChange={(e) => setZoom(e.target.value as Zoom)}
-            >
-              <option value="day">Día</option>
-              <option value="week">Semana</option>
-              <option value="month">Mes</option>
-              <option value="quarter">Trimestre</option>
-            </select>
-          </label>
+          <div className="view-switch" role="group" aria-label="Zoom temporal">
+            {([['day','Día'],['week','Semana'],['month','Mes'],['quarter','Trimestre']] as const).map(([value,label]) => <button key={value} aria-pressed={zoom===value} onClick={() => setZoom(value)}>{label}</button>)}
+          </div>
+          <button onClick={()=>{setOrder([]);localStorage.removeItem(preferenceKey);}}>Restaurar orden</button>
           <label>
             <input
               type="checkbox"
@@ -115,7 +134,7 @@ export function Schedule({
       <p className="board-hint">
         Hoy: {today}. Relaciones fin → inicio, en días naturales. Simula debajo
         para consultar holgura y ruta crítica; la jerarquía no agrega duración.
-        Las barras se editan desde la ficha.
+        Arrastra una barra para revisar un movimiento de fechas; clic abre la ficha.
       </p>
       <div className="state-legend">
         {Object.entries(states).map(([key, label]) => (
@@ -124,7 +143,13 @@ export function Schedule({
           </span>
         ))}
       </div>
-      <div className="schedule-scroll">
+      <div className="schedule-scroll timeline-pan" ref={scroll} tabIndex={0} aria-label="Timeline: desplazar con flechas o arrastrar el fondo"
+        onKeyDown={e => {if (e.key==='ArrowRight' || e.key==='ArrowLeft') {e.preventDefault(); e.currentTarget.scrollLeft += e.key==='ArrowRight' ? 160 : -160;}}}
+        onWheel={e => {if (Math.abs(e.deltaY)>Math.abs(e.deltaX)) e.currentTarget.scrollLeft+=e.deltaY;}}
+        onPointerDown={e => {if ((e.target as HTMLElement).closest('button')) return; pan.current={x:e.clientX,left:e.currentTarget.scrollLeft,pointer:e.pointerId};e.currentTarget.setPointerCapture(e.pointerId);}}
+        onPointerMove={e => {if(pan.current && pan.current.pointer===e.pointerId)e.currentTarget.scrollLeft=pan.current.left+pan.current.x-e.clientX;}}
+        onPointerUp={() => {pan.current=null;}} onPointerCancel={() => {pan.current=null;}}
+      >
         <div
           className="gantt-canvas"
           style={{ width: canvasWidth, minWidth: "100%" }}
@@ -161,7 +186,9 @@ export function Schedule({
                 p = proposed.get(item.id),
                 dated = item.start_date && item.target_date;
               return (
-                <div className="schedule-row" key={item.id}>
+                <div className="schedule-row" key={item.id}
+                  onDragOver={e=>{if(dragOrder && allItems.find(i=>i.id===dragOrder)?.parent_id===item.parent_id)e.preventDefault();}}
+                  onDrop={e=>{e.preventDefault();if(dragOrder)moveOrder(dragOrder,item.id);setDragOrder('');}}>
                   <div
                     className="gantt-name"
                     style={{ paddingLeft: Math.min(depth, 8) * 14 }}
@@ -188,6 +215,10 @@ export function Schedule({
                     )}
                     <button
                       className="schedule-name"
+                      draggable={!busy}
+                      onDragStart={e=>{setDragOrder(item.id);e.dataTransfer.setData('text/plain',item.id);}}
+                      onDragEnd={()=>setDragOrder('')}
+                      title="Arrastra el nombre para ordenar entre trabajos con el mismo padre. Orden visual local."
                       onClick={() =>
                         onEdit(allItems.find((i) => i.id === item.id) || item)
                       }
@@ -225,7 +256,7 @@ export function Schedule({
                           (p?.critical ? " gantt-critical" : "")
                         }
                         style={{
-                          left: position(item.start_date!) + "%",
+                          left: (position(item.start_date!) + (dragDelta?.id===item.id ? dragDelta.days*86400000/span*100 : 0)) + "%",
                           width:
                             Math.max(
                               0.15,
@@ -236,9 +267,8 @@ export function Schedule({
                                 100,
                             ) + "%",
                         }}
-                        onClick={() =>
-                          onEdit(allItems.find((i) => i.id === item.id) || item)
-                        }
+                        onPointerDown={e=>shiftBar(e,allItems.find(i=>i.id===item.id)||item)}
+                        onClick={() => {if(suppressClick.current){suppressClick.current=false;return;}onEdit(allItems.find((i) => i.id === item.id) || item);}}
                         aria-label={
                           item.code +
                           " · " +
