@@ -246,7 +246,7 @@ def migrate_executive_links(db,data_dir):
     db.execute('INSERT INTO schema_version VALUES(9)')
 
 def migrate_management(db,data_dir):
-    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]>=10:return
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]!=9:return
     db.commit()
     if db.execute('SELECT COUNT(*) FROM projects').fetchone()[0]:
         stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
@@ -282,3 +282,37 @@ def migrate_management(db,data_dir):
                 (NEW.target_kind='cut' AND EXISTS(SELECT 1 FROM cuts t WHERE t.id=NEW.target_id AND t.project_id=d.project_id))))
             BEGIN SELECT RAISE(ABORT,'Documento relacionado ajeno al proyecto'); END''')
     db.execute('INSERT INTO schema_version VALUES(10)')
+
+def migrate_minutes(db,data_dir):
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]!=10:return
+    db.commit()
+    if db.execute('SELECT COUNT(*) FROM projects').fetchone()[0]:
+        stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
+        with sqlite3.connect(data_dir/f'backup-v10-{stamp}.sqlite3') as backup:db.backup(backup)
+    db.execute('BEGIN IMMEDIATE')
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]>=11:return
+    db.execute('''CREATE TABLE meeting_minutes(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),
+        event_id TEXT NOT NULL REFERENCES events(id),document_id TEXT NOT NULL REFERENCES documents(id),
+        meeting_date TEXT NOT NULL,participants TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(event_id,document_id))''')
+    db.execute('''CREATE TABLE minute_proposals(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),
+        minute_id TEXT NOT NULL REFERENCES meeting_minutes(id),kind TEXT NOT NULL,text TEXT NOT NULL,evidence TEXT NOT NULL DEFAULT '',
+        owner_id TEXT REFERENCES people(id),target_date TEXT,status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','accepted','ignored')),
+        review_action TEXT,item_id TEXT REFERENCES master_items(id),decision_id TEXT REFERENCES meeting_decisions(id),
+        executive_candidate INTEGER NOT NULL DEFAULT 0,reviewer_id TEXT REFERENCES people(id),reviewed_at TEXT,
+        version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL)''')
+    db.execute('''CREATE TABLE meeting_decisions(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),
+        proposal_id TEXT NOT NULL UNIQUE REFERENCES minute_proposals(id),text TEXT NOT NULL,owner_id TEXT REFERENCES people(id),
+        target_date TEXT,created_at TEXT NOT NULL)''')
+    for action in ('INSERT','UPDATE'):
+        db.execute(f'''CREATE TRIGGER minute_scope_{action.lower()} BEFORE {action} ON meeting_minutes
+            WHEN NOT EXISTS(SELECT 1 FROM events e JOIN documents d ON d.project_id=e.project_id
+                WHERE e.id=NEW.event_id AND d.id=NEW.document_id AND e.project_id=NEW.project_id)
+            BEGIN SELECT RAISE(ABORT,'Minuta ajena al proyecto'); END''')
+        db.execute(f'''CREATE TRIGGER proposal_scope_{action.lower()} BEFORE {action} ON minute_proposals
+            WHEN NOT EXISTS(SELECT 1 FROM meeting_minutes m WHERE m.id=NEW.minute_id AND m.project_id=NEW.project_id)
+              OR (NEW.item_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM master_items i WHERE i.id=NEW.item_id AND i.project_id=NEW.project_id))
+              OR (NEW.owner_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM project_people p WHERE p.person_id=NEW.owner_id AND p.project_id=NEW.project_id))
+            BEGIN SELECT RAISE(ABORT,'Propuesta ajena al proyecto'); END''')
+    db.execute('''CREATE TRIGGER immutable_minute BEFORE UPDATE ON meeting_minutes
+        BEGIN SELECT RAISE(ABORT,'El contexto original de la minuta es inmutable'); END''')
+    db.execute('INSERT INTO schema_version VALUES(11)')

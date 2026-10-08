@@ -4,29 +4,29 @@
 
 Solicitud: attachments/30adff68-f038-499b-92c5-305f87b5790c/Texto pegado.txt. Sus fases 1–3 NO renumeran fases/versiones oficiales. Continuar en orden, sin reiniciar ni revertir. Base master 47dfd41.
 
-COMPLETADO: etapa 1 de esta solicitud en 73adac1; etapa 2 implementada con esquema aditivo 10, personas/contactos, roles independientes, asignaciones con líder/rol/excepción de equipos, organigrama visual, ausencias globales y horarios por proyecto/equipo, agenda y documentos con alcance por usuario local, semana con escala compartida, recordatorio local y relaciones documentales múltiples. Los roles heredados no se convierten automáticamente. Backend focalizado: 14 pruebas; TypeScript/Vite correctos. Revisión desktop de personas/contacto/roles/organigrama/horario/agenda semanal/scope/documentos. Evidencia y límites en docs/VERIFICATION_UX_CONTINUATION.md. Versión oficial permanece 0.13.0; no renumerar fases oficiales por estas tres etapas.
+COMPLETADO: las tres etapas de la solicitud UX. Etapa 1: 73adac1; etapa 2: 5c7882d; etapa 3: minutas TXT/DOCX originales, propuestas manuales, revisión humana transaccional, vínculos a trabajos y decisiones estructuradas. Esquema aditivo 11; versión oficial 0.13.0 y fase oficial 13 conservadas. 86 pruebas backend, 29 frontend y TypeScript/Vite correctos. Matriz completa en docs/EXECUTIVE_SUFFICIENCY.md; evidencia y límites en docs/VERIFICATION_UX_CONTINUATION.md.
 
-PENDIENTE: etapa 3 (minutas TXT/DOCX, propuestas revisadas sin IA externa, matriz de suficiencia) y cierre global. Resize de duración del Gantt pendiente permitido por solicitud. La lógica de capacidad conserva porcentajes; las ausencias son contexto, no reducción automática de horas. Arrastre semanal y revisión exhaustiva de nuevas relaciones UI pendientes de cierre.
+PENDIENTE PERMITIDO: resize de duración del Gantt, proveedor de extracción automática, certificación manual del arrastre HTML5 semanal/periodos/orden de filas; móvil completo y migración real .pohub requieren trabajo posterior. Ausencias contextualizan capacidad sin modificar el scheduler ni descontar horas automáticamente. No declarar paridad total.
 
-SIGUIENTE PASO EXACTO: completar backend/app/api/minutes.py (borrador todavía sin router activo), migración aditiva 11 y UI de minutas en detalle de evento. Reutilizar documents sin duplicar bytes y master.save_item para aceptación transaccional; ninguna propuesta modifica el catálogo sin revisión humana explícita. QA .test-data/phase5-browser en 8015 (PID30140). Normal 8011 no reiniciado ni base normal modificada. Al finalizar, suite global, revisión visual restante, documentación y commit/push en master.
+SIGUIENTE PASO EXACTO: conservar este incremento y sus originales; cualquier extracción futura debe generar propuestas pendientes a través del contrato /minute-contract, nunca hechos aceptados automáticamente. No repetir auditoría ni renumerar fases por esta solicitud.
 
-## Estado al 2026-10-07
+## Baseline histórica al 2026-10-07
 
 Fases 0–4 completadas. Repositorio privado chimeco795/ProjectOfficeHub, master. Base React/TypeScript/Vite + FastAPI + SQLite funcional. Proyecto maestro con metodología, prioridad y fechas independientes; portafolio, resumen y acceso a Seguimiento Ejecutivo. Start.ps1 permite iniciar la app local.
 
-Baseline histórica: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. La entrega 0.10.0 tuvo 68 tests backend y 16 frontend. Estado vigente: 0.13.0, 76 backend, 25 frontend y build correctos. Creación, edición, recarga de proyecto/corte y aislamiento entre proyectos comprobados con base temporal.
+Baseline histórica: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. La entrega 0.10.0 tuvo 68 tests backend y 16 frontend. Estado vigente: 0.13.0, 86 backend, 29 frontend y build correctos. Creación, edición, recarga de proyecto/corte y aislamiento entre proyectos comprobados con base temporal.
 
 ## Reglas
 
 Project Office Hub es el producto maestro. Seguimiento Ejecutivo es un módulo por proyecto. Un solo catálogo de proyectos. No duplicar futuros catálogos de personas, riesgos, hitos y actividades. Importar genera propuestas; conservar originales, trazabilidad e histórico. Publicados inmutables; no insertar datos de muestra automáticamente.
 
-## Implementación actual
+## Implementación base y antecedentes
 
 - backend/app/api, domain y repositories: separación inicial del dominio Project.
 - backend/app/migrations.py: migraciones aditivas v2 → v3 → v4 → v5 → v6 con respaldos. Esquema 4 protege cortes publicados, registros y fuentes con triggers; las modificaciones de contenido incrementan la versión del corte. La publicación congela también la serie histórica oficial.
 - frontend/src/modules/projects: resumen y campos comunes de la ficha.
 - frontend/src/modules/executive: histórico filtrable, avances, pendientes y trazabilidad con valores antes/después. Creación de cortes con periodo explícito y copia desde una semana anterior.
-- Código semanal heredado y sus tres archivos de pruebas preservados. Los tests de migración esperan ahora esquema final 9 y se conservaron sus garantías.
+- Código semanal heredado y sus tres archivos de pruebas preservados. Los tests de migración esperan ahora esquema final 11 y se conservaron sus garantías.
 - La URL guarda project, view y cut y restaura el contexto al cargar; usa replaceState, sin historial por pantalla.
 - Catálogo maestro compartido de RAID, hitos y actividades; personas globales asignadas a proyectos; conciliación explícita, snapshots por registro y auditoría agregada. Ver VERIFICATION_PHASE3.md.
 - Fase 5 implementa planificación sobre master_items, equipos, presupuesto, agenda, documentos e importador schemaVersion 3. No se importaron datos reales. Ver docs/VERIFICATION_PHASE5.md para límites y paridad pendiente.
@@ -82,7 +82,7 @@ Estrategia PMO → ejecutivo: inventario previo en docs/EXECUTIVE_SOURCE_MAP.md.
 
 75 pruebas backend, 21 frontend, TypeScript/Vite y revisión real de ocho pantallas correctos; detalles/límites en docs/VERIFICATION_PHASE12.md. El dashboard y la inspección real PDF/PNG se cerraron en fase 13. Baseline, decisiones estructuradas, migración real, paridad legacy, móvil completo y agenda semanal por arrastre siguen pendientes.
 
-## Estado vigente 2026-10-07: 0.13.0, esquema 9
+## Entrega histórica 2026-10-07: 0.13.0, esquema 9
 
 Se conservaron y completaron los cambios locales anteriores, sin reiniciar arquitectura. Portafolio añade señales objetivas de atraso, vencidos, bloqueos, riesgos relevantes y desviación del último corte cuando hay cifras. Wizard Crear proyecto: identidad/metodología y prioridad/estado/fechas; solo nombre obligatorio.
 

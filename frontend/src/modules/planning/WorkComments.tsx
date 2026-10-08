@@ -5,10 +5,12 @@ export function WorkComments({
   projectId,
   itemId,
   onBusy,
+  compact=false,
 }: {
   projectId: string;
   itemId: string;
   onBusy: (busy: boolean) => void;
+  compact?: boolean;
 }) {
   const [rows, setRows] = useState<Comment[]>([]),
     [text, setText] = useState(""),
@@ -55,13 +57,13 @@ export function WorkComments({
     }
   }
   return (
-    <section className="work-comments">
-      <h3>Conversación del trabajo</h3>
+    <section className={"work-comments "+(compact?'compact-comments':'')}>
+      {!compact&&<><h3>Conversación del trabajo</h3>
       <p>
         Notas del usuario local, guardadas por separado del formulario. Para
         corregir una nota, añade un comentario nuevo; los reportes publicados
         conservan su contenido.
-      </p>
+      </p></>}
       <div className="comment-list">
         {rows.map((comment) => (
           <article key={comment.id}>

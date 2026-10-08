@@ -40,6 +40,8 @@ from .api.management import router as management_router
 app.include_router(management_router)
 from .api.document_links import router as document_links_router
 app.include_router(document_links_router)
+from .api.minutes import router as minutes_router
+app.include_router(minutes_router)
 app.add_middleware(TrustedHostMiddleware,allowed_hosts=['127.0.0.1','localhost','testserver'])
 
 class Cut(BaseModel):

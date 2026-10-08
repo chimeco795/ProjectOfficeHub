@@ -36,6 +36,11 @@ def test_roles_assignments_contacts_and_availability(client):
     ana = next(x for x in capacity if x['id'] == person['id'])
     assert ana['peak'] == 100 and len(ana['availability']) == 1
     assert {x['id'] for x in client.get('/api/people/'+person['id']+'/projects').json()} == {p['id'], q['id']}
+    assert client.put('/api/roles/'+role['id'],json={**role,'archived':True}).status_code==200
+    edited=client.put(b+'/pmo/memberships/'+saved.json()['id'],json={**saved.json(),'allocation':45})
+    assert edited.status_code==200,edited.text
+    assert client.post(b+'/pmo/memberships',json=membership).status_code==422
+    assert any(e['event']=='editar_rol' and e['entity_id']==role['id'] for e in client.get(b+'/audit').json())
 
 
 def test_calendar_and_document_links_atomic_scope_and_versions(client):
@@ -70,6 +75,7 @@ def test_management_migration_preserves_legacy_and_backup(tmp_path, monkeypatch)
     monkeypatch.setattr(db, 'DATA', tmp_path)
     with monkeypatch.context() as old:
         old.setattr(migrations, 'migrate_management', lambda *args: None)
+        old.setattr(migrations, 'migrate_minutes', lambda *args: None)
         db.initialize()
     with db.connection() as connection:
         connection.execute("INSERT INTO projects(id,name,description,objective,created_at) VALUES('p','Anterior','','','2026-10-01')")

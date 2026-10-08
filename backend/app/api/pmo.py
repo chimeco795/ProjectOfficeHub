@@ -30,7 +30,7 @@ def decode(value):
         if key+'_cents' in result:result[key]=format(Decimal(result.pop(key+'_cents'))/100,'.2f')
     return result
 
-def validate_refs(db,pid,values):
+def validate_refs(db,pid,values,existing_role=None):
     for key in ('owner_id','person_id'):
         person=getattr(values,key,None)
         if person and not db.execute('SELECT 1 FROM project_people WHERE project_id=? AND person_id=?',(pid,person)).fetchone():
@@ -41,7 +41,7 @@ def validate_refs(db,pid,values):
     if getattr(values,'team_id',None):scoped(db,'teams',pid,values.team_id)
     if getattr(values,'role_id',None):
         role=require(db,'roles',values.role_id)
-        if role['archived']:raise HTTPException(422,'El rol está archivado')
+        if role['archived'] and values.role_id!=existing_role:raise HTTPException(422,'El rol está archivado')
     if getattr(values,'leader_id',None) and not db.execute('SELECT 1 FROM project_people WHERE project_id=? AND person_id=?',(pid,values.leader_id)).fetchone():raise HTTPException(422,'Líder ajeno al proyecto')
     if getattr(values,'related_id',None):item(db,pid,values.related_id)
     for guest in getattr(values,'guests',[]):
@@ -77,7 +77,7 @@ def save_record(db,pid,collection,value,identity=None):
     require(db,'projects',pid)
     old=scoped(db,table,pid,identity) if identity else {}
     if old and old['version']!=values.version:raise HTTPException(409,'El registro cambió; recarga antes de guardar')
-    validate_refs(db,pid,values)
+    validate_refs(db,pid,values,old.get('role_id'))
     if table=='memberships' and values.team_id and not values.archived and not values.allow_multiple_teams:
         conflict=db.execute('''SELECT 1 FROM memberships WHERE project_id=? AND person_id=? AND archived=0 AND team_id IS NOT NULL AND team_id!=? AND id!=?
             AND COALESCE(valid_from,'0001-01-01')<=? AND COALESCE(valid_to,'9999-12-31')>=?''',(pid,values.person_id,values.team_id,identity or '',str(values.valid_to or '9999-12-31'),str(values.valid_from or '0001-01-01'))).fetchone()

@@ -53,3 +53,4 @@ La base normal conserva APS (Waterfall) y Migracion Maui (Agile), esquema 9 y ce
 - Widgets adicionales de avance ponderado, riesgo, ruta crítica, capacidad, presupuesto e hitos del PMO anterior siguen registrados para incrementos posteriores; los ocho widgets del resumen actual sí son configurables.
 - No se probó móvil completo, arrastre de agenda semanal ni estrés con cientos de conexiones. Persistencia de preferencias solo en este navegador.
 - Migración real .pohub y paridad legacy siguen pendientes del archivo del usuario. No se sustituyen por los ZIP de código.
+Actualización 2026-10-08: la continuación UX de tres etapas conserva esta fase y la versión 0.13.0. Estado vigente y evidencia en [VERIFICATION_UX_CONTINUATION.md](VERIFICATION_UX_CONTINUATION.md); matriz ejecutiva en [EXECUTIVE_SUFFICIENCY.md](EXECUTIVE_SUFFICIENCY.md). Esquema 11, 86 pruebas backend y 29 frontend correctas.

@@ -4,9 +4,9 @@ Producto PMO con un catálogo maestro de proyectos y Seguimiento Ejecutivo dentr
 
 ## Estado
 
-Fases 0–4 completadas el 5 de octubre de 2026. Incremento de diseño y uso cotidiano disponible: versión 0.13.0, esquema SQLite 9: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
+Fases 0–4 completadas el 5 de octubre de 2026. Incremento de diseño y uso cotidiano disponible: versión 0.13.0, esquema SQLite 11: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
 
-Desde **Catálogo y responsables** administra el estado actual. Al crear un corte puedes partir del catálogo o copiar una semana anterior. Revisa y acepta los registros; en **Conciliar con el catálogo** vincula los riesgos, dependencias, hitos y actividades antes de publicar. Vincular no sobrescribe los valores semanales. Traer datos actuales vuelve a dejar el registro pendiente; aplicar cambios al catálogo exige revisar y guardar el formulario. **Auditoría del proyecto** reúne los eventos históricos.
+Desde **RAID e hitos** administra el estado actual. Al crear un corte puedes partir del catálogo o copiar una semana anterior. Revisa y acepta los registros; en **Conciliar con el catálogo** vincula los riesgos, dependencias, hitos y actividades antes de publicar. Vincular no sobrescribe los valores semanales. Traer datos actuales vuelve a dejar el registro pendiente; aplicar cambios al catálogo exige revisar y guardar el formulario. **Auditoría del proyecto** reúne los eventos históricos.
 
 Incremento operativo de fase 5 disponible: Backlog, Board, Gantt, Roadmap, equipos, presupuesto, agenda y documentos operan sobre SQLite. Migración .pohub con validación previa, asignación de proyectos, transacción atómica y originales descargables. El usuario aún no tiene su exportación: la migración real y la paridad completa siguen pendientes. Véase docs/VERIFICATION_PHASE5.md para la matriz de alcance. Los ZIP originales permanecen intactos.
 
@@ -67,7 +67,7 @@ Si otra ventana modifica contenido, se rechaza publicar con una versión antigua
 
 Datos locales en `data/pmo.sqlite3`, excluidos de Git. `PMO_DATA_DIR` permite utilizar otra carpeta. Se conservan los datos normales creados por el usuario; no se importó su base legacy .pohub. Las pruebas de navegador usan `.test-data/browser` y no forman parte de la base normal.
 
-Al iniciar se ejecutan las migraciones necesarias hasta esquema 9. La v3 agrega metodología, prioridad, fecha objetivo y fecha de actualización; la v4 protege publicaciones y guarda su serie histórica. Si contiene proyectos, se crea primero el respaldo `backup-v2-<fecha>.sqlite3` o `backup-v3-<fecha>.sqlite3`, según la migración. Los proyectos anteriores reciben Hybrid y prioridad Media como valores iniciales revisables; no se inventa una fecha objetivo ni se cambian snapshots publicados.
+Al iniciar se ejecutan las migraciones necesarias hasta esquema 11. La v3 agrega metodología, prioridad, fecha objetivo y fecha de actualización; la v4 protege publicaciones y guarda su serie histórica. Si contiene proyectos, se crea primero el respaldo `backup-v2-<fecha>.sqlite3` o `backup-v3-<fecha>.sqlite3`, según la migración. Los proyectos anteriores reciben Hybrid y prioridad Media como valores iniciales revisables; no se inventa una fecha objetivo ni se cambian snapshots publicados.
 
 Para un respaldo manual, detener la aplicación y copiar la carpeta data. Para restaurar, conservar la copia actual y arrancar con otra carpeta mediante PMO_DATA_DIR. No apuntar este incremento a la única copia de una base anterior.
 
@@ -80,7 +80,7 @@ Set-Location ..\frontend
 npm run build
 ```
 
-Resultado vigente: 76 pruebas backend, 25 frontend y TypeScript/Vite correctos. Ver docs/VERIFICATION_PHASE13.md para verificaciones y límites. [Verificación de fase 2](docs/VERIFICATION_PHASE2.md). Véase [verificación](docs/VERIFICATION.md) para el alcance y las advertencias heredadas.
+Resultado vigente: 86 pruebas backend, 29 frontend y TypeScript/Vite correctos. Ver docs/VERIFICATION_PHASE13.md para verificaciones y límites. [Verificación de fase 2](docs/VERIFICATION_PHASE2.md). Véase [verificación](docs/VERIFICATION.md) para el alcance y las advertencias heredadas.
 
 ## Documentación
 
@@ -100,6 +100,15 @@ Equipo incluye capacidad por fechas entre proyectos y organigrama compartido. Lo
 
 Revisión UX/UI 0.10.0: alta rápida, edición progresiva e inline, equipo por tareas, Gantt jerárquico y biblioteca compartida de documentos. Alcance y verificación: [VERIFICATION_PHASE10](docs/VERIFICATION_PHASE10.md).
 
-Revisión UX/UI 0.11.0: ficha display-to-edit, agenda con duración/movimiento confirmado, usuario local, documentos con autor/descripción y PDF/PNG del reporte. [Alcance y verificación](docs/VERIFICATION_PHASE11.md). Incremento vigente 12: edición inline con Enter/blur/Escape, personas predictivas, Gantt expandible y captura PMO para el corte. [Verificación actual](docs/VERIFICATION_PHASE12.md) y [matriz de fuentes](docs/EXECUTIVE_SOURCE_MAP.md). Migración real de fase 5 pendiente.
+Revisión UX/UI 0.11.0: ficha display-to-edit, agenda con duración/movimiento confirmado, usuario local, documentos con autor/descripción y PDF/PNG del reporte. [Alcance y verificación](docs/VERIFICATION_PHASE11.md). Incremento histórico 12: edición inline con Enter/blur/Escape, personas predictivas, Gantt expandible y captura PMO para el corte. [Verificación actual](docs/VERIFICATION_PHASE12.md) y [matriz de fuentes](docs/EXECUTIVE_SOURCE_MAP.md). Migración real de fase 5 pendiente.
 
 Incremento 13: dashboard de ocho widgets con modos Lectura/Diseño, arrastre/resize y preferencias por persona local y proyecto. Crear proyecto usa dos pasos. Tablero/Lista comparten filtros; columnas visibles y extremos colapsables se recuerdan. Filtros ocultos inicialmente y metodología con contenido específico: Agile sprints/releases, Waterfall fases/entregables/hitos, Hybrid periodos y entregables. Gantt con zoom día/semana/mes/trimestre. [Verificación](docs/VERIFICATION_PHASE13.md).
+
+
+## Continuación UX del 8 de octubre de 2026
+
+Las tres etapas de esta solicitud mantienen la versión 0.13.0 y la fase oficial 13. Tablero de una a cuatro columnas persistentes, ficha compacta, periodos por equipo/responsable y Gantt con movimiento horizontal validado. Personas, roles, equipos y asignaciones son conceptos independientes; organigrama, ausencias y horarios conservan los datos heredados sin convertir roles automáticamente.
+
+Agenda con semana compartida, alcance de proyectos asignados al usuario local y recordatorios mientras la aplicación está abierta. Documentos con múltiples vínculos a trabajos, eventos y cortes, sin duplicar bytes. Las minutas TXT/DOCX conservan el original y admiten propuestas manuales que requieren aceptación, vinculación o descarte explícitos. No hay extracción automática ni servicio de IA conectado.
+
+[Verificación y límites](docs/VERIFICATION_UX_CONTINUATION.md) · [Matriz de suficiencia ejecutiva](docs/EXECUTIVE_SUFFICIENCY.md). Las migraciones 10 y 11 son aditivas y crean respaldos de bases pobladas antes de aplicarse. El resize del Gantt y la certificación manual de algunos arrastres HTML5 siguen pendientes.

@@ -147,7 +147,7 @@ def project_audit(project_id:str):
     with connection() as db:
         service.require(db,'projects',project_id)
         events=[{**dict(r),'origin':'maestro'} for r in db.execute('''SELECT * FROM audit_events WHERE project_id=? OR
-            (project_id IS NULL AND entity_id IN (SELECT person_id FROM project_people WHERE project_id=?))''',(project_id,project_id))]
+            (project_id IS NULL AND (entity_id IN (SELECT person_id FROM project_people WHERE project_id=?) OR entity_id IN (SELECT id FROM roles)))''',(project_id,project_id))]
         events += [{**dict(r),'event':'editar_proyecto','origin':'proyecto'} for r in db.execute('SELECT * FROM project_audit WHERE project_id=?',(project_id,))]
         events += [{**dict(r),'origin':'corte'} for r in db.execute('SELECT a.* FROM cut_audit a JOIN cuts c ON c.id=a.cut_id WHERE c.project_id=?',(project_id,))]
         events += [{**dict(r),'event':'editar_registro','origin':'registro'} for r in db.execute('SELECT a.* FROM audit a JOIN records r ON r.id=a.record_id JOIN cuts c ON c.id=r.cut_id WHERE c.project_id=?',(project_id,))]

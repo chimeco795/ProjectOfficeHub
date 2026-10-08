@@ -90,7 +90,7 @@ def test_v8_migration_backup_idempotence_and_legacy_values(tmp_path, monkeypatch
         assert saved['duration_minutes'] is None
         assert saved['status'] == 'Programado'
         assert conn.execute('PRAGMA foreign_key_check').fetchall() == []
-        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 10
+        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 11
     backups = list(tmp_path.glob('backup-v7-*.sqlite3'))
     assert len(backups) == 1
     with sqlite3.connect(backups[0]) as conn:

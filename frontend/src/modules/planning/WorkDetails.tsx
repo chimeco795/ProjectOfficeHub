@@ -236,13 +236,15 @@ export function WorkDetails({
           <p>Los cortes publicados conservan su información histórica.</p>
         </section>
       </div>
+      <div className="work-detail-bottom">
       <section className="work-detail-block work-detail-description">{field("description", "Descripción", undefined, "textarea")}</section>
-      <Attachments projectId={projectId} kind="item" id={work.id}/>
-      {error && <p role="alert">{error}</p>}
       <section className="work-comments-section work-detail-block">
         <h4>Conversación</h4>
-        <WorkComments projectId={projectId} itemId={work.id} onBusy={setBusy} />
+        <WorkComments compact projectId={projectId} itemId={work.id} onBusy={setBusy} />
       </section>
+      </div>
+      <Attachments projectId={projectId} kind="item" id={work.id}/>
+      {error && <p role="alert">{error}</p>}
       <div className="editor-footer">
         <button disabled={busy || !!editing} onClick={onClose}>
           Cerrar

@@ -53,3 +53,12 @@ SQLite 6 añade planning_periods, work_dependencies, teams/project_teams, member
 ## Esquema 7 (0.9.0)
 
 people incorpora leader_id (FK a people) y role global. Triggers de inserción/actualización impiden ciclos recursivos. Migración respaldada v6 → v7; versión de persona protege cambios concurrentes de nombre y organización. Comentarios operativos usan audit_events event=comentario, next con text, request_id y author local. Capacidad se calcula sobre memberships, sin almacenamiento duplicado.
+
+
+## Esquemas aditivos 10 y 11 — continuación UX
+
+Personas globales incorporan campos de contacto opcionales. Roles globales forman una jerarquía sin ciclos; memberships conserva el rol heredado y añade role_id, leader_id y allow_multiple_teams. La excepción permite asignaciones simultáneas a equipos diferentes; porcentajes y vigencia siguen perteneciendo a cada asignación.
+
+availability registra intervalos globales de ausencias por persona. working_calendars configura días y horario por proyecto/equipo. Estos datos contextualizan disponibilidad y no reescriben el scheduler. document_links permite múltiples relaciones del mismo documento a item/event/cut, con validación de proyecto y actualización transaccional de versión.
+
+meeting_minutes conserva evento, documento original y snapshot de fecha/participantes. minute_proposals almacena propuestas manuales pendientes, evidencia, propietario/fecha opcionales, revisión/versionado y candidatura ejecutiva. meeting_decisions registra decisiones aceptadas sin sobrescribir narrativas históricas. La revisión de propuestas exige una acción explícita y aplica catálogo/vínculos/auditoría en una transacción; las publicaciones previas permanecen intactas.

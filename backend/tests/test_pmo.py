@@ -153,7 +153,7 @@ def test_v5_migration_backup_and_published_preservation(tmp_path,monkeypatch):
     with db.connection() as conn:
         assert dict(conn.execute('SELECT * FROM cuts').fetchone())==original
         assert conn.execute('PRAGMA foreign_key_check').fetchall()==[]
-        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==10
+        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==11
     backups=list(tmp_path.glob('backup-v5-*.sqlite3'));assert len(backups)==1
     with sqlite3.connect(backups[0]) as conn:assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==5
 

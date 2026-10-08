@@ -1,4 +1,4 @@
-import {ScopeToggle,useOperationScope,projectColor} from './OperationScope';
+import { ScopeToggle, useOperationScope, projectColor } from "./OperationScope";
 import { dateKey } from "./calendarModel";
 import { useEffect, useState } from "react";
 import { api, json } from "../../api";
@@ -6,7 +6,8 @@ import { Dialog } from "../../Dialog";
 import { SearchPicker, personChoices } from "../../components/SearchPicker";
 import { localPersonId } from "../../components/LocalIdentity";
 import { Calendar } from "./Calendar";
-import { Attachments } from './Attachments';
+import { Attachments } from "./Attachments";
+import { MeetingMinutes } from "./MeetingMinutes";
 export type AgendaEvent = {
   project_id: string;
   id: string;
@@ -28,10 +29,21 @@ export type AgendaEvent = {
 };
 export function AgendaWorkspace({ projectId }: { projectId: string }) {
   const base = "/projects/" + projectId;
-  const scope=useOperationScope(projectId),scopeKey=scope.ids.join(',');
-  const [projectFilter,setProjectFilter]=useState(''),[projects,setProjects]=useState<any[]>([]),[workingCalendar,setWorkingCalendar]=useState<any>(undefined),[absences,setAbsences]=useState<any[]>([]);
-  const [reminder,setReminder]=useState(()=>localStorage.getItem('pohub.agenda.reminder')||'0'),[now,setNow]=useState(Date.now());
-  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(timer);},[]);
+  const scope = useOperationScope(projectId),
+    scopeKey = scope.ids.join(",");
+  const [projectFilter, setProjectFilter] = useState(""),
+    [projects, setProjects] = useState<any[]>([]),
+    [workingCalendar, setWorkingCalendar] = useState<any>(undefined),
+    [absences, setAbsences] = useState<any[]>([]);
+  const [attachmentRevision, setAttachmentRevision] = useState(0);
+  const [reminder, setReminder] = useState(
+      () => localStorage.getItem("pohub.agenda.reminder") || "0",
+    ),
+    [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
   const [events, setEvents] = useState<AgendaEvent[]>([]),
     [people, setPeople] = useState<any[]>([]),
     [items, setItems] = useState<any[]>([]),
@@ -54,20 +66,73 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
       date: string;
       time: string;
     } | null>(null);
-  useEffect(()=>{
-    let active=true;setEvents([]);setSelected('');setEditing(null);setPending(null);setUndo(null);setProjectFilter('');setError('');
-    Promise.all([Promise.all(scope.ids.map(async id=>{
-      const [e,p,i,d,a]=await Promise.all([api('/projects/'+id+'/pmo/events'),api('/projects/'+id+'/people'),api('/projects/'+id+'/items'),api('/projects/'+id+'/documents'),api('/projects/'+id+'/availability')]);
-      return {events:e.map((v:any)=>({...v,project_id:id})),people:p.map((v:any)=>({...v,project_id:id})),items:i.map((v:any)=>({...v,project_id:id})),documents:d.map((v:any)=>({...v,project_id:id})),absences:a};
-    })),api('/projects'),api(base+'/working-calendars')]).then(([rows,all,calendars])=>{
-      if(!active)return;
-      setEvents(rows.flatMap(r=>r.events));setPeople(rows.flatMap(r=>r.people));setItems(rows.flatMap(r=>r.items));setDocuments(rows.flatMap(r=>r.documents));setAbsences([...new Map(rows.flatMap(r=>r.absences).map(a=>[a.id,a])).values()]);
-      setProjects(all);setProject(all.find((p:any)=>p.id===projectId)||{});setWorkingCalendar(calendars.find((c:any)=>!c.team_id));
-    }).catch(e=>{if(active)setError(e.message);});
-    return()=>{active=false;};
-  },[base,scopeKey]);
-  const projectLabel=(id:string)=>projects.find(p=>p.id===id)?.name||'Proyecto';
-  const upcoming=events.filter(e=>!e.archived&&!['Cancelado','Completado'].includes(e.status)&&[e.owner_id,...e.guests].includes(scope.person)&&Number(reminder)>0).filter(e=>{const time=new Date(e.date+'T'+e.time).getTime();return time>=now&&time-now<=Number(reminder)*60000;});
+  useEffect(() => {
+    let active = true;
+    setEvents([]);
+    setSelected("");
+    setEditing(null);
+    setPending(null);
+    setUndo(null);
+    setProjectFilter("");
+    setError("");
+    Promise.all([
+      Promise.all(
+        scope.ids.map(async (id) => {
+          const [e, p, i, d, a] = await Promise.all([
+            api("/projects/" + id + "/pmo/events"),
+            api("/projects/" + id + "/people"),
+            api("/projects/" + id + "/items"),
+            api("/projects/" + id + "/documents"),
+            api("/projects/" + id + "/availability"),
+          ]);
+          return {
+            events: e.map((v: any) => ({ ...v, project_id: id })),
+            people: p.map((v: any) => ({ ...v, project_id: id })),
+            items: i.map((v: any) => ({ ...v, project_id: id })),
+            documents: d.map((v: any) => ({ ...v, project_id: id })),
+            absences: a,
+          };
+        }),
+      ),
+      api("/projects"),
+      api(base + "/working-calendars"),
+    ])
+      .then(([rows, all, calendars]) => {
+        if (!active) return;
+        setEvents(rows.flatMap((r) => r.events));
+        setPeople(rows.flatMap((r) => r.people));
+        setItems(rows.flatMap((r) => r.items));
+        setDocuments(rows.flatMap((r) => r.documents));
+        setAbsences([
+          ...new Map(
+            rows.flatMap((r) => r.absences).map((a) => [a.id, a]),
+          ).values(),
+        ]);
+        setProjects(all);
+        setProject(all.find((p: any) => p.id === projectId) || {});
+        setWorkingCalendar(calendars.find((c: any) => !c.team_id));
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [base, scopeKey]);
+  const projectLabel = (id: string) =>
+    projects.find((p) => p.id === id)?.name || "Proyecto";
+  const upcoming = events
+    .filter(
+      (e) =>
+        !e.archived &&
+        !["Cancelado", "Completado"].includes(e.status) &&
+        [e.owner_id, ...e.guests].includes(scope.person) &&
+        Number(reminder) > 0,
+    )
+    .filter((e) => {
+      const time = new Date(e.date + "T" + e.time).getTime();
+      return time >= now && time - now <= Number(reminder) * 60000;
+    });
   const person = (id: string | null) =>
     people.find((p) => p.id === id)?.name || "Sin asignar";
   const related = (id: string | null) => {
@@ -77,7 +142,8 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
   const visible = events
     .filter(
       (e) =>
-        !!e.archived === archived && (!projectFilter||e.project_id===projectFilter) &&
+        !!e.archived === archived &&
+        (!projectFilter || e.project_id === projectFilter) &&
         [
           e.title,
           e.description,
@@ -96,11 +162,17 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   const current = visible.find((e) => e.id === selected);
   const save = async (e: AgendaEvent) => {
-    const result = await api("/projects/"+(e.project_id||projectId) + "/pmo/events" + (e.id ? "/" + e.id : ""), {
-      method: e.id ? "PUT" : "POST",
-      ...json(e),
-    });
-    result.project_id=e.project_id||projectId;
+    const result = await api(
+      "/projects/" +
+        (e.project_id || projectId) +
+        "/pmo/events" +
+        (e.id ? "/" + e.id : ""),
+      {
+        method: e.id ? "PUT" : "POST",
+        ...json(e),
+      },
+    );
+    result.project_id = e.project_id || projectId;
     setEvents((all) =>
       e.id
         ? all.map((x) => (x.id === result.id ? result : x))
@@ -110,7 +182,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
   };
   const create = (date: string) =>
     setEditing({
-      project_id:projectId,
+      project_id: projectId,
       id: "",
       version: 1,
       title: "",
@@ -120,7 +192,9 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
       duration_minutes: 60,
       kind: "Reunión",
       status: "Programado",
-      owner_id: people.some((p) => p.project_id===projectId&&p.id === localPersonId())
+      owner_id: people.some(
+        (p) => p.project_id === projectId && p.id === localPersonId(),
+      )
         ? localPersonId()
         : null,
       guests: [],
@@ -137,15 +211,22 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
     setBusy(true);
     setError("");
     try {
-      const saved = await api("/projects/"+value.event.project_id + "/events/" + value.event.id + "/move", {
-        method: "POST",
-        ...json({
-          version: value.event.version,
-          date: value.date,
-          time: value.time,
-        }),
-      });
-      saved.project_id=value.event.project_id;
+      const saved = await api(
+        "/projects/" +
+          value.event.project_id +
+          "/events/" +
+          value.event.id +
+          "/move",
+        {
+          method: "POST",
+          ...json({
+            version: value.event.version,
+            date: value.date,
+            time: value.time,
+          }),
+        },
+      );
+      saved.project_id = value.event.project_id;
       setEvents((all) => all.map((e) => (e.id === saved.id ? saved : e)));
       setSelected(saved.id);
       setUndo(
@@ -163,7 +244,10 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
   const detail = current ? (
     <article className="event-detail">
       <span className="field-chip">{current.status}</span>
-      <h3>{current.title}</h3><p style={{color:projectColor(current.project_id)}}>{projectLabel(current.project_id)}</p>
+      <h3>{current.title}</h3>
+      <p style={{ color: projectColor(current.project_id) }}>
+        {projectLabel(current.project_id)}
+      </p>
       <p>{current.description || "Sin descripción registrada"}</p>
       <dl>
         <dt>Fecha y hora</dt>
@@ -184,12 +268,25 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
         <dd>{related(current.related_id)}</dd>
       </dl>
       <p>{current.notes || "Sin notas adicionales"}</p>
-      {current.propose_executive && <p>Propuesto para Seguimiento Ejecutivo · {related(current.related_id)}</p>}
+      {current.propose_executive && (
+        <p>
+          Propuesto para Seguimiento Ejecutivo · {related(current.related_id)}
+        </p>
+      )}
       <div>
         {current.document_ids.map((id) => {
           const doc = documents.find((d) => d.id === id);
           return doc ? (
-            <a key={id} href={"/api/projects/"+current.project_id + "/documents/" + id + "/download"}>
+            <a
+              key={id}
+              href={
+                "/api/projects/" +
+                current.project_id +
+                "/documents/" +
+                id +
+                "/download"
+              }
+            >
               {doc.filename}
             </a>
           ) : (
@@ -200,7 +297,12 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
       <button className="primary" onClick={() => setEditing(current)}>
         Editar evento
       </button>
-      <Attachments projectId={current.project_id} kind="event" id={current.id}/>
+      <Attachments
+        key={attachmentRevision}
+        projectId={current.project_id}
+        kind="event"
+        id={current.id}
+      />
     </article>
   ) : (
     <div className="event-detail empty-state">
@@ -221,8 +323,15 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           Nuevo evento
         </button>
       </div>
-      <ScopeToggle scope={scope}/>
-      {upcoming.length>0&&<p role="status">Recordatorio: {upcoming.map(e=>e.title+' · '+e.time.slice(0,5)).join(' / ')}</p>}
+      <ScopeToggle scope={scope} />
+      {upcoming.length > 0 && (
+        <p role="status">
+          Recordatorio:{" "}
+          {upcoming
+            .map((e) => e.title + " · " + e.time.slice(0, 5))
+            .join(" / ")}
+        </p>
+      )}
       {error && <p role="alert">{error}</p>}
       {undo && (
         <p role="status">
@@ -233,8 +342,44 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
         </p>
       )}
       <div className="pmo-actions">
-        {scope.all&&<label>Proyecto<select value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="">Todos mis proyectos</option>{scope.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
-        <label>Recordatorio local<select value={reminder} onChange={e=>{setReminder(e.target.value);localStorage.setItem('pohub.agenda.reminder',e.target.value);}}>{[['0','Desactivado'],['5','5 minutos'],['15','15 minutos'],['30','30 minutos']].map(([v,t])=><option key={v} value={v}>{t}</option>)}</select><small>Mientras la agenda está abierta, para tus eventos.</small></label>
+        {scope.all && (
+          <label>
+            Proyecto
+            <select
+              value={projectFilter}
+              onChange={(e) => setProjectFilter(e.target.value)}
+            >
+              <option value="">Todos mis proyectos</option>
+              {scope.projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label>
+          Recordatorio local
+          <select
+            value={reminder}
+            onChange={(e) => {
+              setReminder(e.target.value);
+              localStorage.setItem("pohub.agenda.reminder", e.target.value);
+            }}
+          >
+            {[
+              ["0", "Desactivado"],
+              ["5", "5 minutos"],
+              ["15", "15 minutos"],
+              ["30", "30 minutos"],
+            ].map(([v, t]) => (
+              <option key={v} value={v}>
+                {t}
+              </option>
+            ))}
+          </select>
+          <small>Mientras la agenda está abierta, para tus eventos.</small>
+        </label>
         <label>
           Buscar eventos
           <input
@@ -277,8 +422,16 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           details={detail}
           describe={(e) => {
             const event = events.find((x) => x.id === e.id)!;
-            const absence=absences.filter(a=>!a.archived&&a.start_date<=event.date&&a.end_date>=event.date&&[event.owner_id,...event.guests].includes(a.person_id)).map(a=>person(a.person_id)+': '+a.kind);
-            return `${projectLabel(event.project_id)} · Organizador: ${person(event.owner_id)} · Invitados: ${event.guests.map(person).join(', ')||'—'} · ${related(event.related_id)} · ${event.description} · ${event.notes}${absence.length?' · Disponibilidad: '+absence.join(', '):''}`;
+            const absence = absences
+              .filter(
+                (a) =>
+                  !a.archived &&
+                  a.start_date <= event.date &&
+                  a.end_date >= event.date &&
+                  [event.owner_id, ...event.guests].includes(a.person_id),
+              )
+              .map((a) => person(a.person_id) + ": " + a.kind);
+            return `${projectLabel(event.project_id)} · Organizador: ${person(event.owner_id)} · Invitados: ${event.guests.map(person).join(", ") || "—"} · ${related(event.related_id)} · ${event.description} · ${event.notes}${absence.length ? " · Disponibilidad: " + absence.join(", ") : ""}`;
           }}
         />
       ) : (
@@ -287,14 +440,17 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
             {visible.map((e) => (
               <button
                 key={e.id}
-                style={{borderLeft:`4px solid ${projectColor(e.project_id)}`}}
+                style={{
+                  borderLeft: `4px solid ${projectColor(e.project_id)}`,
+                }}
                 className={e.id === selected ? "selected" : ""}
                 onClick={() => setSelected(e.id)}
               >
                 <time>
                   {e.date} · {e.time.slice(0, 5)}
                 </time>
-                <strong>{e.title}</strong><small>{projectLabel(e.project_id)}</small>
+                <strong>{e.title}</strong>
+                <small>{projectLabel(e.project_id)}</small>
                 <small>
                   {e.duration_minutes ?? "—"} min · {e.status} ·{" "}
                   {person(e.owner_id)}
@@ -307,12 +463,37 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           {detail}
         </div>
       )}
+      {current && (
+        <MeetingMinutes
+          key={current.id}
+          projectId={current.project_id}
+          eventId={current.id}
+          eventTitle={current.title}
+          people={people.filter((p) => p.project_id === current.project_id)}
+          items={items.filter((i) => i.project_id === current.project_id)}
+          onChange={async () => {
+            setAttachmentRevision((v) => v + 1);
+            const fresh = await api(
+              "/projects/" + current.project_id + "/items",
+            );
+            setItems((all) => [
+              ...all.filter((i) => i.project_id !== current.project_id),
+              ...fresh.map((i: any) => ({
+                ...i,
+                project_id: current.project_id,
+              })),
+            ]);
+          }}
+        />
+      )}
       {editing && (
         <EventEditor
           initial={editing}
-          people={people.filter(p=>p.project_id===editing.project_id)}
-          items={items.filter(i=>i.project_id===editing.project_id)}
-          documents={documents.filter(d=>d.project_id===editing.project_id)}
+          people={people.filter((p) => p.project_id === editing.project_id)}
+          items={items.filter((i) => i.project_id === editing.project_id)}
+          documents={documents.filter(
+            (d) => d.project_id === editing.project_id,
+          )}
           onClose={() => setEditing(null)}
           onSave={save}
         />
@@ -480,7 +661,13 @@ function EventEditor({
               value: i.id,
               label: `${i.code} · ${i.name}`,
             }))}
-            onChange={(value) => setV({...v,related_id:String(value)||null,propose_executive:!!value && v.propose_executive})}
+            onChange={(value) =>
+              setV({
+                ...v,
+                related_id: String(value) || null,
+                propose_executive: !!value && v.propose_executive,
+              })
+            }
           />
           <details>
             <summary>Notas y documentos</summary>
@@ -502,8 +689,19 @@ function EventEditor({
               onChange={(value) => set("document_ids", value)}
             />
           </details>
-          <label className="executive-event-label"><input type="checkbox" checked={!!v.propose_executive} disabled={!v.related_id} onChange={e=>set("propose_executive",e.target.checked)}/> Proponer el elemento relacionado para Seguimiento Ejecutivo</label>
-          <small className="executive-event-help">Vincula un trabajo o RAID. El siguiente corte propondrá ese elemento para revisión; no copiará las notas de la reunión.</small>
+          <label className="executive-event-label">
+            <input
+              type="checkbox"
+              checked={!!v.propose_executive}
+              disabled={!v.related_id}
+              onChange={(e) => set("propose_executive", e.target.checked)}
+            />{" "}
+            Proponer el elemento relacionado para Seguimiento Ejecutivo
+          </label>
+          <small className="executive-event-help">
+            Vincula un trabajo o RAID. El siguiente corte propondrá ese elemento
+            para revisión; no copiará las notas de la reunión.
+          </small>
           <label>
             <input
               type="checkbox"

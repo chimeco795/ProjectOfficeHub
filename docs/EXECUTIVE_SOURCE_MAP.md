@@ -31,4 +31,7 @@ No se eliminan importadores ni originales. Un reporte publicado consume sus prop
 
 ## Información aún no disponible
 
-Baseline de avance ponderado, transiciones de estado por periodo como modelo ejecutivo, decisiones estructuradas del comité, semáforos interpretados, evaluación de calidad/alcance, confianza y narrativas. Permanecen manuales o como propuestas claramente etiquetadas. El dashboard configurable y drag/resize del Gantt siguen pendientes.
+Baseline de avance ponderado, transiciones de estado por periodo como modelo ejecutivo, decisiones estructuradas del comité, semáforos interpretados, evaluación de calidad/alcance, confianza y narrativas. Permanecen manuales o como propuestas claramente etiquetadas. El dashboard configurable y el desplazamiento horizontal validado del Gantt están implementados; resize de duración sigue pendiente.
+
+
+Actualización 2026-10-08: este inventario histórico se complementa con [EXECUTIVE_SUFFICIENCY.md](EXECUTIVE_SUFFICIENCY.md), incluyendo minutas originales, propuestas revisadas y decisiones estructuradas. No implica generación automática de narrativa.

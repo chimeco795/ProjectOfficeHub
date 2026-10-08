@@ -35,5 +35,7 @@ def capture(db, project_id, report_date):
         'budget':{'totals':budget,'baseline':dict(approved) if approved else None},'memberships':memberships,
         'periods':[dict(r) for r in db.execute('SELECT * FROM planning_periods WHERE project_id=? AND archived=0 ORDER BY start_date,name',(project_id,))],
         'documents':[dict(r) for r in db.execute('SELECT id,version,filename,sha256,author_id,related_id,source_id FROM documents WHERE project_id=? AND archived=0 ORDER BY filename,id',(project_id,))],
-        'meeting_proposals':events,'schedule':{'anchor':str(day),'errors':schedule['errors'],'finish':schedule['finish'],'changes':schedule['changes'],'critical':[] if schedule['errors'] else [r for r in schedule['rows'] if r['critical']], 'label':'Modelo simulado; no es una desviación respecto a línea base'},
+        'meeting_proposals':events,
+        'minute_candidates':[dict(r) for r in db.execute("SELECT p.id,p.version,p.kind,p.text,p.owner_id,p.target_date,p.item_id,p.decision_id,p.reviewed_at,m.event_id,m.document_id,m.meeting_date FROM minute_proposals p JOIN meeting_minutes m ON m.id=p.minute_id WHERE p.project_id=? AND p.status='accepted' AND p.executive_candidate=1 AND substr(p.reviewed_at,1,10)<=? ORDER BY p.reviewed_at,p.id",(project_id,str(day)))],
+        'schedule':{'anchor':str(day),'errors':schedule['errors'],'finish':schedule['finish'],'changes':schedule['changes'],'critical':[] if schedule['errors'] else [r for r in schedule['rows'] if r['critical']], 'label':'Modelo simulado; no es una desviación respecto a línea base'},
         'sources':[{'id':i['id'],'version':i['version']} for i in items]}
