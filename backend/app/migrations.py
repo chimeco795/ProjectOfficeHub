@@ -244,3 +244,41 @@ def migrate_executive_links(db,data_dir):
             WHEN NEW.propose_executive=1 AND NEW.related_id IS NULL
             BEGIN SELECT RAISE(ABORT,'Propuesta ejecutiva requiere relación'); END''')
     db.execute('INSERT INTO schema_version VALUES(9)')
+
+def migrate_management(db,data_dir):
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]>=10:return
+    db.commit()
+    if db.execute('SELECT COUNT(*) FROM projects').fetchone()[0]:
+        stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
+        with sqlite3.connect(data_dir/f'backup-v9-{stamp}.sqlite3') as backup:db.backup(backup)
+    db.execute('BEGIN IMMEDIATE')
+    if db.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]>=10:return
+    for column in ["phone TEXT NOT NULL DEFAULT ''","mobile TEXT NOT NULL DEFAULT ''","location TEXT NOT NULL DEFAULT ''","contact_notes TEXT NOT NULL DEFAULT ''"]:
+        db.execute('ALTER TABLE people ADD COLUMN '+column)
+    db.execute('''CREATE TABLE roles(id TEXT PRIMARY KEY,name TEXT NOT NULL,name_key TEXT NOT NULL UNIQUE,
+        reports_to TEXT REFERENCES roles(id),archived INTEGER NOT NULL DEFAULT 0,version INTEGER NOT NULL DEFAULT 1)''')
+    db.execute('ALTER TABLE memberships ADD COLUMN role_id TEXT REFERENCES roles(id)')
+    db.execute('ALTER TABLE memberships ADD COLUMN leader_id TEXT REFERENCES people(id)')
+    db.execute('ALTER TABLE memberships ADD COLUMN allow_multiple_teams INTEGER NOT NULL DEFAULT 0')
+    db.execute('''CREATE TABLE availability(id TEXT PRIMARY KEY,person_id TEXT NOT NULL REFERENCES people(id),
+        kind TEXT NOT NULL,start_date TEXT NOT NULL,end_date TEXT NOT NULL,notes TEXT NOT NULL DEFAULT '',
+        archived INTEGER NOT NULL DEFAULT 0,version INTEGER NOT NULL DEFAULT 1,CHECK(start_date<=end_date))''')
+    db.execute('''CREATE TABLE working_calendars(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),
+        team_id TEXT REFERENCES teams(id),days TEXT NOT NULL,start_time TEXT NOT NULL,end_time TEXT NOT NULL,
+        version INTEGER NOT NULL DEFAULT 1,CHECK(start_time<end_time))''')
+    db.execute("CREATE UNIQUE INDEX calendar_scope ON working_calendars(project_id,COALESCE(team_id,''))")
+    db.execute('''CREATE TABLE document_links(document_id TEXT NOT NULL REFERENCES documents(id),
+        target_kind TEXT NOT NULL,target_id TEXT NOT NULL,PRIMARY KEY(document_id,target_kind,target_id))''')
+    for action in ('INSERT','UPDATE'):
+        db.execute(f'''CREATE TRIGGER role_cycle_{action.lower()} BEFORE {action} ON roles
+            WHEN NEW.reports_to IS NOT NULL AND EXISTS(WITH RECURSIVE chain(id) AS
+                (SELECT NEW.reports_to UNION SELECT r.reports_to FROM roles r JOIN chain c ON r.id=c.id WHERE r.reports_to IS NOT NULL)
+                SELECT 1 FROM chain WHERE id=NEW.id)
+            BEGIN SELECT RAISE(ABORT,'Los roles no admiten ciclos'); END''')
+        db.execute(f'''CREATE TRIGGER document_link_scope_{action.lower()} BEFORE {action} ON document_links
+            WHEN NOT EXISTS(SELECT 1 FROM documents d WHERE d.id=NEW.document_id AND (
+                (NEW.target_kind='item' AND EXISTS(SELECT 1 FROM master_items t WHERE t.id=NEW.target_id AND t.project_id=d.project_id)) OR
+                (NEW.target_kind='event' AND EXISTS(SELECT 1 FROM events t WHERE t.id=NEW.target_id AND t.project_id=d.project_id)) OR
+                (NEW.target_kind='cut' AND EXISTS(SELECT 1 FROM cuts t WHERE t.id=NEW.target_id AND t.project_id=d.project_id))))
+            BEGIN SELECT RAISE(ABORT,'Documento relacionado ajeno al proyecto'); END''')
+    db.execute('INSERT INTO schema_version VALUES(10)')

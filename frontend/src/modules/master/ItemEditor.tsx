@@ -1,6 +1,7 @@
 import { SearchPicker, personChoices } from "../../components/SearchPicker";
 import { useState } from "react";
 import { Dialog } from "../../Dialog";
+import { Attachments } from '../operations/Attachments';
 
 export type Person = { id:string; name:string; email:string; version:number };
 export type Item = {
@@ -44,5 +45,5 @@ export function ItemEditor({ initial, people, items, title, onClose, onSave }: {
     <p>Estos son datos actuales del proyecto. Los cortes publicados conservan sus valores anteriores.</p>
     {error && <p role="alert" className="message error">{error}</p>}
     <button className="primary" disabled={busy}>{busy?"Guardando…":"Guardar elemento"}</button>
-  </fieldset></form></Dialog>;
+  </fieldset></form>{initial.id&&<Attachments projectId={initial.project_id} kind="item" id={initial.id}/>}</Dialog>;
 }

@@ -1,4 +1,5 @@
 import { DocumentWorkspace } from "./DocumentWorkspace";
+import {ManagementWorkspace} from './ManagementWorkspace';
 import { SearchPicker, personChoices, type Choice } from "../../components/SearchPicker";
 import { ContextField } from "../../components/ContextField";
 import { AgendaWorkspace } from "./AgendaWorkspace";
@@ -70,7 +71,7 @@ export function RecordEditor({
         }}
       >
         <fieldset disabled={busy}>
-          {fields.map((f) => f.options && ['person_id','owner_id','lead_id'].includes(f.key) ? <SearchPicker key={f.key} label={f.label} value={v[f.key]||''} options={f.options} onChange={value=>set(f.key,value||(f.nullable?null:''))}/> : (
+          {fields.filter(f=>f.key!=='role'||!v.role_id).map((f) => f.options && ['person_id','owner_id','lead_id'].includes(f.key) ? <SearchPicker key={f.key} label={f.label} value={v[f.key]||''} options={f.options} onChange={value=>set(f.key,value||(f.nullable?null:''))}/> : (
             <label key={f.key}>
               {f.label}
               {f.type === "checkbox" ? (
@@ -132,7 +133,7 @@ export function RecordEditor({
   );
 }
 export function Operations(props: { projectId: string; view: string }) {
-  return props.view === "documents" ? (
+  return ['people','roles','organization','availability'].includes(props.view) ? <ManagementWorkspace {...props}/> : props.view === "documents" ? (
     <DocumentWorkspace projectId={props.projectId} />
   ) : props.view === "agenda" ? (
     <AgendaWorkspace projectId={props.projectId} />
@@ -154,6 +155,7 @@ function OperationsContent({
     [teams, setTeams] = useState<Value[]>([]),
     [allTeams, setAllTeams] = useState<Value[]>([]),
     [budget, setBudget] = useState<Value>({ baseline: null, totals: {} });
+  const [roles,setRoles]=useState<Value[]>([]);
   const [teamView, setTeamView] = useState("project"),
     [allPeople, setAllPeople] = useState<Value[]>([]),
     [addingPerson, setAddingPerson] = useState(false);
@@ -174,7 +176,7 @@ function OperationsContent({
   const collection =
     view === "teams" ? "memberships" : view === "budget" ? "entries" : "events";
   async function reload() {
-    const [r, p, i, t, b, a, globalPeople] = await Promise.all([
+    const [r, p, i, t, b, a, globalPeople,roleRows] = await Promise.all([
       api(
         base +
           (view === "documents" ? "/document-library" : "/pmo/" + collection),
@@ -185,8 +187,9 @@ function OperationsContent({
       api(base + "/budget"),
       api("/teams"),
       api("/people"),
+      api("/roles"),
     ]);
-    setAllPeople(globalPeople);
+    setAllPeople(globalPeople);setRoles(roleRows);
     setRows(r);
     setPeople(p);
     setItems(i);
@@ -229,7 +232,10 @@ function OperationsContent({
         options: personOptions,
       },
       { key: "team_id", label: "Equipo", options: teamOptions, nullable: true },
-      { key: "role", label: "Rol", required: true },
+      {key:"role_id",label:"Rol del catálogo",nullable:true,options:roles.filter(r=>!r.archived).map(r=>({value:r.id,label:r.name}))},
+      { key: "role", label: "Rol heredado / sin catálogo" },
+      {key:"leader_id",label:"Líder de la asignación",nullable:true,options:personOptions},
+      {key:"allow_multiple_teams",label:"Excepción: permitir varios equipos simultáneos",type:"checkbox"},
       {
         key: "allocation",
         label: "Asignación (%)",
@@ -333,7 +339,7 @@ function OperationsContent({
     memberships: {
       person_id: "",
       team_id: null,
-      role: "",
+      role: "",role_id:null,leader_id:null,allow_multiple_teams:false,
       allocation: 100,
       valid_from: null,
       valid_to: null,
@@ -439,8 +445,7 @@ function OperationsContent({
             project: "Equipo del proyecto",
             available: "Personas disponibles",
             groups: "Equipos compartidos",
-            capacity: "Capacidad",
-            organization: "Organigrama",
+
           }).map(([key, label]) => (
             <button
               key={key}
@@ -483,7 +488,7 @@ function OperationsContent({
       {view === "teams" && teamView === "groups" && (
         <>
           <p>
-            Las personas se administran en Catálogo y responsables. Los equipos
+            Las personas se administran en Personas. Los equipos
             son compartidos; editar su nombre o líder afecta a todos sus
             proyectos.
           </p>
@@ -771,13 +776,14 @@ function OperationsContent({
                   <div>
                     <ContextField
                       label="Rol"
-                      value={r.role}
-                      required
+                      value={r.role_id || ""}
+                      display={roles.find(x=>x.id===r.role_id)?.name || r.role}
+                      options={[{value:"",label:r.role || 'Sin catálogo'},...roles.filter(x=>!x.archived||x.id===r.role_id).map(x=>({value:x.id,label:x.name}))]}
                       disabled={busy}
                       onSave={async (value) => {
                         const saved = await api(
                           base + "/pmo/memberships/" + r.id,
-                          { method: "PUT", ...json({ ...r, role: value }) },
+                          { method: "PUT", ...json({ ...r, role_id: value || null, role:roles.find(x=>x.id===value)?.name || r.role }) },
                         );
                         setRows((current) =>
                           current.map((row) =>

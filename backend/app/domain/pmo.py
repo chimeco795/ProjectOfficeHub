@@ -25,14 +25,18 @@ class Team(Versioned):
     lead_id:str|None=None
 
 class Membership(Versioned):
+    role_id:str|None=None
+    leader_id:str|None=None
+    allow_multiple_teams:bool=False
     team_id:str|None=None
     person_id:str
-    role:str=Field(min_length=1,max_length=100)
+    role:str=Field(default='',max_length=100)
     allocation:float=Field(ge=0,le=100,allow_inf_nan=False)
     valid_from:Date|None=None
     valid_to:Date|None=None
     @model_validator(mode='after')
     def dates(self):
+        if not self.role.strip() and not self.role_id:raise ValueError('Selecciona un rol o conserva el rol heredado')
         if self.valid_from and self.valid_to and self.valid_from>self.valid_to:raise ValueError('Vigencia inválida')
         return self
 

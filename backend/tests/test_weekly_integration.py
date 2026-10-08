@@ -131,7 +131,7 @@ def test_v3_migration_preserves_data_and_creates_backup(tmp_path,monkeypatch):
         cut=connection.execute('SELECT * FROM cuts').fetchone()
         assert json.loads(cut['project_snapshot']) == {'name':'Histórico'}
         assert json.loads(cut['history_snapshot'])[0]['planned'] == 48
-        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 9
+        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 10
     backups=list(tmp_path.glob('backup-v3-*.sqlite3'))
     assert len(backups)==1
     with sqlite3.connect(backups[0]) as connection:

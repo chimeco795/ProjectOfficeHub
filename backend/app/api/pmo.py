@@ -39,6 +39,10 @@ def validate_refs(db,pid,values):
     for identity in getattr(values,'document_ids',[]):scoped(db,'documents',pid,identity)
     if getattr(values,'lead_id',None):require(db,'people',values.lead_id)
     if getattr(values,'team_id',None):scoped(db,'teams',pid,values.team_id)
+    if getattr(values,'role_id',None):
+        role=require(db,'roles',values.role_id)
+        if role['archived']:raise HTTPException(422,'El rol está archivado')
+    if getattr(values,'leader_id',None) and not db.execute('SELECT 1 FROM project_people WHERE project_id=? AND person_id=?',(pid,values.leader_id)).fetchone():raise HTTPException(422,'Líder ajeno al proyecto')
     if getattr(values,'related_id',None):item(db,pid,values.related_id)
     for guest in getattr(values,'guests',[]):
         if not db.execute('SELECT 1 FROM project_people WHERE project_id=? AND person_id=?',(pid,guest)).fetchone():
@@ -74,9 +78,14 @@ def save_record(db,pid,collection,value,identity=None):
     old=scoped(db,table,pid,identity) if identity else {}
     if old and old['version']!=values.version:raise HTTPException(409,'El registro cambió; recarga antes de guardar')
     validate_refs(db,pid,values)
+    if table=='memberships' and values.team_id and not values.archived and not values.allow_multiple_teams:
+        conflict=db.execute('''SELECT 1 FROM memberships WHERE project_id=? AND person_id=? AND archived=0 AND team_id IS NOT NULL AND team_id!=? AND id!=?
+            AND COALESCE(valid_from,'0001-01-01')<=? AND COALESCE(valid_to,'9999-12-31')>=?''',(pid,values.person_id,values.team_id,identity or '',str(values.valid_to or '9999-12-31'),str(values.valid_from or '0001-01-01'))).fetchone()
+        if conflict and (not old or any(old[k]!=value.get(k) for k in ('team_id','person_id','valid_from','valid_to'))):raise HTTPException(422,'La persona ya tiene otro equipo en esa vigencia; marca la excepción explícita')
     if table=='planning_periods' and old and old['kind']!=values.kind:
         raise HTTPException(422,'El tipo de periodo no puede cambiar')
     fields=values.model_dump(mode='json');fields.pop('version')
+    if table=='memberships' and values.role_id:fields['role']=require(db,'roles',values.role_id)['name']
     for key in ('name','title','concept','category','role','kind'):
         if key in fields:
             fields[key]=fields[key].strip()
@@ -161,6 +170,9 @@ def document_library(project_id:str):
             # A file still used by a report remains discoverable in the active library.
             entry['archived']=False
             entry['references'].append({'kind':'source','id':source['id'],'filename':source['filename'],'cut_id':source['cut_id'],'report_date':source['report_date'],'status':source['status']})
+        from .document_links import document_links
+        for entry in grouped.values():
+            entry['links']=document_links(db,entry['id']) if entry['origin']=='document' else []
         return sorted(grouped.values(),key=lambda x:x['created_at'],reverse=True)
 
 @router.get('/projects/{project_id}/source-files/{identity}/download')

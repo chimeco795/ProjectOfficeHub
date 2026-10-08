@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Cut } from "../../types";
 import { api } from "../../api";
+import {Attachments} from '../operations/Attachments';
 
 import "./executive.css";
 
@@ -39,7 +40,7 @@ export function CutHistory({ cuts, onOpen, onCreate, busy }: {
 
 type Event = { id: number; changed_at: string; event: string; previous: string; next: string; location?: string; section?: string };
 const eventNames: Record<string,string> = { crear:"Creación del corte", copiar:"Copia de corte anterior", importar:"Importación de archivo", editar:"Edición del resumen", publicar:"Publicación", registro:"Cambio de registro" };
-export function CutTimeline({ cutId, version }: { cutId: string; version: number }) {
+export function CutTimeline({ cutId, version,projectId }: { cutId: string; version: number;projectId:string }) {
   const [events,setEvents] = useState<Event[]>([]);
   const [error,setError] = useState("");
   useEffect(() => {
@@ -50,6 +51,7 @@ export function CutTimeline({ cutId, version }: { cutId: string; version: number
   }, [cutId,version]);
   return <section className="panel"><h2>Trazabilidad del corte</h2>
     <p>Creación, importaciones, correcciones y publicación conservadas en este corte.</p>
+    <Attachments projectId={projectId} kind="cut" id={cutId}/>
     {error && <p role="alert">{error}</p>}
     {events.map((event,index) => <details className="cut-event" key={`${event.event}-${event.id}-${index}`}>
       <summary>{eventNames[event.event] || event.event} · {new Date(event.changed_at).toLocaleString("es-MX")}</summary>

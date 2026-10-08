@@ -98,6 +98,7 @@ def test_organization_schema_migration_backup(tmp_path,monkeypatch):
     import sqlite3
     monkeypatch.setattr(db,'DATA',tmp_path)
     with monkeypatch.context() as old:
+        old.setattr(migrations,'migrate_management',lambda *args:None)
         old.setattr(migrations,'migrate_operation_details',lambda *args:None)
         old.setattr(migrations,'migrate_organization',lambda *args:None);db.initialize()
     with db.connection() as conn:
@@ -108,6 +109,6 @@ def test_organization_schema_migration_backup(tmp_path,monkeypatch):
         row=dict(conn.execute('SELECT * FROM people').fetchone())
         assert row['name']=='Ana' and row['leader_id'] is None and row['role']==''
         assert conn.execute('PRAGMA foreign_key_check').fetchall()==[]
-        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==9
+        assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==10
     backups=list(tmp_path.glob('backup-v6-*.sqlite3'));assert len(backups)==1
     with sqlite3.connect(backups[0]) as conn:assert conn.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==6

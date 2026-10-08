@@ -15,7 +15,10 @@ def get_capacity(project_id:str,start:date,end:date):
         people=[dict(r) for r in db.execute('SELECT p.id,p.name FROM people p JOIN project_people x ON x.person_id=p.id WHERE x.project_id=? ORDER BY p.name,p.id',(project_id,))]
         rows=[dict(r) for r in db.execute('''SELECT m.*,p.name project_name FROM memberships m JOIN projects p ON p.id=m.project_id
             WHERE m.person_id IN (SELECT person_id FROM project_people WHERE project_id=?) AND m.archived=0 ORDER BY m.id''',(project_id,))]
-        return {'start':start.isoformat(),'end':end.isoformat(),'people':capacity(people,rows,start,end)}
+        result=capacity(people,rows,start,end)
+        for person in result:
+            person['availability']=[dict(r) for r in db.execute('SELECT * FROM availability WHERE person_id=? AND archived=0 AND start_date<=? AND end_date>=?',(person['id'],end.isoformat(),start.isoformat()))]
+        return {'start':start.isoformat(),'end':end.isoformat(),'people':result}
 
 class Comment(BaseModel):
     text:str=Field(min_length=1,max_length=5000)

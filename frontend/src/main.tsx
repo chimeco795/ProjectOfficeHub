@@ -36,7 +36,7 @@ import { ProjectFields } from "./modules/projects/ProjectFields";
 
 import "./modules/workspace/refinement.css";
 
-const operationViews = ["backlog","board","gantt","roadmap","teams","budget","agenda","documents"];
+const operationViews = ["backlog","board","gantt","roadmap","teams","people","roles","organization","availability","budget","agenda","documents"];
 const sections: Record<string, string> = {
   general: "Datos generales",
   avance: "Avance",
@@ -204,7 +204,7 @@ function App() {
       setCutId(target);
       setDetail(loaded);
     }
-    setView(["migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents", "master", "audit", "reconcile", "summary", "report", "weekly", "data", "review", "import", "history", "timeline"].includes(nextView) ? nextView : "summary");
+    setView(["migration", "backlog", "board", "gantt", "roadmap", "teams", "people", "roles", "organization", "availability", "budget", "agenda", "documents", "master", "audit", "reconcile", "summary", "report", "weekly", "data", "review", "import", "history", "timeline"].includes(nextView) ? nextView : "summary");
   }
   async function save(row: Row, review: string) {
     for (const [key, value] of Object.entries(row.current)) {
@@ -284,11 +284,11 @@ function App() {
           </div>
         </div>
       </aside>
-      <main>
+      <main className={['agenda','documents'].includes(view)?'compact-operation':''}>
         <header className="topbar">
           <span>
             Gestión de proyectos <ChevronRight size={14} />{" "}
-            {view === "migration" ? "Migración .pohub" : operationViews.includes(view) && project ? (["teams","budget"].includes(view) ? "Gestión" : ["agenda","documents"].includes(view) ? "Operación" : "Planificación") : project ? (view === "master" ? "Catálogo y responsables" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
+            {view === "migration" ? "Migración .pohub" : operationViews.includes(view) && project ? (["teams","people","roles","organization","availability","budget"].includes(view) ? "Gestión" : ["agenda","documents"].includes(view) ? "Operación" : "Planificación") : project ? (view === "master" ? "RAID e hitos" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
           </span>
           <span className="phase">{project ? viewLabel(view, project.methodology) : "Espacio de trabajo"}</span>
         </header>
@@ -399,16 +399,16 @@ function App() {
                       ? "FUENTES DEL REPORTE"
                       : view === "history"
                         ? "ARCHIVO DEL PROYECTO"
-                        : ["backlog","board","gantt","roadmap","teams","budget","agenda","documents"].includes(view) ? (["teams","budget"].includes(view) ? "GESTIÓN" : ["agenda","documents"].includes(view) ? "OPERACIÓN" : "PLANIFICACIÓN") : "REVISIÓN DEL CORTE"}
+                        : ["backlog","board","gantt","roadmap","teams","people","roles","organization","availability","budget","agenda","documents"].includes(view) ? (["teams","people","roles","organization","availability","budget"].includes(view) ? "GESTIÓN" : ["agenda","documents"].includes(view) ? "OPERACIÓN" : "PLANIFICACIÓN") : "REVISIÓN DEL CORTE"}
                   </div>
                   <h1>
-                    {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado"
+                    {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "people", "roles", "organization", "availability", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado"
                       ? (detail.cut.project_snapshot.name ?? "Nombre histórico no disponible")
                       : project.name}
                   </h1>
                   <span className="methodology-badge">◈ {!["summary", "history", "master", "audit", "migration", ...operationViews].includes(view) && detail?.cut.status === "publicado" ? (detail.cut.project_snapshot.methodology || "Metodología histórica no disponible") : ({Agile:"Agile",Waterfall:"Waterfall",Hybrid:"Híbrida"}[project.methodology] || project.methodology)}</span>
                   <p>
-                    {(!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado"
+                    {(!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "people", "roles", "organization", "availability", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado"
                       ? detail.cut.project_snapshot.description
                       : project.description) ||
                       ([...operationViews,"summary","master","audit"].includes(view) ? "Administra el estado actual y el historial de tu proyecto." : "Prepara la información de tu reporte semanal.")}
@@ -427,7 +427,7 @@ function App() {
                 </div>
               </div>
               <WorkspaceTabs methodology={project.methodology} view={view} onNavigate={navigate}/>
-              {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && <div className="cutbar">
+              {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "people", "roles", "organization", "availability", "budget", "agenda", "documents"].includes(view) && <div className="cutbar">
                 <label>
                   Corte de reporte{" "}
                   <select
@@ -466,7 +466,7 @@ function App() {
                 </span>
               </div>
               }
-              {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado" && (
+              {!["summary", "history", "master", "audit", "migration", "backlog", "board", "gantt", "roadmap", "teams", "people", "roles", "organization", "availability", "budget", "agenda", "documents"].includes(view) && detail?.cut.status === "publicado" && (
                 <div className="message success">
                   Este corte está publicado. Los datos son de solo lectura.
                 </div>
@@ -476,7 +476,7 @@ function App() {
 
               ) : ["backlog","board","gantt","roadmap"].includes(view) ? (
                 <Planning key={project.id} project={project} view={view} onViewChange={navigate}/>
-              ) : ["teams","budget","agenda","documents"].includes(view) ? (
+              ) : ["teams","people","roles","organization","availability","budget","agenda","documents","people","roles","organization","availability"].includes(view) ? (
                 <Operations key={project.id+view} projectId={project.id} view={view}/>
               ) : view === "master" ? (
                 <MasterCatalog key={project.id} projectId={project.id} />
@@ -529,7 +529,7 @@ function App() {
                   setView(cuts.find(c => c.id === id)?.status === "publicado" ? "report" : "review");
                 })} />
               ) : view === "timeline" && detail ? (
-                <CutTimeline cutId={cutId} version={detail.cut.version} />
+                <CutTimeline cutId={cutId} version={detail.cut.version} projectId={project.id}/>
               ) : view === "import" ? (
                 <>
                   <section className="panel import-panel">

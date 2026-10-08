@@ -28,7 +28,11 @@ export const groups = [
     icon: Users,
     views: [
       ["master", "RAID e hitos"],
-      ["teams", "Equipo y roles"],
+      ["people", "Personas"],
+      ["teams", "Equipos / Asignaciones"],
+      ["roles", "Roles"],
+      ["organization", "Organigrama"],
+      ["availability", "Capacidad / Disponibilidad"],
       ["budget", "Presupuesto"],
     ],
   },

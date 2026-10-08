@@ -553,6 +553,19 @@
 .native-dialog.work-detail-dialog .work-detail-block .context-field{display:grid;grid-template-columns:minmax(80px,1fr) minmax(0,1.5fr);align-items:start;gap:5px}
 .native-dialog.work-detail-dialog .work-detail-block .context-field:has(textarea),.native-dialog.work-detail-dialog .work-detail-block .context-field:has(.search-picker){display:block}
 .native-dialog.work-detail-dialog .work-detail-block p{font-size:12px;line-height:1.4;margin:6px 0}
+.availability-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:12px 0}
+.org-scroll{overflow:auto;padding:16px;background:#f8fafc;border-radius:12px}
+.org-tree{width:max-content;min-width:100%;text-align:center}
+.org-tree ul{display:flex;justify-content:center;padding:24px 0 0;margin:0;position:relative;list-style:none}
+.org-tree li{padding:24px 12px 0;position:relative}
+.org-tree li:before,.org-tree li:after{content:'';position:absolute;top:0;right:50%;border-top:1px solid #9caec5;width:50%;height:24px}
+.org-tree li:after{right:auto;left:50%;border-left:1px solid #9caec5}
+.org-tree li:only-child:before,.org-tree li:only-child:after{display:none}
+.org-tree li:first-child:before,.org-tree li:last-child:after{border-top:0}
+.org-tree ul ul:before{content:'';position:absolute;top:0;left:50%;height:24px;border-left:1px solid #9caec5}
+.org-node{min-width:190px;max-width:280px;border:1px solid #cbd8e8;border-radius:10px;background:white;padding:12px;display:inline-flex;flex-direction:column;gap:8px}
+.org-person{display:flex;gap:8px;align-items:center;text-align:left;border-top:1px solid #edf1f6;padding-top:8px}
+.org-person small{display:block;color:#61738d;font-size:11px}
 .shell .state-resolved{--state-bg:#eeebff;--state-color:#5544a0;--state-border:#cbc3ef}
 @media(max-width:900px){.work-detail-dialog .work-sections{grid-template-columns:repeat(2,minmax(0,1fr))}.shell .kanban .kanban-column{flex-basis:40%}}
 @media(max-width:600px){.work-detail-dialog>.detail-grid,.work-detail-dialog .work-sections{grid-template-columns:1fr}.shell .kanban .kanban-column{flex-basis:80%}}

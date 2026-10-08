@@ -36,6 +36,10 @@ from .api.schedule import router as schedule_router
 app.include_router(schedule_router)
 from .api.collaboration import router as collaboration_router
 app.include_router(collaboration_router)
+from .api.management import router as management_router
+app.include_router(management_router)
+from .api.document_links import router as document_links_router
+app.include_router(document_links_router)
 app.add_middleware(TrustedHostMiddleware,allowed_hosts=['127.0.0.1','localhost','testserver'])
 
 class Cut(BaseModel):

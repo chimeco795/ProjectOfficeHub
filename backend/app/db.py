@@ -72,7 +72,7 @@ def initialize():
             db.execute('CREATE TABLE cut_audit(id INTEGER PRIMARY KEY, cut_id TEXT NOT NULL REFERENCES cuts(id), changed_at TEXT NOT NULL, event TEXT NOT NULL, previous TEXT NOT NULL, next TEXT NOT NULL)')
             db.execute('CREATE TABLE project_audit(id INTEGER PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), changed_at TEXT NOT NULL, previous TEXT NOT NULL, next TEXT NOT NULL)')
             db.execute('INSERT INTO schema_version VALUES(2)')
-        from .migrations import migrate_projects, migrate_weekly, migrate_master, migrate_pmo, migrate_organization, migrate_operation_details, migrate_executive_links
+        from .migrations import migrate_projects, migrate_weekly, migrate_master, migrate_pmo, migrate_organization, migrate_operation_details, migrate_executive_links, migrate_management
         migrate_projects(db, DATA)
         migrate_weekly(db, DATA)
         migrate_master(db, DATA)
@@ -82,3 +82,4 @@ def initialize():
 
         migrate_operation_details(db, DATA)
         migrate_executive_links(db, DATA)
+        migrate_management(db, DATA)

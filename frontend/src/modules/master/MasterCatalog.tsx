@@ -17,7 +17,7 @@ export function MasterCatalog({projectId}: {projectId:string}) {
   async function run(fn:()=>Promise<void>){setBusy(true);setError("");setNotice("");try{await fn();await reload();setNotice("Datos maestros guardados.");}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
   const visible=items.filter(i=>i.kind===kind && !!i.archived===archived && `${i.code} ${i.name} ${i.owner_name}`.toLowerCase().includes(query.toLowerCase()));
   return <>
-    <section className="panel"><div className="section-heading"><div><h2>Estado actual del proyecto</h2><p>RAID, hitos y actividades comparten responsables y se vinculan con los cortes semanales.</p></div>
+    <section className="panel"><div className="section-heading"><div><h2>RAID e hitos</h2><p>Riesgos, supuestos, incidencias, dependencias e hitos vigentes que alimentan los nuevos cortes semanales.</p></div>
       <button className="primary" onClick={()=>setEditing(emptyItem(kind))}>Nuevo elemento</button></div>
       {error&&<p role="alert" className="message error">{error}</p>}{notice&&<p role="status">{notice}</p>}
       <div className="master-filters"><label>Tipo de elemento<select value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(kinds).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>

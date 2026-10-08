@@ -4,6 +4,7 @@ import { ContextField } from "../../components/ContextField";
 import { personChoices } from "../../components/SearchPicker";
 import { iterationLabel } from "./workPresentation";
 import { WorkComments } from "./WorkComments";
+import { Attachments } from '../operations/Attachments';
 import { states, types, allowedTypes, stateClass } from "./workPresentation";
 import type { Work, Period } from "./Planning";
 import type { Person } from "../master/ItemEditor";
@@ -236,6 +237,7 @@ export function WorkDetails({
         </section>
       </div>
       <section className="work-detail-block work-detail-description">{field("description", "Descripción", undefined, "textarea")}</section>
+      <Attachments projectId={projectId} kind="item" id={work.id}/>
       {error && <p role="alert">{error}</p>}
       <section className="work-comments-section work-detail-block">
         <h4>Conversación</h4>

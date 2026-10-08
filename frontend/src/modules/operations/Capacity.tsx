@@ -23,6 +23,7 @@ type Result = {
     average: number;
     overloaded_days: number;
     segments: Segment[];
+    availability?: {id:string;kind:string;start_date:string;end_date:string}[];
   }[];
 };
 export function Capacity({
@@ -138,6 +139,7 @@ export function Capacity({
                   <div className="capacity-meter">
                     <span style={{ width: `${Math.min(100, person.peak)}%` }} />
                   </div>
+                  {!!person.availability?.length && <div><strong>Disponibilidad registrada</strong>{person.availability.map(a=><p key={a.id}>{a.kind} · {a.start_date} → {a.end_date}</p>)}<small>Ausencias mostradas como contexto; la dedicación contractual no se reduce automáticamente.</small></div>}
                   <details>
                     <summary>
                       Ver periodos y proyectos ({person.segments.length})

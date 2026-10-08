@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { calendarDays, dateKey, shiftCalendar } from "./calendarModel";
+import { projectColor } from './OperationScope';
 type Event = {
   id: string;
   title: string;
@@ -9,6 +10,7 @@ type Event = {
   kind: string;
   duration_minutes?: number | null;
   status?: string;
+  project_id?: string;
 };
 export function Calendar({
   events,
@@ -18,6 +20,7 @@ export function Calendar({
   busy = false,
   details,
   describe,
+  workingCalendar,
 }: {
   events: Event[];
   onEdit: (id: string) => void;
@@ -26,11 +29,14 @@ export function Calendar({
   busy?: boolean;
   details?: ReactNode;
   describe?: (event: Event) => string;
+  workingCalendar?: {days:number[];start_time:string;end_time:string};
 }) {
   const [mode, setMode] = useState<"month" | "week" | "day">("month"),
     [anchor, setAnchor] = useState(dateKey(new Date())),
     [dragging, setDragging] = useState(""),
-    [over, setOver] = useState("");
+    [over, setOver] = useState(""),
+    [outsideHours,setOutsideHours]=useState(false),
+    [hover,setHover]=useState<{event:Event;left:number;top:number}|null>(null);
   const days = calendarDays(anchor, mode),
     today = dateKey(new Date());
   const drop = (date: string, time?: string) => ({
@@ -64,6 +70,11 @@ export function Calendar({
         setOver("");
       }}
       className="calendar-event"
+      style={{borderLeft:`4px solid ${projectColor(event.project_id||'')}`}}
+      onMouseEnter={e=>{const r=e.currentTarget.getBoundingClientRect();setHover({event,left:Math.max(8,Math.min(r.left,window.innerWidth-340)),top:Math.max(8,Math.min(r.bottom+4,window.innerHeight-270))});}}
+      onMouseLeave={()=>setHover(null)}
+      onFocus={e=>{const r=e.currentTarget.getBoundingClientRect();setHover({event,left:Math.max(8,Math.min(r.left,window.innerWidth-340)),top:Math.max(8,Math.min(r.bottom+4,window.innerHeight-270))});}}
+      onBlur={()=>setHover(null)}
       onClick={() => onEdit(event.id)}
       title={`${event.time.slice(0, 5)} · ${event.title}`}
     >
@@ -75,18 +86,21 @@ export function Calendar({
           : "Duración sin definir"}{" "}
         · {event.status || event.kind}
       </small>
-      {describe && <small>{describe(event)}</small>}
     </button>
   );
+  const startHour=Number((workingCalendar?.start_time||'08:00').slice(0,2));
+  const endHour=Math.ceil(Number((workingCalendar?.end_time||'18:00').slice(0,2))+Number((workingCalendar?.end_time||'18:00').slice(3,5))/60);
+  const hourRange=Array.from({length:24},(_,h)=>h).filter(h=>outsideHours||(h>=startHour&&h<endHour));
+  const isWorking=(day:string,hour:number)=>{const weekday=(new Date(day+'T12:00:00').getDay()+6)%7;return (workingCalendar?.days||[0,1,2,3,4]).includes(weekday)&&hour>=startHour&&hour<endHour;};
   const hours = (day: string) => (
     <div className="hour-list">
-      {Array.from({ length: 24 }, (_, hour) => {
+      {hourRange.map((hour) => {
         const time = String(hour).padStart(2, "0") + ":00";
         return (
           <div
             key={time}
             className={
-              "hour-slot " + (over === day + time ? "drop-active" : "")
+              "hour-slot " + (!isWorking(day,hour)?"outside-working ":"") + (over === day + time ? "drop-active" : "")
             }
             {...drop(day, time)}
             aria-label={`Mover a ${day} ${time}`}
@@ -146,6 +160,7 @@ export function Calendar({
         Selecciona para leer. Arrastra a un día u hora para proponer un cambio;
         confirma antes de guardar.
       </p>
+      {mode!=='month'&&<><button aria-pressed={outsideHours} onClick={()=>setOutsideHours(!outsideHours)}>{outsideHours?'Priorizar horario laboral':'Mostrar todas las horas'}</button>{!outsideHours&&<div className="outside-events"><strong>Fuera de horario laboral</strong>{events.filter(e=>days.includes(e.date)&&(Number(e.time.slice(0,2))<startHour||Number(e.time.slice(0,2))>=endHour)).map(card)}</div>}</>}
       {mode === "day" ? (
         <div className="event-master-detail">
           <div>
@@ -159,6 +174,8 @@ export function Calendar({
           </div>
           {details}
         </div>
+      ) : mode==='week'?(
+        <><div className="weekly-time-scroll"><div className="weekly-time-grid"><div className="weekly-time-heading">Hora</div>{days.map((day,n)=><div className="weekly-time-heading" key={day}>{['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][n]} {Number(day.slice(8))}<button aria-label={`Crear evento el ${day}`} onClick={()=>onCreate(day)}><Plus size={13}/></button></div>)}{hourRange.map(hour=>{const time=String(hour).padStart(2,'0')+':00';return <div className="weekly-hour-row" key={hour}><time>{time}</time>{days.map(day=><div key={day} className={'weekly-hour-cell '+(!isWorking(day,hour)?'outside-working ':'')+(over===day+time?'drop-active':'')} {...drop(day,time)} aria-label={`Mover a ${day} ${time}`}>{events.filter(e=>e.date===day&&Number(e.time.slice(0,2))===hour).sort((a,b)=>a.time.localeCompare(b.time)).map(card)}</div>)}</div>;})}</div></div>{details}</>
       ) : (
         <>
           <div className="calendar-scroll">
@@ -190,9 +207,7 @@ export function Calendar({
                       <Plus size={13} />
                     </button>
                   </div>
-                  {mode === "week"
-                    ? hours(day)
-                    : events
+                  {events
                         .filter((e) => e.date === day)
                         .sort((a, b) => a.time.localeCompare(b.time))
                         .map(card)}
@@ -203,6 +218,7 @@ export function Calendar({
           {details}
         </>
       )}
+      {hover&&<aside className="event-hover-card" role="tooltip" style={{left:hover.left,top:hover.top}}><strong>{hover.event.title}</strong><p>{hover.event.date} · {hover.event.time.slice(0,5)} · {hover.event.duration_minutes||'—'} min</p><p>{describe?.(hover.event)}</p></aside>}
     </section>
   );
 }

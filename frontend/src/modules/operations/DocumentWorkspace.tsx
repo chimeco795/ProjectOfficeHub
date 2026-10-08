@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import {ScopeToggle,useOperationScope} from './OperationScope';
+import { useEffect, useRef, useState } from "react";
 import { api, json } from "../../api";
 import { Dialog } from "../../Dialog";
 import { SearchPicker, personChoices } from "../../components/SearchPicker";
@@ -6,6 +7,9 @@ import { ContextField } from "../../components/ContextField";
 import { localPersonId } from "../../components/LocalIdentity";
 import { DocumentIcon, fileKind } from "./DocumentIcon";
 export function DocumentWorkspace({ projectId }: { projectId: string }) {
+  const scope=useOperationScope(projectId);
+  const scopeKey=scope.ids.join(",");
+  const [targets,setTargets]=useState<any[]>([]),[projectFilter,setProjectFilter]=useState(""),[typeFilter,setTypeFilter]=useState(""),[dateFrom,setDateFrom]=useState(""),[authorFilter,setAuthorFilter]=useState(""),[itemFilter,setItemFilter]=useState("");
   const base = "/projects/" + projectId;
   const [rows, setRows] = useState<any[]>([]),
     [people, setPeople] = useState<any[]>([]),
@@ -21,24 +25,23 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
-  const reload = async () => setRows(await api(base + "/document-library"));
-  useEffect(() => {
-    Promise.all([
-      api(base + "/document-library"),
-      api("/people"),
-      api(base + "/items"),
-      api("/projects"),
-    ])
-      .then(([r, p, i, projects]) => {
-        setRows(r);
-        setPeople(p);
-        setItems(i);
-        setProjectName(
-          projects.find((p: any) => p.id === projectId)?.name || "",
-        );
-      })
-      .catch((e) => setError(e.message));
-  }, [base]);
+  const generation=useRef(0);
+  const reload = async (token=generation.current) => {
+    const result=await Promise.all(scope.ids.map(async id=>{
+      const [r,i,e,c]=await Promise.all([api('/projects/'+id+'/document-library'),api('/projects/'+id+'/items'),api('/projects/'+id+'/pmo/events'),api('/projects/'+id+'/cuts')]);
+      return {rows:r.map((d:any)=>({...d,project_id:id})),items:i.map((x:any)=>({...x,project_id:id})),targets:[...i.map((x:any)=>({value:'item:'+x.id,label:x.code+' · '+x.name,project_id:id})),...e.map((x:any)=>({value:'event:'+x.id,label:'Evento · '+x.title,project_id:id})),...c.map((x:any)=>({value:'cut:'+x.id,label:'Corte · '+x.report_date,project_id:id}))]};
+    }));
+    if(token!==generation.current)return;
+    setRows(result.flatMap(r=>r.rows));setItems(result.flatMap(r=>r.items));setTargets(result.flatMap(r=>r.targets));
+  };
+  useEffect(()=>{
+    const token=++generation.current;setRows([]);setItems([]);setTargets([]);setSelected(null);setProjectFilter("");setItemFilter("");setError("");
+    void Promise.all([reload(token),api('/people'),api('/projects')]).then(([,p,projects])=>{
+      if(token!==generation.current)return;
+      setPeople(p);setProjectName(projects.find((p:any)=>p.id===projectId)?.name||'');
+    }).catch(e=>{if(token===generation.current)setError(e.message);});
+    return()=>{generation.current++;};
+  },[base,scopeKey]);
   const person = (id: string) =>
     people.find((p) => p.id === id)?.name || "Autor no registrado";
   const relation = (id: string) => {
@@ -47,7 +50,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
   };
   const visible = rows.filter(
     (r) =>
-      !!r.archived === archived &&
+      !!r.archived === archived && (!projectFilter||r.project_id===projectFilter) && (!typeFilter||fileKind(r.filename)===typeFilter) && (!dateFrom||r.created_at.slice(0,10)>=dateFrom) && (!authorFilter||r.author_id===authorFilter) && (!itemFilter||r.related_id===itemFilter||r.links?.some((l:any)=>l.target_kind==='item'&&l.target_id===itemFilter)) &&
       [
         r.filename,
         r.notes,
@@ -66,7 +69,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
     setBusy(true);
     try {
       const next = { ...selected, [key]: value };
-      await api(base + "/documents/" + next.id, {
+      await api("/projects/"+(next.project_id||projectId) + "/documents/" + next.id, {
         method: "PUT",
         ...json({ ...next, archived: next.document_archived ?? next.archived }),
       });
@@ -77,7 +80,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
     }
   }
   return (
-    <section className="panel">
+    <section className="panel operation-workspace">
       <div className="section-heading">
         <div>
           <h2>Documentos</h2>
@@ -99,6 +102,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
           Cargar documento
         </button>
       </div>
+      <ScopeToggle scope={scope}/>
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
       <div className="pmo-actions">
@@ -120,9 +124,16 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
           Archivados
         </label>
       </div>
+      <div className="document-filter-row">
+        {scope.all&&<label>Proyecto<select value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="">Todos mis proyectos</option>{scope.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
+        <label>Tipo<select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option value="">Todos</option>{[...new Set(rows.map(r=>fileKind(r.filename)))].map(kind=><option key={kind}>{kind}</option>)}</select></label>
+        <label>Desde<input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}/></label>
+        <SearchPicker label="Autor" value={authorFilter} options={personChoices(people)} onChange={v=>setAuthorFilter(String(v))}/>
+        <SearchPicker label="Trabajo / Hito" value={itemFilter} options={items.map(i=>({value:i.id,label:i.code+' · '+i.name}))} onChange={v=>setItemFilter(String(v))}/>
+      </div>
       <div className="document-list">
         {visible.map((r) => (
-          <article className="document-card" key={r.sha256}>
+          <article className="document-card" key={r.project_id+":"+r.sha256}>
             <DocumentIcon filename={r.filename} />
             <h3>{r.filename}</h3>
             <p>{r.notes || "Sin descripción registrada"}</p>
@@ -131,7 +142,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
               {r.created_at.slice(0, 10)}
             </p>
             <p>
-              {person(r.author_id)} · {projectName}
+              {person(r.author_id)} · {scope.projects.find(p=>p.id===r.project_id)?.name||projectName}
             </p>
             {r.related_id && <p>{relation(r.related_id)}</p>}
             <div className="document-associations">
@@ -143,6 +154,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
                 </span>
               ))}
             </div>
+            {!!r.links?.length && <p>{r.links.map((l:any)=>targets.find(t=>t.value===l.target_kind+":"+l.target_id)?.label||l.target_kind).join(" · ")}</p>}
             <a href={r.download_url}>Descargar original</a>
             {r.origin === "document" && (
               <button onClick={() => setSelected(r)}>Ver detalle</button>
@@ -186,7 +198,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
                     (d: any) => d.id === result.id,
                   );
                   setSelected({
-                    ...existing,
+                    ...existing,project_id:projectId,
                     document_archived: !!existing.archived,
                   });
                   setNotice(
@@ -222,7 +234,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
               <SearchPicker
                 label="Elemento relacionado"
                 value={related}
-                options={items.map((i) => ({
+                options={items.filter(i=>i.project_id===projectId).map((i) => ({
                   value: i.id,
                   label: `${i.code} · ${i.name}`,
                 }))}
@@ -265,7 +277,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
               label="Elemento relacionado"
               search
               value={selected.related_id || ""}
-              options={items.map((i) => ({
+              options={items.filter(i=>i.project_id===(selected.project_id||projectId)).map((i) => ({
                 value: i.id,
                 label: `${i.code} · ${i.name}`,
               }))}
@@ -274,7 +286,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
             />
             <ContextField
               label="Archivo"
-              value={String(selected.document_archived ?? selected.archived)}
+              value={String(!!(selected.document_archived ?? selected.archived))}
               options={[
                 { value: "false", label: "Activo" },
                 { value: "true", label: "Archivado" },
@@ -283,6 +295,9 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
               disabled={busy}
             />
           </div>
+          <ContextField label="Relaciones adicionales" search multiple value={(selected.links||[]).map((l:any)=>l.target_kind+':'+l.target_id)} options={targets.filter(t=>t.project_id===(selected.project_id||projectId))} disabled={busy} onSave={async values=>{
+            setBusy(true);try{const saved=await api('/projects/'+(selected.project_id||projectId)+'/documents/'+selected.id+'/links',{method:'PUT',...json({version:selected.version,links:values.map((v:string)=>{const [target_kind,target_id]=v.split(':');return {target_kind,target_id};})})});setSelected({...selected,...saved});await reload();}finally{setBusy(false);}
+          }}/>
           <p>
             {fileKind(selected.filename)} · {selected.created_at?.slice(0, 10)}{" "}
             · {projectName}

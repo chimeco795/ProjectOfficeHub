@@ -711,3 +711,28 @@
     max-height: 380px;
   }
 }
+.operation-scope{display:flex;align-items:center;gap:12px;margin:8px 0 14px;flex-wrap:wrap}
+.document-filter-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:12px 0}
+.weekly-time-scroll{max-height:540px;overflow:auto;margin:12px 0;border:1px solid var(--line);border-radius:10px}
+.weekly-time-grid{display:grid;grid-template-columns:52px repeat(7,minmax(105px,1fr));min-width:787px}
+.weekly-time-heading{position:sticky;top:0;z-index:2;background:var(--surface,#fff);padding:8px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-weight:600}
+.weekly-time-heading button{padding:2px}
+.weekly-hour-row{display:contents}
+.weekly-hour-row>time{padding:8px;font-size:11px;border-bottom:1px solid var(--line)}
+.weekly-hour-cell{min-height:68px;padding:4px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
+.weekly-hour-cell .calendar-event{width:100%;margin-bottom:4px}
+.outside-working{background:rgba(100,116,139,.09)}
+.outside-events{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px;background:rgba(100,116,139,.06)}
+.outside-events .calendar-event{max-width:240px}
+.event-hover-card{position:fixed;z-index:1000;width:320px;max-height:250px;overflow:auto;pointer-events:none;white-space:pre-wrap;border:1px solid var(--line);border-radius:10px;background:var(--surface,#fff);box-shadow:0 8px 25px #0003;padding:14px;font-size:12px}
+.event-hover-card p{margin:8px 0;line-height:1.5}
+.entity-attachments{margin-top:16px;border-top:1px solid var(--line);padding-top:10px}
+.entity-attachments>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0}
+.entity-attachments>div>p{width:100%;margin:0;font-size:12px}
+.compact-operation .back{margin-bottom:8px}
+.compact-operation .page-heading{margin-bottom:14px;align-items:center}
+.compact-operation .page-heading h1{font-size:23px;margin:4px 0}
+.compact-operation .page-heading p{margin:4px 0;font-size:12px}
+.compact-operation .workspace-tabs{margin-bottom:14px}
+.compact-operation .panel{padding:20px}
+.compact-operation .section-heading{margin-bottom:12px}
