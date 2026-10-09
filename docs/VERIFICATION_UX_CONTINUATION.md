@@ -1,6 +1,6 @@
 # Continuación UX — solicitud del 2026-10-08
 
-Documento histórico de las tres etapas anteriores. La pasada posterior minimalista, incluyendo resize del Gantt y nueva evidencia de arrastre semanal/orden/móvil, está en [VERIFICATION_PHASE13_MINIMALIST.md](VERIFICATION_PHASE13_MINIMALIST.md).
+Conserva el histórico de las tres etapas y, al final, la verificación vigente del refinamiento puntual del 2026-10-09. La pasada minimalista previa, incluyendo resize del Gantt y evidencia de arrastre semanal/orden/móvil, está en [VERIFICATION_PHASE13_MINIMALIST.md](VERIFICATION_PHASE13_MINIMALIST.md).
 
 Las fases 1–3 de esta solicitud son etapas del incremento, no una renumeración de las fases oficiales. Base master 47dfd41, versión 0.13.0, SQLite 9.
 
@@ -40,3 +40,49 @@ QA visual sobre .test-data/phase5-browser: minuta TXT cargada, propuesta vincula
 La base normal se respaldó antes de actualizar y se ensayó la migración en una copia. Tras iniciar la aplicación actualizada en 8011, comparación de todas las columnas originales de 23 tablas: valores idénticos, esquema 11, foreign_key_check vacío e integrity_check ok. No se insertaron ejemplos en data/, ni se alteraron fechas de trabajo, snapshots, fuentes o históricos. Respaldos y evidencias en .test-data/ están ignorados por Git.
 
 Límites explícitos: resize de duración del Gantt permitido como pendiente; arrastres HTML5 semanal, de periodos y orden de filas no certificados visualmente. El arrastre horizontal del Gantt sí se validó y restauró. Ausencias/horarios contextualizan disponibilidad sin cambiar el scheduler. Recordatorios locales requieren agenda abierta. La narrativa ejecutiva permanece revisable/manual; el contrato futuro no es un proveedor activo. Móvil completo, exportación real .pohub y paridad total legacy no se declaran cerrados.
+
+## Refinamiento UX puntual — 2026-10-09
+
+Base master 8c512d9. Versión 0.13.0, fase oficial 13 y SQLite 11 conservados. Esta sección es el estado vigente; los checkpoints anteriores permanecen históricos. Sólo frontend y documentación: sin cambios de arquitectura, contratos, scheduler, backend, migraciones, publicaciones u originales.
+
+### Cambios
+
+- Tablero: flechas centradas en la franja colapsada y orientadas por extremo. Clic en cabecera o zona amplia expande; flecha y zona amplia son botones accesibles. Columna reordenada que sigue colapsada conserva su acceso a expansión. Configuración flotante de 1–4 columnas; casillas en línea cuando hay espacio, con ajuste al ancho del área de trabajo. Se elimina “Cerrar columnas”; Columnas, clic fuera y Escape cierran, y scroll/resize evitan dejar el popover desanclado. Se mantienen las claves de preferencias, contador, drag/drop y Tablero/Lista.
+- Gantt: identidad fija con sticky y fondo que cubre toda la altura de cada fila; fechas, barras y conexiones se desplazan detrás de esa columna. Una sola estructura conserva la sincronización vertical. La rueda vertical no se convierte automáticamente en movimiento horizontal; pan del fondo, flechas, scroll horizontal nativo y trackpad permanecen. Ancho fijo 230 px en escritorio y 160 px en móvil; conexiones adaptadas a esa medida. Se conservan los handlers de mover/resize, zoom, jerarquía, Hoy y simulación/ruta crítica.
+- RAID/hitos: Tipo, Buscar y Archivados tienen separación explícita; label e input de búsqueda se separan 8 px. Lista por defecto y selector Cards. Filas/cards completas abren la misma ficha contextual; sin botón Editar permanente. Cards de menor altura y ancho, con respuesta limitada a dos líneas.
+- Personas: “Ver persona y asignación” abre directamente proyecto/equipo/rol/dedicación. Una persona no asignada comienza por “Asignar a este proyecto”; luego elige un equipo existente y un rol del catálogo. Contacto, vigencia y líder se despliegan bajo demanda. Sin crear roles dentro del alta de personas.
+- Equipos: comparte AssignmentFields con Personas; mantiene las mismas llamadas y validaciones de memberships. Equipo, rol y dedicación se editan por separado; vigencia/líder/excepción multiequipo quedan bajo un único desplegable. Añadir persona y ⋮ se alinean a la derecha, con ficha de equipo compacta.
+- Personas, roles, equipos, project_people y memberships continúan siendo entidades distintas. Las asignaciones existentes se editan en su registro, incluyendo las que aún no tienen equipo. Las vencidas se muestran como anteriores en lectura; no se convierten automáticamente en una nueva asignación.
+
+### Comprobaciones
+
+- `npm test`: 29/29 frontend correctas, incluyendo límites/preferencias de columnas, jerarquía, orden visual, fechas/zoom, precedencias y búsqueda predictiva.
+- `npm run build`: TypeScript (`tsc -b`) y Vite correctos. Continúa el aviso de bundle principal superior a 500 kB; no se cambió la arquitectura para corregirlo.
+- Backend no reejecutado: no se modificó código/lógica del backend. Baseline anterior: 89 pruebas correctas.
+- `git diff --check` correcto.
+
+Revisión real en QA 8015, base sintética .test-data/phase5-browser:
+
+| Vista | Evidencia de interacción |
+|---|---|
+| Tablero | Límites: último checkbox seleccionado deshabilitado y quinto no disponible. Ocho checks en una línea a 1280/1024; se ajustan en móvil. Cierre por botón y clic fuera; expansión desde zona amplia y cabecera. Preferencias conservadas tras reload. UX-MIN arrastrado de En ejecución a Preparado y restaurado con Deshacer; estado comprobado también en Lista. Reordenación por cabecera expandida y restauración comprobadas. |
+| Gantt | Día/Semana/Mes/Trimestre, contraer/expandir UX-E con descendientes, dependencias visibles y simulación con ruta crítica sin aplicar. En escritorio, desplazamiento 320 px: nombre permanece en x=309 y el track pasa x=554 → 234; ambas celdas comparten y=154. Arrastre de UX13-ENT +2 días y Deshacer; fin +1 día por teclado y Deshacer. Fechas restauradas 2026-10-07 → 2026-11-01. En móvil: nombre x=51 antes/después de scroll 160 px, ancho 160 px y cero desbordamiento horizontal de página. |
+| RAID/hitos | Lista inicial, búsqueda UX-R, filtro Archivados y selección Hitos vacía sin errores. Cards compactas de UX-R; clic abre ficha existente con opciones secundarias ⋮. En móvil la búsqueda conserva gap 8 px y no hay desbordamiento horizontal. |
+| Personas | Rol Analista QA → QA flujo contextual → Analista QA, dedicación 40 → 45 → 40, persistidos en la misma asignación de Validación fase 5. Selector flotante dentro de viewport 390; ficha a 1024 sin overflow horizontal. |
+| Equipos / Asignaciones | Los mismos valores guardados desde Personas aparecen en Equipo flujo UX. Edición compartida de vigencia, campos principales compactos y opciones desplegables. Equipo compartido vinculado a Proyecto paralelo QA mediante el flujo existente. |
+| Roles | Catálogo independiente, jerarquía y ficha de Analista QA; archivo permanece en ⋮. No se creó ni convirtió un rol para la prueba. |
+
+Flujo completo adicional desde una persona global existente **sin asignar** a Proyecto paralelo QA: asignar proyecto → vincular equipo compartido desde Equipos → elegir equipo desde Personas → rol Analista QA → dedicación 20% → vigencia 2026-10-09 a 2026-10-31 → líder Persona QA capacidad. Recarga confirma todos los valores. No se crearon personas, roles ni equipos duplicados.
+
+Prueba de vigencia en esa asignación sintética: fechas temporales 2026-10-01 a 2026-10-08; Personas muestra “Asignaciones anteriores · 1” con equipo, rol y porcentaje en lectura y ofrece iniciar una asignación actual, sin crearla automáticamente. Se restauraron las fechas 2026-10-09 a 2026-10-31 desde Equipos. La asignación original de Validación fase 5 conserva 40%, su líder y rol.
+
+Evidencia local ignorada por Git: .test-data/ux-continuation-board.png, ux-continuation-gantt-fixed.png, ux-continuation-gantt-mobile.png, ux-continuation-raid-list.png, ux-continuation-raid-cards.png, ux-continuation-person-assignment.png, ux-continuation-teams.png y ux-continuation-roles.png.
+
+No se insertaron fixtures ni se realizaron escrituras de prueba en data/. No se reinició ni modificó el backend normal; 8011 sirve el nuevo dist. No se editaron cortes publicados, fuentes ni originales. El respaldo y la comparación de 31 tablas documentados en el checkpoint minimalista corresponden a esa entrega anterior.
+
+### Pendientes y límites conservados
+
+- Reordenación desde la cabecera colapsada estrecha no recertificada mediante el navegador de QA; sí desde cabecera expandida y menú ⋮. Para reordenar puede expandirse la columna o usarse el menú.
+- Vista Hitos comprobada con selección vacía; no se fabricó un hito nuevo para la revisión.
+- Prueba móvil mediante viewport; no certifica dispositivos táctiles físicos. Nombres largos y filas profundas pueden truncarse; ficha y tooltip conservan el detalle.
+- Continúan abiertos exportación real .pohub, proveedor de extracción automática, widgets/paridad legacy y pruebas de estrés/arrastre de periodos anteriores. No se renumeran fases para estos pendientes.

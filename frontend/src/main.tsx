@@ -36,6 +36,7 @@ import { ProjectFields } from "./modules/projects/ProjectFields";
 
 import "./modules/workspace/refinement.css";
 import "./modules/workspace/minimalist.css";
+import "./modules/workspace/ux-continuation.css";
 
 const operationViews = ["backlog","board","gantt","roadmap","teams","people","roles","organization","availability","budget","agenda","documents"];
 const sections: Record<string, string> = {

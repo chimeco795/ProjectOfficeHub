@@ -169,8 +169,7 @@ export function Schedule({
       </div>
       <div className="schedule-scroll timeline-pan" ref={scroll} tabIndex={0} aria-label="Timeline: desplazar con flechas o arrastrar el fondo"
         onKeyDown={e => {if (e.key==='ArrowRight' || e.key==='ArrowLeft') {e.preventDefault(); e.currentTarget.scrollLeft += e.key==='ArrowRight' ? 160 : -160;}}}
-        onWheel={e => {if (Math.abs(e.deltaY)>Math.abs(e.deltaX)) e.currentTarget.scrollLeft+=e.deltaY;}}
-        onPointerDown={e => {if ((e.target as HTMLElement).closest('button')) return; pan.current={x:e.clientX,left:e.currentTarget.scrollLeft,pointer:e.pointerId};e.currentTarget.setPointerCapture(e.pointerId);}}
+        onPointerDown={e => {if ((e.target as HTMLElement).closest('button,.gantt-name,.schedule-axis > span')) return; pan.current={x:e.clientX,left:e.currentTarget.scrollLeft,pointer:e.pointerId};e.currentTarget.setPointerCapture(e.pointerId);}}
         onPointerMove={e => {if(pan.current && pan.current.pointer===e.pointerId)e.currentTarget.scrollLeft=pan.current.left+pan.current.x-e.clientX;}}
         onPointerUp={() => {pan.current=null;}} onPointerCancel={() => {pan.current=null;}}
       >

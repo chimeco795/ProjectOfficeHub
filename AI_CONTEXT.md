@@ -1,6 +1,18 @@
 # Contexto de Project Office Hub
 
-## Checkpoint activo — UX minimalista, cierre 2026-10-09
+## Checkpoint activo — refinamiento UX puntual, 2026-10-09
+
+Base master 8c512d9. Solicitud directa: Tablero, Gantt, RAID/hitos y flujo Persona → Proyecto → Equipo → Rol → Dedicación → Vigencia/líder. Conservados versión 0.13.0, fase oficial 13, SQLite 11, arquitectura, contratos, tests e histórico.
+
+COMPLETADO: flechas centradas y orientadas por extremo; cabecera y zona amplia del colapso expanden, con botones accesibles. Columnas 1–4 en popover flotante, checks en línea si caben, cierre por Columnas/clic fuera/Escape, sin “Cerrar columnas”. Gantt fija nombres/responsables/estado/avance; timeline y barras se desplazan horizontalmente, con filas compartidas para sincronización vertical. La rueda vertical ya no fuerza pan horizontal. RAID/hitos abre en Lista, ofrece Cards compactas clicables y controles espaciados. Personas abre directamente su asignación al proyecto, equipo, rol y dedicación; vigencia/líder y contacto son progresivos. AssignmentFields reutiliza los campos existentes desde Personas y Equipos; roles siguen siendo catálogo independiente. Las asignaciones vencidas se presentan como anteriores, sin reescribirlas ni duplicarlas automáticamente.
+
+VERIFICACIÓN ACTUAL: 29 tests frontend correctos; TypeScript y Vite correctos. Backend sin cambios, no reejecutado; 89 pruebas correctas en la entrega anterior. Seis vistas revisadas en escritorio; controles a 1024 y viewport móvil 390. Flujos de asignación completos y persistencia comprobados exclusivamente en QA 8015. Arrastre de tarjetas/cabeceras expandidas/barras, ajuste de duración por teclado y Deshacer comprobados; zoom, jerarquía, dependencias y ruta crítica simulada conservados. Detalles y límites en docs/VERIFICATION_UX_CONTINUATION.md, sección de refinamiento puntual del 2026-10-09.
+
+DATOS: sin cambios de backend, migraciones ni escrituras QA en data/. App normal http://127.0.0.1:8011/ sirve el build actualizado. Evidencia sintética .test-data/ux-continuation-*.png, fuera de Git. Las publicaciones y originales no se editaron.
+
+PENDIENTE: exportación real .pohub, extracción automática, widgets/paridad legacy y límites anteriores siguen abiertos. Cabecera colapsada estrecha no recertificada para reordenación por arrastre; sí cabecera expandida y menú ⋮. Móvil mediante viewport, sin certificar dispositivos táctiles físicos. Continuar sólo con el alcance nuevo indicado por el usuario.
+
+## Checkpoint anterior — UX minimalista, cierre 2026-10-09
 
 Solicitud: attachments/a9cae9bb-beb4-40b7-b73b-7d4bb8765253/Texto pegado.txt, base master 2522e6f. Mantener versión 0.13.0, fase oficial 13 y SQLite 11. No reiniciar auditoría ni renumerar fases.
 

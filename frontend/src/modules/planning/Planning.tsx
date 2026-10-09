@@ -29,7 +29,7 @@ import {
 import { Roadmap } from "./Roadmap";
 import { ScheduleSimulation, type Proposal } from "./ScheduleSimulation";
 import { Schedule } from "./Schedule";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, json } from "../../api";
 import type { Project } from "../../types";
 import { Dialog } from "../../Dialog";
@@ -130,6 +130,24 @@ function PlanningWorkspace({
   const preferenceKey = `pohub.columns.${localPersonId() || "local"}.${project.id}`;
   const [filtersOpen, setFiltersOpen] = useState(false),
     [columnsOpen, setColumnsOpen] = useState(false);
+  const columnsButton = useRef<HTMLButtonElement>(null);
+  const columnsPanel = useRef<HTMLDivElement>(null);
+  const columnsLeft = Math.max(16, columnsButton.current?.closest('.panel')?.getBoundingClientRect().left || 16,
+    Math.min(columnsButton.current?.getBoundingClientRect().left || 16, window.innerWidth - 836));
+  useEffect(() => {
+    if (!columnsOpen) return;
+    function outside(event: PointerEvent) {
+      const target = event.target as Node;
+      if (!columnsPanel.current?.contains(target) && !columnsButton.current?.contains(target)) setColumnsOpen(false);
+    }
+    function escape(event: KeyboardEvent) { if (event.key === 'Escape') { setColumnsOpen(false); columnsButton.current?.focus(); } }
+    function reposition() { setColumnsOpen(false); }
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition);
+    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); window.removeEventListener('resize', reposition); window.removeEventListener('scroll', reposition); };
+  }, [columnsOpen]);
   const [columns, setColumns] = useState<string[]>(() => {
     try {
       const value = JSON.parse(localStorage.getItem(preferenceKey) || "null");
@@ -331,6 +349,7 @@ function PlanningWorkspace({
           </button>
           {view === "board" && (
             <button
+              ref={columnsButton}
               aria-expanded={columnsOpen}
               onClick={() => setColumnsOpen(!columnsOpen)}
             >
@@ -424,7 +443,7 @@ function PlanningWorkspace({
         </div>
       )}
       {view === "board" && columnsOpen && (
-        <div className="columns-panel" aria-label="Columnas disponibles">
+        <div ref={columnsPanel} className="columns-panel" aria-label="Columnas disponibles" style={{left:columnsLeft,width:Math.min(820,window.innerWidth-columnsLeft-16),top:Math.min((columnsButton.current?.getBoundingClientRect().bottom||0)+8,window.innerHeight*.6-16)}}>
           {[...Object.keys(states), "Otros"].map((state) => (
             <label key={state}>
               <input
@@ -442,8 +461,7 @@ function PlanningWorkspace({
               {states[state] || state}
             </label>
           ))}
-          <small role="status">Máximo 4 columnas</small>
-          <button onClick={() => setColumnsOpen(false)}>Cerrar columnas</button>
+          <small role="status">De 1 a 4 columnas</small>
         </div>
       )}
       {view === "board" && (
@@ -495,14 +513,14 @@ function PlanningWorkspace({
                     void move(item, state);
                 }}
               >
-                <h3 draggable={!busy} onDragStart={e=>{setColumnDrag(state);e.dataTransfer.setData('text/plain',state);e.dataTransfer.effectAllowed='move';}} onDragEnd={()=>setColumnDrag('')} title="Arrastra para ordenar columnas">
+                <h3 draggable={!busy} onDragStart={e=>{setColumnDrag(state);e.dataTransfer.setData('text/plain',state);e.dataTransfer.effectAllowed='move';}} onDragEnd={()=>setColumnDrag('')} onClick={e=>{if(collapsedColumns.includes(state)&&!(e.target as HTMLElement).closest('button'))setCollapsedColumns(old=>old.filter(x=>x!==state));}} title="Arrastra para ordenar columnas">
                   <span className="column-title">{states[state] || state} · {cards.length}</span>
                   <ActionMenu label={'Opciones de columna '+(states[state]||state)}>
                     <button disabled={columnIndex===0} onClick={()=>changeColumns(reorderColumn(columns,state,-1))}>Mover izquierda</button>
                     <button disabled={columnIndex===columns.length-1} onClick={()=>changeColumns(reorderColumn(columns,state,1))}>Mover derecha</button>
                     <button disabled={columns.length===1} onClick={()=>changeColumns(columns.filter(x=>x!==state))}>Ocultar columna</button>
                   </ActionMenu>
-                  {(columnIndex === 0 ||
+                  {(collapsedColumns.includes(state) || columnIndex === 0 ||
                     columnIndex === columns.length - 1) && (
                     <button
                       aria-label={
@@ -519,7 +537,7 @@ function PlanningWorkspace({
                         )
                       }
                     >
-                      {collapsedColumns.includes(state) ? (
+                      {collapsedColumns.includes(state) === (columnIndex === 0) ? (
                         <ChevronRight size={14} />
                       ) : (
                         <ChevronLeft size={14} />
@@ -527,6 +545,7 @@ function PlanningWorkspace({
                     </button>
                   )}
                 </h3>
+                {collapsedColumns.includes(state) && <button className="column-expand-area" aria-label={'Expandir '+(states[state]||state)+' desde la columna'} onClick={()=>setCollapsedColumns(old=>old.filter(x=>x!==state))}/>}
                 {state === 'New' && !collapsedColumns.includes(state) && <button className="column-create" onClick={() => setEditing(blank(project))}>+ Nuevo trabajo</button>}
                 {!collapsedColumns.includes(state) &&
                   cards.map((i) => (

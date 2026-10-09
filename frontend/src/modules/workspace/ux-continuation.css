@@ -1,0 +1,51 @@
+/* Focused UX continuation: floating controls and stable timeline identity. */
+.shell .columns-panel{position:fixed;z-index:80;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;width:820px;max-width:calc(100vw - 32px);max-height:40vh;overflow:auto;margin:0;padding:14px;box-sizing:border-box;background:#fff;box-shadow:0 12px 36px #20324b26}
+.shell .columns-panel label{white-space:nowrap;flex:0 0 auto}
+.shell .columns-panel small{font-size:11px;color:#64748b}
+.shell .kanban-column.column-collapsed{display:flex;flex-direction:column}
+.shell .kanban-column h3{user-select:none}
+.shell .column-collapsed h3{display:grid;grid-template-columns:28px;grid-template-rows:28px 120px 28px;align-items:center;justify-items:center;gap:6px;margin:0;height:188px;min-height:188px;flex-shrink:0}
+.shell .column-collapsed h3>.column-title{grid-row:2;writing-mode:vertical-rl;min-height:0;width:28px;height:120px;align-self:stretch;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.shell .column-collapsed h3>button{grid-row:1;grid-column:1;display:flex;align-items:center;justify-content:center;width:28px;height:28px;min-height:28px;margin:0}
+.shell .column-collapsed h3>.action-menu-trigger{grid-row:3}
+.shell .column-expand-area{flex:1;width:100%;min-height:40px;padding:0;border:0;background:transparent;cursor:pointer}
+.shell .column-collapsed .column-title:hover,.shell .column-expand-area:hover{background:#dce8f1}
+.shell .gantt-name,.shell .schedule-axis>span{position:sticky;left:15px;z-index:3;background:#fff;box-shadow:-15px 0 #fff,15px 0 #fff,16px 0 #e1e8eb}
+.shell .schedule-axis>span{z-index:4;background:#f4f7f8;box-shadow:-15px 0 #f4f7f8,15px 0 #f4f7f8,16px 0 #e1e8eb;display:flex;align-items:center}
+.shell .gantt-name{isolation:isolate}
+.shell .gantt-name::before{content:'';position:absolute;inset:-12px -15px;z-index:-1;background:#fff;border-right:1px solid #e1e8eb}
+.raid-controls{display:flex;align-items:flex-end;flex-wrap:wrap;gap:18px;margin:20px 0}
+.raid-controls>.context-field{flex:0 0 160px}
+.raid-search{display:flex;flex-direction:column;gap:8px;flex:1 1 240px;margin:0!important}
+.raid-search input{margin:0!important;width:100%;box-sizing:border-box}
+.raid-archived{display:flex;align-items:center;gap:8px;white-space:nowrap;margin:0!important;padding-bottom:10px}
+.raid-archived input{width:auto!important;margin:0!important}
+.raid-controls .view-switch{flex-wrap:nowrap;padding-bottom:3px}
+.raid-list,.raid-cards{list-style:none;margin:0;padding:0}
+.raid-list>li+li{border-top:1px solid #e1e8eb}
+.raid-row,.raid-card{width:100%;text-align:left;background:#fff;border:0;cursor:pointer;color:inherit}
+.raid-row{display:grid;grid-template-columns:minmax(180px,2fr) minmax(120px,1fr) minmax(120px,1fr) 105px;align-items:center;gap:18px;padding:14px 10px}
+.raid-row:hover,.raid-card:hover{background:#f6f9fc}
+.raid-title,.raid-state,.raid-owner,.raid-date{display:flex;flex-direction:column;gap:5px;min-width:0;overflow-wrap:anywhere}
+.raid-title strong{font-size:14px}
+.raid-row small,.raid-card small{font-weight:400;font-size:11px;color:#64748b}
+.raid-state .field-chip{align-self:flex-start}
+.raid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.raid-card{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;border:1px solid #e1e8eb;border-radius:10px;height:100%;align-content:start}
+.raid-card .raid-title,.raid-card .raid-state,.raid-response{grid-column:1/-1}
+.raid-card .raid-state{flex-direction:row;align-items:center;flex-wrap:wrap}
+.raid-response{font-size:12px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.assignment-path{font-size:12px;color:#64748b;line-height:1.6;margin:8px 0 16px}
+.person-assignment h3{margin-top:0;font-size:16px}
+.person-assignment-record{padding:16px 0}
+.person-assignment-record+.person-assignment-record{border-top:1px solid #e1e8eb}
+.assignment-options{grid-column:1/-1;padding:8px 0}
+.assignment-options summary,.person-contact summary{cursor:pointer;color:#475569;font-size:13px}
+.assignment-options .member-fields{margin-top:12px}
+.person-contact{margin-top:22px;padding-top:16px;border-top:1px solid #e1e8eb}
+.person-contact .detail-grid{margin-top:16px}
+.management-workspace>label{display:flex;flex-direction:column;gap:8px;max-width:480px;margin:14px 0}
+.management-workspace>label input{margin:0}
+.team-workspace>.section-heading>div:first-child{flex:1}
+.team-workspace>.detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:700px){.raid-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.raid-row .raid-title{grid-column:1/-1}.raid-controls{gap:16px}.raid-search{flex-basis:100%}.raid-controls>.context-field{flex-basis:150px}.team-workspace>.detail-grid{grid-template-columns:minmax(0,1fr)}.shell .schedule-axis,.shell .schedule-row{grid-template-columns:160px minmax(500px,1fr)}.shell .gantt-links{left:190px;width:calc(100% - 205px)}}

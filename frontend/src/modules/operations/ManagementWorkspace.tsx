@@ -7,6 +7,7 @@ import { RecordEditor } from "./Operations";
 import { Capacity } from "./Capacity";
 import { OrganizationChart } from "./OrganizationChart";
 import {ActionMenu} from '../../components/ActionMenu';
+import {PersonAssignment} from './PersonAssignment';
 export function ManagementWorkspace({
   projectId,
   view,
@@ -105,26 +106,8 @@ export function ManagementWorkspace({
                   </span>
                   <h3>{p.name}</h3>
                   <p>{p.email || "Sin correo"}</p>
-                  <button onClick={() => setSelected(p)}>Ver contacto</button>
-                  {!assigned.some((a) => a.id === p.id) ? (
-                    <button
-                      onClick={async () => {
-                        try {
-                          await api(base + "/people", {
-                            method: "POST",
-                            ...json({ person_id: p.id }),
-                          });
-                          await reload();
-                        } catch (e) {
-                          setError((e as Error).message);
-                        }
-                      }}
-                    >
-                      Asignar a este proyecto
-                    </button>
-                  ) : (
-                    <small>En este proyecto</small>
-                  )}
+                  <button onClick={() => setSelected(p)}>Ver persona y asignación</button>
+                  <small>{assigned.some((a)=>a.id===p.id)?'En este proyecto':'Sin asignar al proyecto'}</small>
                 </article>
               ))}
           </div>
@@ -198,6 +181,8 @@ export function ManagementWorkspace({
       )}
       {selected && view === "people" && (
         <Dialog title={selected.name} onClose={() => setSelected(null)}>
+          <PersonAssignment key={selected.id} projectId={projectId} person={selected} onAssigned={reload}/>
+          <details className="person-contact"><summary>Contacto y datos de la persona</summary>
           <div className="detail-grid">
             {(["name", "email"] as const).map((key) => (
               <ContextField
@@ -235,6 +220,7 @@ export function ManagementWorkspace({
                 </button>
               ),
           )}
+          </details>
         </Dialog>
       )}
       {adding === "people" && (
