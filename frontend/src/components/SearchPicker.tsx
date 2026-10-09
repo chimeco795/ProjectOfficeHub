@@ -1,4 +1,4 @@
-import { useState, useId } from "react";
+import { useState, useId, useRef, useLayoutEffect } from "react";
 import { matchingChoices, type Choice } from "./choiceModel";
 export { personChoices } from "./choiceModel";
 export type { Choice } from "./choiceModel";
@@ -25,6 +25,13 @@ export function SearchPicker({
     [open, setOpen] = useState(false),
     [active, setActive] = useState(0);
   const id = useId();
+  const root=useRef<HTMLDivElement>(null);
+  const [popup,setPopup]=useState<{left:number;top:number;width:number;height:number}>({left:8,top:8,width:240,height:240});
+  useLayoutEffect(()=>{
+    if(!open)return;
+    const place=()=>{const r=root.current!.getBoundingClientRect(),height=Math.min(240,Math.max(100,Math.max(r.top,window.innerHeight-r.bottom)-12));setPopup({left:Math.max(8,Math.min(r.left,window.innerWidth-248)),top:r.bottom+height+8<=window.innerHeight?r.bottom+4:Math.max(8,r.top-height-4),width:Math.min(Math.max(240,r.width),window.innerWidth-16),height});};
+    place();window.addEventListener('resize',place);window.addEventListener('scroll',place,true);return()=>{window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true);};
+  },[open,query]);
   const selected = Array.isArray(value) ? value : value ? [value] : [];
   const matches = matchingChoices(options,selected,query);
   const choose = (v: string) => {
@@ -36,6 +43,7 @@ export function SearchPicker({
   return (
     <div
       className="search-picker"
+      ref={root}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
       }}
@@ -109,7 +117,7 @@ export function SearchPicker({
       </div>
       {open && (
         <>
-          <ul id={id} role="listbox" aria-label={label + " disponibles"}>
+          <ul id={id} role="listbox" aria-label={label + " disponibles"} className="floating-choices" style={{position:'fixed',left:popup.left,top:popup.top,width:popup.width,maxHeight:popup.height}}>
             {query.trim() &&
               matches.map((o, n) => (
                 <li
@@ -121,6 +129,7 @@ export function SearchPicker({
                   <button
                     disabled={disabled}
                     type="button"
+                    onPointerDown={e=>e.preventDefault()}
                     onClick={() => choose(o.value)}
                   >
                     {o.person && (

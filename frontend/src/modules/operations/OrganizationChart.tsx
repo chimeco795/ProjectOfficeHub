@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api } from "../../api";
 import { dateKey } from "./calendarModel";
 export function OrganizationChart({ projectId }: { projectId: string }) {
+  const [selected,setSelected]=useState<any>(null);
+  const pan=useRef<{x:number;y:number;left:number;top:number}|null>(null);
   const [roles, setRoles] = useState<any[]>([]),
     [members, setMembers] = useState<any[]>([]),
     [people, setPeople] = useState<any[]>([]),
@@ -36,9 +38,9 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
     return (
       <li key={role.id}>
         <div className="org-node">
-          <strong>{role.name}</strong>
+          <button className="org-select" onClick={()=>setSelected({role})}><strong>{role.name}</strong></button>
           {persons.map((m) => (
-            <div className="org-person" key={m.id}>
+            <button className="org-person" key={m.id} onClick={()=>setSelected({role,member:m})}>
               <span className="person-avatar">
                 {(people.find((p) => p.id === m.person_id)?.name || "?").slice(
                   0,
@@ -56,7 +58,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
                     : ""}
                 </small>
               </span>
-            </div>
+            </button>
           ))}
           {!persons.length && <small>Sin persona asignada</small>}
           {!!children.length && (
@@ -106,6 +108,9 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
         className="org-scroll"
         tabIndex={0}
         aria-label="Organigrama por jerarquía de roles"
+        onPointerDown={e=>{if((e.target as HTMLElement).closest('button'))return;pan.current={x:e.clientX,y:e.clientY,left:e.currentTarget.scrollLeft,top:e.currentTarget.scrollTop};e.currentTarget.setPointerCapture(e.pointerId);}}
+        onPointerMove={e=>{if(pan.current){e.currentTarget.scrollLeft=pan.current.left+pan.current.x-e.clientX;e.currentTarget.scrollTop=pan.current.top+pan.current.y-e.clientY;}}}
+        onPointerUp={()=>{pan.current=null;}} onPointerCancel={()=>{pan.current=null;}}
       >
         <div className="org-tree" style={{ zoom }}>
           <ul>
@@ -118,6 +123,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
           </ul>
         </div>
       </div>
+      {selected&&<article className="org-context"><div className="section-heading"><h3>{selected.member?people.find(p=>p.id===selected.member.person_id)?.name:selected.role.name}</h3><button aria-label="Cerrar detalle del nodo" onClick={()=>setSelected(null)}>×</button></div><p>{selected.role.name} · Reporta a {roles.find(r=>r.id===selected.role.reports_to)?.name||'Raíz'}</p>{selected.member&&<p>Dedicación {selected.member.allocation}% · Vigencia {selected.member.valid_from||'Sin inicio'} → {selected.member.valid_to||'Sin fin'}</p>}<small>La estructura se configura desde Roles y Equipos.</small></article>}
       {!roles.length && (
         <p>
           Crea roles y define “reporta a” para formar los niveles. Asigna

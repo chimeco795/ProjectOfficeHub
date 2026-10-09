@@ -6,6 +6,7 @@ import { Dialog } from "../../Dialog";
 import { RecordEditor } from "./Operations";
 import { Capacity } from "./Capacity";
 import { OrganizationChart } from "./OrganizationChart";
+import {ActionMenu} from '../../components/ActionMenu';
 export function ManagementWorkspace({
   projectId,
   view,
@@ -142,7 +143,7 @@ export function ManagementWorkspace({
                 {roles.filter((x) => x.reports_to === r.id).length} roles
                 subordinados
               </p>
-              <button onClick={() => setSelected(r)}>Editar rol</button>
+              <button onClick={() => setSelected(r)}>Ver rol</button>
             </article>
           ))}
         </div>
@@ -246,15 +247,23 @@ export function ManagementWorkspace({
           ]}
           onClose={() => setAdding("")}
           onSave={async (v) => {
-            await api(base + "/people", {
+            const saved=await api(base + "/people", {
               method: "POST",
               ...json({ new_person: v }),
             });
             await reload();
+            setSelected(saved);
           }}
         />
       )}
-      {(adding === "roles" || (selected && view === "roles")) && (
+      {selected&&view==='roles'&&!adding&&<Dialog title={selected.name} onClose={()=>setSelected(null)}>
+        {error&&<p role="alert">{error}</p>}
+        <div className="detail-grid"><ContextField label="Nombre" required value={selected.name} onSave={async v=>{const saved=await api('/roles/'+selected.id,{method:'PUT',...json({...selected,name:v})});setSelected(saved);await reload();}}/>
+        <ContextField label="Reporta a" value={selected.reports_to||''} search options={[{value:'',label:'Raíz'},...roles.filter(r=>r.id!==selected.id&&!r.archived).map(r=>({value:r.id,label:r.name}))]} onSave={async v=>{const saved=await api('/roles/'+selected.id,{method:'PUT',...json({...selected,reports_to:v||null})});setSelected(saved);await reload();}}/></div>
+        <p>{roles.filter(r=>r.reports_to===selected.id).length} roles subordinados · {selected.archived?'Archivado':'Activo'}</p>
+        <ActionMenu label="Opciones del rol"><button onClick={async()=>{if(window.confirm(selected.archived?'¿Restaurar este rol?':'¿Archivar este rol? Las asignaciones existentes se conservan.')){try{const saved=await api('/roles/'+selected.id,{method:'PUT',...json({...selected,archived:!selected.archived})});setSelected(saved);await reload();}catch(e){setError((e as Error).message);}}}}>{selected.archived?'Restaurar rol':'Archivar rol'}</button></ActionMenu>
+      </Dialog>}
+      {adding === "roles" && (
         <RecordEditor
           title="Rol"
           initial={
@@ -275,7 +284,6 @@ export function ManagementWorkspace({
                 .filter((r) => r.id !== selected?.id && !r.archived)
                 .map((r) => ({ value: r.id, label: r.name })),
             },
-            { key: "archived", label: "Archivado", type: "checkbox" },
           ]}
           onClose={() => {
             setSelected(null);

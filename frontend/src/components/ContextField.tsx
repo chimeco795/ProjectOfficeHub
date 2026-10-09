@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SearchPicker, type Choice } from "./SearchPicker";
 export function ContextField({
   label,
@@ -36,11 +36,13 @@ export function ContextField({
   confirm?: boolean;
 }) {
   const [open, setOpen] = useState(false),
+    [saved,setSaved]=useState(false),
     [draft, setDraft] = useState(value),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const form = useRef<HTMLFormElement>(null),
     saving = useRef(false);
+  useEffect(()=>{if(!saved)return;const timer=setTimeout(()=>setSaved(false),2500);return()=>clearTimeout(timer);},[saved]);
   const explicit = confirm || multiple || type === "textarea";
   const close = () => {
     setOpen(false);
@@ -65,6 +67,7 @@ export function ContextField({
     setError("");
     try {
       await onSave(next);
+      setSaved(true);
       close();
     } catch (e) {
       setError((e as Error).message);
@@ -85,7 +88,7 @@ export function ContextField({
     String(value ?? "");
   return (
     <div className="context-field">
-      {showLabel && <span className="control-label">{label}</span>}
+      {showLabel && <span className="control-label">{label}{saved&&<small role="status" className="saved-feedback"> · Guardado</small>}</span>}
       {!open ? (
         <button
           type="button"
@@ -148,7 +151,7 @@ export function ContextField({
               disabled={busy}
               aria-label={label}
               value={draft ?? ""}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => {setDraft(e.target.value); if (!explicit) void commit(e.target.value);}}
             >
               {options.map((o) => (
                 <option value={o.value} key={o.value}>

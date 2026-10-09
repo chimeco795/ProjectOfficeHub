@@ -89,7 +89,7 @@ def save_record(db,pid,collection,value,identity=None):
     for key in ('name','title','concept','category','role','kind'):
         if key in fields:
             fields[key]=fields[key].strip()
-            if not fields[key]:raise HTTPException(422,'Los campos de texto obligatorios no pueden quedar vacíos')
+            if not fields[key] and key!='role':raise HTTPException(422,'Los campos de texto obligatorios no pueden quedar vacíos')
     if 'amount' in fields:fields['amount_cents']=int(values.amount*100);del fields['amount']
     for key in ('guests','document_ids'):
         if key in fields:fields[key]=encode(list(dict.fromkeys(fields[key])))

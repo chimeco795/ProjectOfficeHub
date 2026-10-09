@@ -5,6 +5,7 @@ import { personChoices } from "../../components/SearchPicker";
 import { iterationLabel } from "./workPresentation";
 import { WorkComments } from "./WorkComments";
 import { Attachments } from '../operations/Attachments';
+import {ActionMenu} from '../../components/ActionMenu';
 import { states, types, allowedTypes, stateClass } from "./workPresentation";
 import type { Work, Period } from "./Planning";
 import type { Person } from "../master/ItemEditor";
@@ -184,7 +185,7 @@ export function WorkDetails({
             {field("completed_effort", "Completado (h)", undefined, "number")}
             {field("points", "Puntos", undefined, "number")}
           </div>
-          <button
+          <ActionMenu label="Opciones de esfuerzo"><button
             disabled={
               busy ||
               !!editing ||
@@ -206,7 +207,7 @@ export function WorkDetails({
             }
           >
             Calcular avance desde esfuerzo
-          </button>
+          </button></ActionMenu>
         </section>
         <section className="work-detail-block">
           <h4>Dependencias · {work.dependencies.length}</h4>

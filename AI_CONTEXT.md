@@ -1,20 +1,22 @@
 # Contexto de Project Office Hub
 
-## Checkpoint activo — solicitud UX del 2026-10-08
+## Checkpoint activo — UX minimalista, cierre 2026-10-09
 
-Solicitud: attachments/30adff68-f038-499b-92c5-305f87b5790c/Texto pegado.txt. Sus fases 1–3 NO renumeran fases/versiones oficiales. Continuar en orden, sin reiniciar ni revertir. Base master 47dfd41.
+Solicitud: attachments/a9cae9bb-beb4-40b7-b73b-7d4bb8765253/Texto pegado.txt, base master 2522e6f. Mantener versión 0.13.0, fase oficial 13 y SQLite 11. No reiniciar auditoría ni renumerar fases.
 
-COMPLETADO: las tres etapas de la solicitud UX. Etapa 1: 73adac1; etapa 2: 5c7882d; etapa 3: minutas TXT/DOCX originales, propuestas manuales, revisión humana transaccional, vínculos a trabajos y decisiones estructuradas. Esquema aditivo 11; versión oficial 0.13.0 y fase oficial 13 conservadas. 86 pruebas backend, 29 frontend y TypeScript/Vite correctos. Matriz completa en docs/EXECUTIVE_SUFFICIENCY.md; evidencia y límites en docs/VERIFICATION_UX_CONTINUATION.md.
+COMPLETADO: pasada transversal minimalista. Columnas checklist 1–4, drag/menú ⋮/Deshacer y colapso estrecho; autocomplete flotante; fichas progresivas Persona/Equipo/Rol y RAID contextual; detalle de trabajo sin cajas; organigrama contextual con pan; Agenda/Documentos con filtros colapsables; Gantt con resize de extremos validado, movimiento directo y orden vertical local sin alterar prioridad; avisos/Deshacer. Conservadas arquitectura, scheduler, auditoría y publicaciones. 89 pruebas backend, 29 frontend y TypeScript/Vite correctos. Flujos A–E sintéticos y revisión 1280/1024/móvil documentados en docs/VERIFICATION_PHASE13_MINIMALIST.md.
 
-PENDIENTE PERMITIDO: resize de duración del Gantt, proveedor de extracción automática, certificación manual del arrastre HTML5 semanal/periodos/orden de filas; móvil completo y migración real .pohub requieren trabajo posterior. Ausencias contextualizan capacidad sin modificar el scheduler ni descontar horas automáticamente. No declarar paridad total.
+DATOS NORMALES: backup .test-data/pre-minimalist-normal.sqlite3; tras reiniciar sólo 8011, las 31 tablas conservan valores idénticos, integridad correcta y sin errores de claves foráneas. No hay nuevas migraciones ni datos QA en data/. App normal http://127.0.0.1:8011/.
 
-SIGUIENTE PASO EXACTO: conservar este incremento y sus originales; cualquier extracción futura debe generar propuestas pendientes a través del contrato /minute-contract, nunca hechos aceptados automáticamente. No repetir auditoría ni renumerar fases por esta solicitud.
+PENDIENTE FUERA DEL INCREMENTO: exportación real .pohub, proveedor de extracción automática, widgets legacy adicionales/paridad completa. Arrastre de periodos y estrés con cientos de conexiones no recertificados. Móvil verificado mediante viewport; no certificar dispositivos táctiles físicos. Deshacer respeta las validaciones de concurrencia.
+
+SIGUIENTE PASO EXACTO: conservar esta entrega; continuar sólo con el alcance nuevo que indique el usuario. La extracción futura genera propuestas pendientes vía /minute-contract, nunca hechos aceptados automáticamente. Las verificaciones anteriores describen entregas históricas; resize/arrastre semanal/orden de filas ya tienen evidencia nueva en la verificación minimalista.
 
 ## Baseline histórica al 2026-10-07
 
 Fases 0–4 completadas. Repositorio privado chimeco795/ProjectOfficeHub, master. Base React/TypeScript/Vite + FastAPI + SQLite funcional. Proyecto maestro con metodología, prioridad y fechas independientes; portafolio, resumen y acceso a Seguimiento Ejecutivo. Start.ps1 permite iniciar la app local.
 
-Baseline histórica: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. La entrega 0.10.0 tuvo 68 tests backend y 16 frontend. Estado vigente: 0.13.0, 86 backend, 29 frontend y build correctos. Creación, edición, recarga de proyecto/corte y aislamiento entre proyectos comprobados con base temporal.
+Baseline histórica: 10 tests semanales originales correctos, builds de ambos orígenes correctos con advertencias en PMO HTML. La entrega 0.10.0 tuvo 68 tests backend y 16 frontend. Estado vigente: 0.13.0, 89 backend, 29 frontend y build correctos. Creación, edición, recarga de proyecto/corte y aislamiento entre proyectos comprobados con base temporal.
 
 ## Reglas
 

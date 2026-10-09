@@ -7,6 +7,8 @@ import type { Proposal } from "./ScheduleSimulation";
 import { visibleHierarchy, ganttPosition } from "./ganttModel";
 import { analyzeSchedule } from "./scheduleModel";
 import { dateKey } from "../operations/calendarModel";
+import { ActionMenu } from '../../components/ActionMenu';
+import { useActionFeedback } from '../../components/ActionFeedback';
 export function Schedule({
   items,
   allItems,
@@ -20,28 +22,47 @@ export function Schedule({
   allItems: Work[];
   onEdit: (item: Work) => void;
   simulation?: Proposal | null;
-  onShift: (item:Work,days:number)=>Promise<void>;
+  onShift: (item:Work,days:number,edge?:'move'|'start'|'end')=>Promise<void>;
   busy:boolean;
   preferenceKey:string;
 }) {
   const scroll = useRef<HTMLDivElement>(null);
+  const {notify,feedback}=useActionFeedback();
   const [order,setOrder]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem(preferenceKey)||'[]');}catch{return [];}});
   const [dragOrder,setDragOrder]=useState('');
   const ordered=restoreOrder(allItems,order);
   function moveOrder(source:string,target:string) {
     const next=reorderSibling(ordered,source,target).map(i=>i.id);
-    setOrder(next);localStorage.setItem(preferenceKey,JSON.stringify(next));
+    if(next.every((id,index)=>id===ordered[index]?.id))return;
+    const before=order;setOrder(next);localStorage.setItem(preferenceKey,JSON.stringify(next));notify('Orden visual actualizado',async()=>{setOrder(before);localStorage.setItem(preferenceKey,JSON.stringify(before));});
   }
   const pan = useRef<{x:number;left:number;pointer:number}|null>(null);
   const suppressClick=useRef(false);
-  const [dragDelta,setDragDelta]=useState<{id:string;days:number}|null>(null);
-  function shiftBar(e:React.PointerEvent<HTMLButtonElement>,item:Work) {
+  function dragRow(e:React.PointerEvent<HTMLButtonElement>,item:Work) {
+    if(busy||e.button!==0)return;
+    const target=e.currentTarget,origin=e.clientY;
+    target.setPointerCapture(e.pointerId);
+    let moved=false;
+    const move=(event:PointerEvent)=>{if(Math.abs(event.clientY-origin)>8){moved=true;setDragOrder(item.id);}};
+    const finish=(event:PointerEvent)=>{
+      target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',finish);target.removeEventListener('pointercancel',finish);
+      setDragOrder('');
+      if(!moved)return;
+      suppressClick.current=true;
+      if(event.type!=='pointerup')return;
+      const id=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-work-row]')?.getAttribute('data-work-row');
+      if(id&&id!==item.id&&allItems.find(i=>i.id===id)?.parent_id===item.parent_id)moveOrder(item.id,id);
+    };
+    target.addEventListener('pointermove',move);target.addEventListener('pointerup',finish);target.addEventListener('pointercancel',finish);
+  }
+  const [dragDelta,setDragDelta]=useState<{id:string;days:number;edge:'move'|'start'|'end'}|null>(null);
+  function shiftBar(e:React.PointerEvent<HTMLElement>,item:Work,edge:'move'|'start'|'end'='move') {
     if(busy || simulation || item.archived || ['Closed','Resolved','Removed'].includes(item.status))return;
     e.preventDefault();e.stopPropagation();
-    const target=e.currentTarget, origin=e.clientX, track=target.parentElement!.getBoundingClientRect().width;
+    const target=e.currentTarget, origin=e.clientX, track=target.closest('.schedule-track')!.getBoundingClientRect().width;
     target.setPointerCapture(e.pointerId);let days=0;
-    const move=(event:PointerEvent)=>{days=Math.round((event.clientX-origin)/track*(span/86400000));setDragDelta({id:item.id,days});};
-    const finish=(event:PointerEvent)=>{target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',finish);target.removeEventListener('pointercancel',cancel);setDragDelta(null);if(days && event.type==='pointerup'){suppressClick.current=true;void onShift(item,days);} };
+    const move=(event:PointerEvent)=>{days=Math.round((event.clientX-origin)/track*(span/86400000));setDragDelta({id:item.id,days,edge});};
+    const finish=(event:PointerEvent)=>{target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',finish);target.removeEventListener('pointercancel',cancel);setDragDelta(null);if(days && event.type==='pointerup'){suppressClick.current=true;void onShift(item,days,edge);} };
     const cancel=(event:PointerEvent)=>{days=0;finish(event);};
     target.addEventListener('pointermove',move);target.addEventListener('pointerup',finish);target.addEventListener('pointercancel',cancel);
   }
@@ -93,6 +114,7 @@ export function Schedule({
   );
   return (
     <div className="schedule">
+      {feedback}
       <div className="section-heading">
         <div>
           <h3>Gantt · Fechas y dependencias</h3>
@@ -105,7 +127,8 @@ export function Schedule({
           <div className="view-switch" role="group" aria-label="Zoom temporal">
             {([['day','Día'],['week','Semana'],['month','Mes'],['quarter','Trimestre']] as const).map(([value,label]) => <button key={value} aria-pressed={zoom===value} onClick={() => setZoom(value)}>{label}</button>)}
           </div>
-          <button onClick={()=>{setOrder([]);localStorage.removeItem(preferenceKey);}}>Restaurar orden</button>
+          <ActionMenu label="Opciones del cronograma">
+          <button onClick={()=>{setOrder([]);localStorage.removeItem(preferenceKey);}}>Restaurar orden visual</button>
           <label>
             <input
               type="checkbox"
@@ -122,6 +145,7 @@ export function Schedule({
             />{" "}
             Dependencias visibles
           </label>
+          </ActionMenu>
         </div>
       </div>
       {simulation && (
@@ -134,7 +158,7 @@ export function Schedule({
       <p className="board-hint">
         Hoy: {today}. Relaciones fin → inicio, en días naturales. Simula debajo
         para consultar holgura y ruta crítica; la jerarquía no agrega duración.
-        Arrastra una barra para revisar un movimiento de fechas; clic abre la ficha.
+        Arrastra la barra o sus extremos; las fechas válidas se guardan con opción de deshacer.
       </p>
       <div className="state-legend">
         {Object.entries(states).map(([key, label]) => (
@@ -186,7 +210,7 @@ export function Schedule({
                 p = proposed.get(item.id),
                 dated = item.start_date && item.target_date;
               return (
-                <div className="schedule-row" key={item.id}
+                <div className="schedule-row" key={item.id} data-work-row={item.id}
                   onDragOver={e=>{if(dragOrder && allItems.find(i=>i.id===dragOrder)?.parent_id===item.parent_id)e.preventDefault();}}
                   onDrop={e=>{e.preventDefault();if(dragOrder)moveOrder(dragOrder,item.id);setDragOrder('');}}>
                   <div
@@ -215,13 +239,9 @@ export function Schedule({
                     )}
                     <button
                       className="schedule-name"
-                      draggable={!busy}
-                      onDragStart={e=>{setDragOrder(item.id);e.dataTransfer.setData('text/plain',item.id);}}
-                      onDragEnd={()=>setDragOrder('')}
+                      onPointerDown={e=>dragRow(e,item)}
                       title="Arrastra el nombre para ordenar entre trabajos con el mismo padre. Orden visual local."
-                      onClick={() =>
-                        onEdit(allItems.find((i) => i.id === item.id) || item)
-                      }
+                      onClick={() => {if(suppressClick.current){suppressClick.current=false;return;}onEdit(allItems.find((i) => i.id === item.id) || item);}}
                     >
                       <strong>
                         {item.code} · {item.name}
@@ -256,13 +276,13 @@ export function Schedule({
                           (p?.critical ? " gantt-critical" : "")
                         }
                         style={{
-                          left: (position(item.start_date!) + (dragDelta?.id===item.id ? dragDelta.days*86400000/span*100 : 0)) + "%",
+                          left: (position(item.start_date!) + (dragDelta?.id===item.id && dragDelta.edge!=='end' ? dragDelta.days*86400000/span*100 : 0)) + "%",
                           width:
                             Math.max(
                               0.15,
                               ((Date.parse(item.target_date!) -
                                 Date.parse(item.start_date!) +
-                                86400000) /
+                                86400000 + (dragDelta?.id===item.id && dragDelta.edge!=='move' ? (dragDelta.edge==='start'?-1:1)*dragDelta.days*86400000:0)) /
                                 span) *
                                 100,
                             ) + "%",
@@ -278,6 +298,7 @@ export function Schedule({
                         }
                         title={`${item.code} · ${item.name}\n${item.owner_name || "Sin responsable"} · ${states[item.status] || item.status}\n${item.start_date} → ${item.target_date}\nPrioridad: ${item.executive_priority} · Avance: ${item.progress ?? "Sin dato"}\n${p ? "Holgura: " + p.slack + " días · " + (p.critical ? "Ruta crítica simulada" : "Simulación") : "Fechas actuales"}\n${warning?.warnings.join("; ") || "Sin alertas"}`}
                       >
+                        {!simulation&&!item.archived&&!['Closed','Resolved','Removed'].includes(item.status)&&<><span className="gantt-resize start" role="slider" tabIndex={0} aria-label={'Ajustar inicio de '+item.code} aria-valuetext={item.start_date!} aria-valuemin={-36500} aria-valuemax={36500} aria-valuenow={0} onPointerDown={e=>shiftBar(e,allItems.find(i=>i.id===item.id)||item,'start')} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();void onShift(item,e.key==='ArrowRight'?1:-1,'start');}}}/><span className="gantt-resize end" role="slider" tabIndex={0} aria-label={'Ajustar fin de '+item.code} aria-valuetext={item.target_date!} aria-valuemin={-36500} aria-valuemax={36500} aria-valuenow={0} onPointerDown={e=>shiftBar(e,allItems.find(i=>i.id===item.id)||item,'end')} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();void onShift(item,e.key==='ArrowRight'?1:-1,'end');}}}/></>}
                         <span style={{ width: (item.progress ?? 0) + "%" }} />
                         <b>
                           {item.progress == null ? "—" : item.progress + "%"}

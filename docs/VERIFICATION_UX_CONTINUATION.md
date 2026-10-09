@@ -1,5 +1,7 @@
 # Continuación UX — solicitud del 2026-10-08
 
+Documento histórico de las tres etapas anteriores. La pasada posterior minimalista, incluyendo resize del Gantt y nueva evidencia de arrastre semanal/orden/móvil, está en [VERIFICATION_PHASE13_MINIMALIST.md](VERIFICATION_PHASE13_MINIMALIST.md).
+
 Las fases 1–3 de esta solicitud son etapas del incremento, no una renumeración de las fases oficiales. Base master 47dfd41, versión 0.13.0, SQLite 9.
 
 ## Checkpoint de la fase 1 de la solicitud

@@ -1,4 +1,6 @@
 import { StagePlan } from "./StagePlan";
+import { ActionMenu } from '../../components/ActionMenu';
+import { useActionFeedback } from '../../components/ActionFeedback';
 import { restoreColumns, reorderColumn } from './columnModel';
 import {
   Filter,
@@ -88,13 +90,26 @@ function PlanningWorkspace({
   onViewChange: (view: string) => void;
 }) {
   const [milestones, setMilestones] = useState<Item[]>([]);
+  const {notify,feedback}=useActionFeedback();
+  const [columnDrag,setColumnDrag]=useState('');
+  function changeColumns(next:string[]) {const before=columns;setColumns(next);notify('Columnas actualizadas',async()=>setColumns(before));}
   const [teams, setTeams] = useState<any[]>([]), [members, setMembers] = useState<any[]>([]);
   const [simulation, setSimulation] = useState<Proposal | null>(null);
   const [shift, setShift] = useState<any>(null);
-  async function previewShift(item: Work, days: number) {
+  async function previewShift(item: Work, days: number, edge:'move'|'start'|'end'='move') {
     if (!days || busy) return;
     setBusy(true); setError('');
-    try { setShift(await api(`/projects/${project.id}/schedule/items/${item.id}/shift-preview`, {method:'POST',...json({days})})); }
+    try {
+      const shiftDate=(value:string)=>new Date(Date.parse(value)+days*86400000).toISOString().slice(0,10);
+      const start=edge==='end'?item.start_date!:shiftDate(item.start_date!),end=edge==='start'?item.target_date!:shiftDate(item.target_date!);
+      const path=`/projects/${project.id}/schedule/items/${item.id}`;
+      const proposal=await api(path+'/dates-preview',{method:'POST',...json({start,end})});
+      if(proposal.errors.length){setShift(proposal);return;}
+      await api(path+'/dates-apply',{method:'POST',...json(proposal)});
+      await reload();
+      const undo=await api(path+'/dates-preview',{method:'POST',...json({start:proposal.old_start,end:proposal.old_end})});
+      notify(edge==='move'?'Fechas movidas':'Duración ajustada',async()=>{await api(path+'/dates-apply',{method:'POST',...json(undo)});await reload();});
+    }
     catch(e) {setError((e as Error).message);}
     finally {setBusy(false);}
   }
@@ -181,11 +196,12 @@ function PlanningWorkspace({
     setError("");
     setBusy(true);
     try {
-      await api(`${base}/items/${item.id}`, {
+      const saved=await api(`${base}/items/${item.id}`, {
         method: "PUT",
         ...json({ ...item, status }),
       });
       await reload();
+      notify('Estado actualizado',async()=>{await api(`${base}/items/${item.id}`,{method:'PUT',...json({...saved,status:item.status})});await reload();});
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -329,6 +345,7 @@ function PlanningWorkspace({
           </button>}
         </div>
       </div>
+      {feedback}
       {error && <p role="alert">{error}</p>}
       {filtersOpen && (
         <div className="planning-filters">
@@ -425,14 +442,7 @@ function PlanningWorkspace({
               {states[state] || state}
             </label>
           ))}
-          <small role="status">Máximo 4 columnas visibles</small>
-          <div className="column-order" aria-label="Orden de columnas">
-            {columns.map((state, index) => <div key={state}>
-              <span>{states[state] || state}</span>
-              <button disabled={index === 0} aria-label={'Mover ' + (states[state] || state) + ' a la izquierda'} onClick={() => setColumns(old => reorderColumn(old, state, -1))}>←</button>
-              <button disabled={index === columns.length - 1} aria-label={'Mover ' + (states[state] || state) + ' a la derecha'} onClick={() => setColumns(old => reorderColumn(old, state, 1))}>→</button>
-            </div>)}
-          </div>
+          <small role="status">Máximo 4 columnas</small>
           <button onClick={() => setColumnsOpen(false)}>Cerrar columnas</button>
         </div>
       )}
@@ -469,10 +479,11 @@ function PlanningWorkspace({
                 }
                 key={state}
                 onDragOver={(e) => {
-                  if (state !== "Otros" && !busy) e.preventDefault();
+                  if (columnDrag || (state !== "Otros" && !busy)) e.preventDefault();
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
+                  if(columnDrag){const from=columns.indexOf(columnDrag),to=columns.indexOf(state);const next=[...columns];next.splice(from,1);next.splice(to,0,columnDrag);changeColumns(next);setColumnDrag('');return;}
                   const item = items.find((i) => i.id === dragging);
                   setDragging("");
                   if (
@@ -484,8 +495,13 @@ function PlanningWorkspace({
                     void move(item, state);
                 }}
               >
-                <h3>
-                  {states[state] || state} · {cards.length}
+                <h3 draggable={!busy} onDragStart={e=>{setColumnDrag(state);e.dataTransfer.setData('text/plain',state);e.dataTransfer.effectAllowed='move';}} onDragEnd={()=>setColumnDrag('')} title="Arrastra para ordenar columnas">
+                  <span className="column-title">{states[state] || state} · {cards.length}</span>
+                  <ActionMenu label={'Opciones de columna '+(states[state]||state)}>
+                    <button disabled={columnIndex===0} onClick={()=>changeColumns(reorderColumn(columns,state,-1))}>Mover izquierda</button>
+                    <button disabled={columnIndex===columns.length-1} onClick={()=>changeColumns(reorderColumn(columns,state,1))}>Mover derecha</button>
+                    <button disabled={columns.length===1} onClick={()=>changeColumns(columns.filter(x=>x!==state))}>Ocultar columna</button>
+                  </ActionMenu>
                   {(columnIndex === 0 ||
                     columnIndex === columns.length - 1) && (
                     <button
@@ -748,18 +764,12 @@ function PlanningWorkspace({
           }}
         />
       )}
-      {shift && <Dialog title="Revisar movimiento del Gantt" onClose={()=>{if(!busy)setShift(null);}}>
+      {shift && <Dialog title="Conflicto de fechas" onClose={()=>{if(!busy)setShift(null);}}>
         <p>{items.find(i=>i.id===shift.id)?.name}</p>
         <p>{shift.old_start} → {shift.start}<br/>{shift.old_end} → {shift.end}</p>
-        <p>La duración se conserva. Este movimiento afecta únicamente este trabajo.</p>
+        <p>Las fechas no se guardaron. Revisa las dependencias antes de volver a arrastrar.</p>
         {!!shift.errors.length && <div role="alert"><ul>{shift.errors.map((error:string,index:number)=><li key={index}>{error}</li>)}</ul></div>}
         <button disabled={busy} onClick={()=>setShift(null)}>Cancelar movimiento</button>
-        <button className="primary" disabled={busy || !!shift.errors.length} onClick={async()=>{
-          setBusy(true);setError('');
-          try {await api(`/projects/${project.id}/schedule/items/${shift.id}/shift-apply`,{method:'POST',...json({days:shift.days,fingerprint:shift.fingerprint})});setShift(null);await reload();}
-          catch(e){setError((e as Error).message);setShift(null);}
-          finally{setBusy(false);}
-        }}>Confirmar fechas</button>
       </Dialog>}
       {period && (
         <PeriodEditor

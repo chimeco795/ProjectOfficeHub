@@ -7,6 +7,7 @@ import { ContextField } from "../../components/ContextField";
 import { localPersonId } from "../../components/LocalIdentity";
 import { DocumentIcon, fileKind } from "./DocumentIcon";
 export function DocumentWorkspace({ projectId }: { projectId: string }) {
+  const [filtersOpen,setFiltersOpen]=useState(false);
   const scope = useOperationScope(projectId);
   const scopeKey = scope.ids.join(",");
   const [targets, setTargets] = useState<any[]>([]),
@@ -170,7 +171,8 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
       <ScopeToggle scope={scope} />
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
-      <div className="pmo-actions">
+      <button aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>Filtros{query||archived||projectFilter||typeFilter||dateFrom||authorFilter||itemFilter?' · Activos':''}</button>
+      {filtersOpen&&<><div className="pmo-actions">
         <label>
           Buscar documentos
           <input
@@ -242,6 +244,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
           onChange={(v) => setItemFilter(String(v))}
         />
       </div>
+      <button onClick={()=>{setQuery('');setArchived(false);setProjectFilter('');setTypeFilter('');setDateFrom('');setAuthorFilter('');setItemFilter('');}}>Limpiar filtros</button></>}
       <div className="document-list">
         {visible.map((r) => (
           <article

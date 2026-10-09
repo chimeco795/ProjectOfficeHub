@@ -8,6 +8,8 @@ import { localPersonId } from "../../components/LocalIdentity";
 import { Calendar } from "./Calendar";
 import { Attachments } from "./Attachments";
 import { MeetingMinutes } from "./MeetingMinutes";
+import {ContextField} from '../../components/ContextField';
+import {ActionMenu} from '../../components/ActionMenu';
 export type AgendaEvent = {
   project_id: string;
   id: string;
@@ -29,6 +31,7 @@ export type AgendaEvent = {
 };
 export function AgendaWorkspace({ projectId }: { projectId: string }) {
   const base = "/projects/" + projectId;
+  const [filtersOpen,setFiltersOpen]=useState(false);
   const scope = useOperationScope(projectId),
     scopeKey = scope.ids.join(",");
   const [projectFilter, setProjectFilter] = useState(""),
@@ -243,32 +246,30 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
   };
   const detail = current ? (
     <article className="event-detail">
-      <span className="field-chip">{current.status}</span>
-      <h3>{current.title}</h3>
+      <ContextField label="Estado del evento" value={current.status} options={['Programado','Confirmado','Completado','Cancelado'].map(v=>({value:v,label:v}))} onSave={v=>save({...current,status:v})}/>
+      <h3><ContextField label="Título del evento" showLabel={false} value={current.title} required onSave={v=>save({...current,title:v})}/></h3>
       <p style={{ color: projectColor(current.project_id) }}>
         {projectLabel(current.project_id)}
       </p>
-      <p>{current.description || "Sin descripción registrada"}</p>
+      <ContextField label="Descripción" type="textarea" value={current.description} onSave={v=>save({...current,description:v})}/>
       <dl>
         <dt>Fecha y hora</dt>
         <dd>
-          {current.date} · {current.time.slice(0, 5)}
+          <ContextField label="Fecha del evento" value={current.date} required type="date" onSave={v=>save({...current,date:v})}/><ContextField label="Hora del evento" value={current.time.slice(0,5)} required type="time" onSave={v=>save({...current,time:v})}/>
         </dd>
         <dt>Duración</dt>
         <dd>
-          {current.duration_minutes
-            ? `${current.duration_minutes} minutos`
-            : "Sin definir"}
+          <ContextField label="Duración (min)" value={current.duration_minutes} type="number" min={1} onSave={v=>save({...current,duration_minutes:v?Number(v):null})}/>
         </dd>
         <dt>Organizador</dt>
-        <dd>{person(current.owner_id)}</dd>
+        <dd><ContextField label="Organizador" value={current.owner_id||''} search options={[{value:'',label:'Sin asignar'},...personChoices(people.filter(p=>p.project_id===current.project_id))]} onSave={v=>save({...current,owner_id:v||null})}/></dd>
         <dt>Invitados</dt>
-        <dd>{current.guests.map(person).join(", ") || "Sin invitados"}</dd>
+        <dd><ContextField label="Invitados" value={current.guests} search multiple options={personChoices(people.filter(p=>p.project_id===current.project_id))} onSave={v=>save({...current,guests:v})}/></dd>
         <dt>Trabajo relacionado</dt>
-        <dd>{related(current.related_id)}</dd>
+        <dd><ContextField label="Trabajo relacionado" value={current.related_id||''} search options={[{value:'',label:'Sin relación'},...items.filter(i=>i.project_id===current.project_id).map(i=>({value:i.id,label:i.code+' · '+i.name}))]} onSave={v=>save({...current,related_id:v||null})}/></dd>
       </dl>
-      <p>{current.notes || "Sin notas adicionales"}</p>
-      {current.propose_executive && (
+      <ContextField label="Notas" value={current.notes} type="textarea" onSave={v=>save({...current,notes:v})}/>
+      {!!current.propose_executive && (
         <p>
           Propuesto para Seguimiento Ejecutivo · {related(current.related_id)}
         </p>
@@ -294,9 +295,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           );
         })}
       </div>
-      <button className="primary" onClick={() => setEditing(current)}>
-        Editar evento
-      </button>
+      <ActionMenu label="Opciones del evento"><button onClick={()=>setEditing(current)}>Editar todos los datos</button></ActionMenu>
       <Attachments
         key={attachmentRevision}
         projectId={current.project_id}
@@ -325,7 +324,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
       </div>
       <ScopeToggle scope={scope} />
       {upcoming.length > 0 && (
-        <p role="status">
+        <p role="status" className="action-toast">
           Recordatorio:{" "}
           {upcoming
             .map((e) => e.title + " · " + e.time.slice(0, 5))
@@ -339,9 +338,11 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           <button disabled={busy} onClick={() => void move(undo, false)}>
             Deshacer movimiento
           </button>
+          <button aria-label="Cerrar aviso" onClick={()=>setUndo(null)}>×</button>
         </p>
       )}
-      <div className="pmo-actions">
+      <div className="agenda-view-controls"><button aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>Filtros{query||archived||projectFilter?' · Activos':''}</button><button aria-pressed={view==='calendar'} onClick={()=>setView('calendar')}>Calendario</button><button aria-pressed={view==='list'} onClick={()=>setView('list')}>Lista</button></div>
+      {filtersOpen&&<div className="pmo-actions">
         {scope.all && (
           <label>
             Proyecto
@@ -397,16 +398,8 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           />
           Archivados
         </label>
-        <button
-          aria-pressed={view === "calendar"}
-          onClick={() => setView("calendar")}
-        >
-          Calendario
-        </button>
-        <button aria-pressed={view === "list"} onClick={() => setView("list")}>
-          Lista
-        </button>
-      </div>
+        <button onClick={()=>{setQuery('');setArchived(false);setProjectFilter('');}}>Limpiar filtros</button>
+      </div>}
       {view === "calendar" ? (
         <Calendar
           events={visible}
@@ -416,7 +409,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           onMove={(id, date, time) => {
             const event = events.find((e) => e.id === id);
             if (event && !busy && !event.archived)
-              setPending({ event, date, time: time || event.time });
+              void move({ event, date, time: time || event.time },true);
           }}
           busy={busy || archived}
           details={detail}

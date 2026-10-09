@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Eye, Grid3X3, GripVertical, Maximize2, X } from "lucide-react";
 import { useLocalPersonId } from "../../components/LocalIdentity";
+import {useActionFeedback} from '../../components/ActionFeedback';
 import {
   arrange,
   defaultLayout,
@@ -51,6 +52,7 @@ function DashboardGrid({
   const [layout, setLayout] = useState(read),
     [design, setDesign] = useState(false);
   const grid = useRef<HTMLDivElement>(null);
+  const {notify,feedback}=useActionFeedback();
   useEffect(() => {
     localStorage.setItem(key, JSON.stringify(layout));
   }, [key, layout]);
@@ -84,6 +86,7 @@ function DashboardGrid({
       target.removeEventListener("pointermove", move);
       target.removeEventListener("pointerup", end);
       target.removeEventListener("pointercancel", end);
+      notify(mode==='move'?'Widget movido':'Tamaño actualizado',async()=>setLayout(layout));
     };
     target.addEventListener("pointermove", move);
     target.addEventListener("pointerup", end);
@@ -91,6 +94,7 @@ function DashboardGrid({
   };
   return (
     <>
+      {feedback}
       <div className="dashboard-toolbar">
         <span>{design ? "Mueve y ajusta tus widgets" : "Vista general"}</span>
         <div className="view-switch">

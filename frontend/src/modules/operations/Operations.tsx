@@ -1,4 +1,5 @@
 import { DocumentWorkspace } from "./DocumentWorkspace";
+import {TeamWorkspace} from './TeamWorkspace';
 import {ManagementWorkspace} from './ManagementWorkspace';
 import { SearchPicker, personChoices, type Choice } from "../../components/SearchPicker";
 import { ContextField } from "../../components/ContextField";
@@ -133,7 +134,7 @@ export function RecordEditor({
   );
 }
 export function Operations(props: { projectId: string; view: string }) {
-  return ['people','roles','organization','availability'].includes(props.view) ? <ManagementWorkspace {...props}/> : props.view === "documents" ? (
+  return props.view==='teams'?<TeamWorkspace projectId={props.projectId}/>:['people','roles','organization','availability'].includes(props.view) ? <ManagementWorkspace {...props}/> : props.view === "documents" ? (
     <DocumentWorkspace projectId={props.projectId} />
   ) : props.view === "agenda" ? (
     <AgendaWorkspace projectId={props.projectId} />

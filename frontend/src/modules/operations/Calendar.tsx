@@ -193,8 +193,8 @@ export function Calendar({
         </div>
       </div>
       <p className="board-hint">
-        Selecciona para leer. Arrastra a un día u hora para proponer un cambio;
-        confirma antes de guardar.
+        Selecciona para leer. Arrastra a un día u hora para mover el evento;
+        puedes deshacer el cambio.
       </p>
       {mode !== "month" && (
         <>
@@ -327,7 +327,7 @@ export function Calendar({
         </>
       )}
       {hover && (
-        <aside
+        <article
           className="event-hover-card"
           role="tooltip"
           style={{ left: hover.left, top: hover.top }}
@@ -338,7 +338,7 @@ export function Calendar({
             {hover.event.duration_minutes || "—"} min
           </p>
           <p>{describe?.(hover.event)}</p>
-        </aside>
+        </article>
       )}
     </section>
   );

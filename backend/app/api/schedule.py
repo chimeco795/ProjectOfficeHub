@@ -43,7 +43,7 @@ class Shift(BaseModel):
     days:int=Field(ge=-36500,le=36500)
     fingerprint:str|None=Field(default=None,min_length=64,max_length=64)
 
-def shift_proposal(items,identity,days,project_id):
+def shift_proposal(items,identity,days,project_id,start_override=None,end_override=None):
     import hashlib,json
     from datetime import timedelta
     source=next((i for i in items if i['id']==identity),None)
@@ -52,10 +52,11 @@ def shift_proposal(items,identity,days,project_id):
         raise HTTPException(422,'El trabajo archivado o terminado no se mueve desde la barra')
     if not source['start_date'] or not source['target_date']:raise HTTPException(422,'Completa las fechas antes de mover')
     try:
-        start=date.fromisoformat(source['start_date'])+timedelta(days=days)
-        end=date.fromisoformat(source['target_date'])+timedelta(days=days)
+        start=start_override or date.fromisoformat(source['start_date'])+timedelta(days=days)
+        end=end_override or date.fromisoformat(source['target_date'])+timedelta(days=days)
     except (ValueError,OverflowError) as exc:raise HTTPException(422,'Fechas fuera del calendario admitido') from exc
     errors=[];by_id={i['id']:i for i in items}
+    if end<start:errors.append('El fin no puede ser anterior al inicio')
     for dep in source['dependencies']:
         pred=by_id.get(dep)
         if not pred or pred['archived'] or not pred['target_date']:errors.append('Predecesor sin fecha válida')
@@ -64,7 +65,7 @@ def shift_proposal(items,identity,days,project_id):
         if not child['archived'] and identity in child['dependencies']:
             if not child['start_date']:errors.append(f"{child['code']}: sucesor sin inicio")
             elif end>=date.fromisoformat(child['start_date']):errors.append(f"{child['code']}: el fin debe preceder al inicio del sucesor")
-    fingerprint=hashlib.sha256(json.dumps([project_id,identity,days,items],sort_keys=True,default=str).encode()).hexdigest()
+    fingerprint=hashlib.sha256(json.dumps([project_id,identity,days,start,end,items],sort_keys=True,default=str).encode()).hexdigest()
     return {'fingerprint':fingerprint,'errors':errors,'id':identity,'old_start':source['start_date'],'old_end':source['target_date'],'start':start.isoformat(),'end':end.isoformat(),'days':days}
 
 @router.post('/items/{identity}/shift-preview')
@@ -85,4 +86,28 @@ def apply_shift(project_id:str,identity:str,value:Shift):
         if value.days:
             db.execute('UPDATE master_items SET start_date=?,target_date=?,version=version+1,updated_at=? WHERE id=?',(result['start'],result['end'],master.now(),identity))
             master.audit(db,project_id,identity,'mover_barra_cronograma',old,master.item(db,project_id,identity))
+        return result
+
+class DateRange(BaseModel):
+    start:date
+    end:date
+    fingerprint:str|None=Field(default=None,min_length=64,max_length=64)
+
+@router.post('/items/{identity}/dates-preview')
+def preview_dates(project_id:str,identity:str,value:DateRange):
+    with connection() as db:
+        db.execute('BEGIN')
+        return shift_proposal(scheduler.snapshot(db,project_id),identity,0,project_id,value.start,value.end)
+
+@router.post('/items/{identity}/dates-apply')
+def apply_dates(project_id:str,identity:str,value:DateRange):
+    with connection() as db:
+        db.execute('BEGIN IMMEDIATE')
+        result=shift_proposal(scheduler.snapshot(db,project_id),identity,0,project_id,value.start,value.end)
+        if value.fingerprint!=result['fingerprint']:raise HTTPException(409,'El plan cambió; vuelve a revisar las fechas')
+        if result['errors']:raise HTTPException(422,'Las fechas incumplen las reglas del cronograma')
+        old=master.item(db,project_id,identity)
+        if (result['start'],result['end'])!=(result['old_start'],result['old_end']):
+            db.execute('UPDATE master_items SET start_date=?,target_date=?,version=version+1,updated_at=? WHERE id=?',(result['start'],result['end'],master.now(),identity))
+            master.audit(db,project_id,identity,'ajustar_fechas_cronograma',old,master.item(db,project_id,identity))
         return result

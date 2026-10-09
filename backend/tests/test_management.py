@@ -95,3 +95,15 @@ def test_management_migration_preserves_legacy_and_backup(tmp_path, monkeypatch)
     assert len(backups) == 1
     with sqlite3.connect(backups[0]) as connection:
         assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 9
+def test_progressive_team_assignment_without_role(client):
+    from test_pmo import base
+    _,_,b=base(client)
+    person=client.post(b+'/people',json={'new_person':{'name':'Persona progresiva','email':''}}).json()
+    team=client.post(b+'/pmo/teams',json={'name':'Equipo progresivo'}).json()
+    created=client.post(b+'/pmo/memberships',json={'person_id':person['id'],'team_id':team['id'],'allocation':100})
+    assert created.status_code==201,created.text
+    row=created.json();assert row['role']=='' and row['role_id'] is None
+    role=client.post('/api/roles',json={'name':'QA progresivo'}).json()
+    updated=client.put(b+'/pmo/memberships/'+row['id'],json={**row,'role_id':role['id'],'allocation':40})
+    assert updated.status_code==200 and updated.json()['role_id']==role['id']
+    assert len(client.get(b+'/pmo/memberships').json())==1

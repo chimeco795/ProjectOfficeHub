@@ -2,6 +2,8 @@ import { SearchPicker, personChoices } from "../../components/SearchPicker";
 import { useState } from "react";
 import { Dialog } from "../../Dialog";
 import { Attachments } from '../operations/Attachments';
+import { ContextField } from '../../components/ContextField';
+import { ActionMenu } from '../../components/ActionMenu';
 
 export type Person = { id:string; name:string; email:string; version:number };
 export type Item = {
@@ -14,11 +16,39 @@ export const kinds: Record<string,string> = {Risk:"Riesgos",Assumption:"Supuesto
 export const sectionKinds: Record<string,string> = {riesgos:"Risk",general:"Assumption",problemas:"Issue",dependencias:"Dependency",hitos:"Milestone",actividades:"Activity"};
 export const emptyItem = (kind="Risk"): Item => ({id:"",project_id:"",kind,code:"",name:"",description:"",status:"Abierto",owner_id:null,owner_name:"",related_id:null,start_date:null,target_date:null,probability:"",impact:"",response:"",executive_priority:"Media",include_in_report:true,progress:null,archived:false,version:1});
 
-export function ItemEditor({ initial, people, items, title, onClose, onSave }: {
-  initial: Item; people:Person[]; items:Item[]; title:string; onClose:()=>void; onSave:(value:Item)=>Promise<void>;
+export function ItemEditor({ initial, people, items, title, onClose, onSave, contextual=false }: {
+  initial: Item; people:Person[]; items:Item[]; title:string; onClose:()=>void; onSave:(value:Item)=>Promise<Item|void>; contextual?:boolean;
 }) {
   const [value,setValue]=useState(initial),[busy,setBusy]=useState(false),[error,setError]=useState("");
   const set=(key:keyof Item,next:unknown)=>setValue({...value,[key]:next});
+  async function saveField(key:keyof Item,next:unknown) {
+    setBusy(true);
+    try {const saved=await onSave({...value,[key]:next}); if(saved)setValue(saved);}
+    finally {setBusy(false);}
+  }
+  if(contextual&&initial.id)return <Dialog title="Detalle del elemento" onClose={()=>{if(!busy)onClose();}}>
+    <p>{value.code} · {kinds[value.kind]}</p>
+    <div className="detail-fields">
+      <ContextField label="Código" value={value.code} required disabled={busy} onSave={v=>saveField('code',v)}/>
+      <ContextField label="Nombre" value={value.name} required disabled={busy} onSave={v=>saveField('name',v)}/>
+      <ContextField label="Estado" value={value.status} required disabled={busy} onSave={v=>saveField('status',v)}/>
+      <ContextField label="Responsable" value={value.owner_id||''} options={personChoices(people)} search disabled={busy} onSave={v=>saveField('owner_id',v||null)}/>
+      <ContextField label="Inicio" value={value.start_date||''} type="date" disabled={busy} onSave={v=>saveField('start_date',v||null)}/>
+      <ContextField label="Compromiso / fecha del hito" value={value.target_date||''} type="date" disabled={busy} onSave={v=>saveField('target_date',v||null)}/>
+      <ContextField label="Prioridad ejecutiva" value={value.executive_priority} options={['Baja','Media','Alta','Crítica'].map(v=>({value:v,label:v}))} disabled={busy} onSave={v=>saveField('executive_priority',v)}/>
+      <ContextField label="Avance (%)" value={value.progress??''} type="number" min={0} max={100} disabled={busy} onSave={v=>saveField('progress',v===''?null:Number(v))}/>
+      <ContextField label="Elemento relacionado" value={value.related_id||''} options={[{value:'',label:'Sin relación'},...items.filter(i=>i.id!==value.id).map(i=>({value:i.id,label:`${i.code} · ${i.name}`}))]} search disabled={busy} onSave={v=>saveField('related_id',v||null)}/>
+      <ContextField label="Probabilidad" value={value.probability} disabled={busy} onSave={v=>saveField('probability',v)}/>
+      <ContextField label="Impacto" value={value.impact} disabled={busy} onSave={v=>saveField('impact',v)}/>
+      <ContextField label="Incluir en nuevos cortes" value={value.include_in_report?'yes':'no'} options={[{value:'yes',label:'Sí'},{value:'no',label:'No'}]} disabled={busy} onSave={v=>saveField('include_in_report',v==='yes')}/>
+    </div>
+    <ContextField label="Detalle" value={value.description} type="textarea" disabled={busy} onSave={v=>saveField('description',v)}/>
+    <ContextField label="Respuesta / mitigación" value={value.response} type="textarea" disabled={busy} onSave={v=>saveField('response',v)}/>
+    <ActionMenu label="Opciones del elemento"><button disabled={busy} onClick={async()=>{if(!window.confirm(value.archived?'¿Restaurar este elemento?':'¿Archivar este elemento?'))return;try {await saveField('archived',!value.archived);}catch(e){setError((e as Error).message);}}}>{value.archived?'Restaurar':'Archivar'}</button></ActionMenu>
+    {error&&<p role="alert">{error}</p>}
+    <p>Los cortes publicados conservan sus valores históricos.</p>
+    <Attachments projectId={value.project_id} kind="item" id={value.id}/>
+  </Dialog>;
   return <Dialog title={title} onClose={()=>{if(!busy)onClose();}}><form onSubmit={async e=>{
     e.preventDefault();setBusy(true);setError("");try {await onSave(value);onClose();}catch(e){setError((e as Error).message);}finally{setBusy(false);}
   }}><fieldset disabled={busy}>

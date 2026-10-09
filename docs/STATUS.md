@@ -1,13 +1,13 @@
 # Estado actual y pendientes
 
-Actualizado: 2026-10-08 · versión 0.13.0 · esquema SQLite 11. Las tres etapas UX mantienen la fase oficial 13.
+Actualizado: 2026-10-09 · versión 0.13.0 · esquema SQLite 11. Las tres etapas UX mantienen la fase oficial 13.
 
 | Área | Disponible | Pendiente o límite |
 |---|---|---|
 | Proyectos y portafolio | Ficha única, indicadores objetivos y wizard de dos pasos | Sin datos reales antiguos importados |
 | Vista general | Ocho widgets, lectura/diseño, arrastre/resize, ocultar/agregar/restaurar, preferencias por persona/proyecto | LocalStorage del navegador; widgets adicionales legacy pendientes |
 | Seguimiento ejecutivo | Importación/revisión, conciliación, cortes y snapshots publicados | Mantener publicaciones históricas independientes |
-| Planificación | Tablero de 1–4 columnas persistentes, ficha compacta, Gantt con zoom, orden visual local y desplazamiento de fechas validado | Resize de duración pendiente; días naturales sin festivos/capacidad |
+| Planificación | Tablero 1–4 columnas con checklist/drag/⋮, fichas contextuales, Gantt con zoom, orden por puntero y mover/resize de fechas con Deshacer | Resize de inicio/fin validado; días naturales sin festivos/capacidad |
 | Roadmap | Agile sprints/releases, Waterfall fases/entregables/hitos, Hybrid periodos + entregables, catálogo compartido | Arrastre de periodos asigna trabajo, no mueve fechas; no convierte periodos heredados en fases |
 | Personas y equipos | Contactos progresivos, roles independientes y jerarquía, organigrama visual, asignaciones con líder/vigencia/excepción multiequipo | Roles heredados preservados sin conversión automática |
 | Capacidad | Asignaciones por fechas y entre proyectos, ausencias globales y horarios por proyecto/equipo | Ausencias contextualizan; no descuentan horas ni redistribuyen tareas automáticamente |
@@ -22,6 +22,10 @@ Los números de fase describen incrementos entregados, no un compromiso de cierr
 
 Dashboard personalizable entregado para los ocho widgets actuales. Widgets adicionales de avance ponderado, riesgos, ruta crítica, equipo, presupuesto e hitos del PMO anterior continúan registrados para posteriores incrementos.
 
-Fase vigente: 13. Las tres etapas UX están implementadas; 86 pruebas backend, 29 frontend y TypeScript/Vite correctos. Ver VERIFICATION_UX_CONTINUATION.md y EXECUTIVE_SUFFICIENCY.md para evidencia, reglas y límites; las verificaciones anteriores describen sus entregas históricas.
+Fase vigente: 13. Las tres etapas UX anteriores y la pasada minimalista están implementadas; 89 pruebas backend, 29 frontend y TypeScript/Vite correctos. Sin cambio de versión/esquema. Ver VERIFICATION_PHASE13_MINIMALIST.md para el estado vigente; VERIFICATION_UX_CONTINUATION.md y las verificaciones anteriores describen entregas históricas.
 
-Resize de duración pendiente permitido por la solicitud. Móvil completo, arrastres HTML5 de agenda/periodos/orden de filas y estrés con cientos de conexiones no se certificaron visualmente. El movimiento horizontal de fechas del Gantt sí se comprobó mediante revisión, confirmación y restauración.
+COMPLETADO: columnas minimalistas, revisión de solapamientos 1280/1024/móvil, Persona/Equipo/Rol, ficha de trabajo/RAID/Evento/Documento, organigrama contextual con pan, resize/orden del Gantt y feedback/Deshacer. Flujos A–E recorridos con datos sintéticos en QA; movimiento semanal de Agenda, orden de columnas/filas y barras/extremos del Gantt comprobados en navegador. Normal 8011 actualizado, 31 tablas idénticas al respaldo e integridad correcta.
+
+PENDIENTE: migración real .pohub, proveedor automático de minutas y paridad legacy/widgets adicionales. Arrastre de periodos y estrés con cientos de conexiones no recertificados.
+
+LIMITACIONES: preferencias locales, días naturales, sin redistribución automática por capacidad/ausencias, recordatorios con Agenda abierta. Móvil probado mediante viewport, sin certificar dispositivos táctiles físicos. Deshacer valida concurrencia. Narrativa y propuestas ejecutivas permanecen bajo revisión humana.

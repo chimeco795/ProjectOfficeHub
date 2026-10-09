@@ -36,7 +36,6 @@ class Membership(Versioned):
     valid_to:Date|None=None
     @model_validator(mode='after')
     def dates(self):
-        if not self.role.strip() and not self.role_id:raise ValueError('Selecciona un rol o conserva el rol heredado')
         if self.valid_from and self.valid_to and self.valid_from>self.valid_to:raise ValueError('Vigencia inválida')
         return self
 
