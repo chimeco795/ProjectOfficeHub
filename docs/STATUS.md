@@ -1,6 +1,8 @@
 # Estado actual y pendientes
 
-Actualizado: 2026-10-09 · versión 0.13.0 · esquema SQLite 11. Las tres etapas UX mantienen la fase oficial 13.
+Actualizado: 2026-10-12 · versión 0.13.0 · esquema SQLite 11. Las etapas UX mantienen la fase oficial 13.
+
+INCREMENTO ACTUAL EN CURSO: Lista/Cards en cinco catálogos, RAID tabular/inline, Personas/Roles con asignaciones actuales, organigrama con células y acceso a asignar persona, barras de Agenda/Documentos y biblioteca tabular. Checkpoint parcial verificado con 29 tests frontend y build. Autenticación real todavía pendiente; la identidad sigue siendo local. También pendientes agrupaciones documentales por relación, preview, pruebas con 10+ células y cierre visual completo. Ver checkpoint del 2026-10-12 en VERIFICATION_UX_CONTINUATION.md. No cerrar la solicitud completa.
 
 | Área | Disponible | Pendiente o límite |
 |---|---|---|

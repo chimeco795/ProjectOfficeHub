@@ -19,9 +19,9 @@ export function PersonAssignment({projectId,person,onAssigned}:{projectId:string
   async function addTeam(teamId:string){if(!teamId||busy)return;setBusy(true);setError('');try{
     // Existing assignments are edited in place, never silently duplicated.
     await api(base+'/pmo/memberships',{method:'POST',...json({person_id:person.id,team_id:teamId,role:'',role_id:null,leader_id:null,allocation:100,valid_from:null,valid_to:null,allow_multiple_teams:false,archived:false})});
-    await reload();setNotice('Equipo asignado. Elige el rol y ajusta la dedicación.');
+    await reload();await onAssigned();setNotice('Equipo asignado. Elige el rol y ajusta la dedicación.');
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}}
-  async function update(member:any,key:string,value:any){const saved=await api(base+'/pmo/memberships/'+member.id,{method:'PUT',...json({...member,[key]:value})});setMembers(old=>old.map(m=>m.id===saved.id?saved:m));setNotice('Asignación guardada.');}
+  async function update(member:any,key:string,value:any){const saved=await api(base+'/pmo/memberships/'+member.id,{method:'PUT',...json({...member,[key]:value})});setMembers(old=>old.map(m=>m.id===saved.id?saved:m));await onAssigned();setNotice('Asignación guardada.');}
   return <div className="person-assignment">
     <h3>Rol y equipo en este proyecto</h3>
     <p className="assignment-path">Persona → Proyecto → Equipo → Rol → Dedicación</p>

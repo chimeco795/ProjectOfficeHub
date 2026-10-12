@@ -1,6 +1,16 @@
 # Contexto de Project Office Hub
 
-## Checkpoint activo — refinamiento UX puntual, 2026-10-09
+## Checkpoint activo — catálogos y operación, 2026-10-12
+
+Incremento en curso sobre master cad52e3, solicitud attachments/d6374663-6298-42e9-9d7a-7bd93f46fa75/Texto pegado.txt. Conservados versión 0.13.0, fase oficial 13 y SQLite 11. Este checkpoint es parcial: no declarar completada la solicitud completa ni el acceso real.
+
+COMPLETADO EN ESTE CHECKPOINT: RAID sin bloque de responsables, tabla de ocho columnas, ordenación y edición contextual con contratos/versiones existentes. Lista/Cards compartido en RAID, Personas, Roles, Documentos y Portafolio; predeterminado Lista excepto Portafolio Cards. Preferencia por persona local, todavía sin cuenta autenticada. Personas/Roles presentan asignaciones vigentes del proyecto; contacto principal primero y asignación independiente en ficha. Cards abren ficha y acciones secundarias ⋮. Organigrama muestra forma/color/etiqueta de equipo, leyenda/filtro y + Asignar persona desde un rol vacío, reutilizando PersonAssignment; alta de persona separada. Agenda reúne alcance/vista/búsqueda/filtros/alta en barra responsive. Documentos tiene ocho columnas, Cards, agrupación proyecto/tipo/fecha y filtro por relación existente; fuentes ejecutivas en lectura, descarga de originales y relaciones múltiples conservadas.
+
+VERIFICADO: 29 tests frontend; TypeScript/Vite correctos. QA 8015: prioridad RAID Media→Alta→Media, rol desde organigrama Analista QA→QA flujo contextual→Analista QA, misma asignación con 40%; preferencias de vistas tras recarga; ficha de persona y documental, fuente ejecutiva en lectura. Revisión a 1280/1024 según matriz de docs/VERIFICATION_UX_CONTINUATION.md. Backend no modificado ni reejecutado. Sin migraciones, escrituras QA en data/ ni cambios de publicados/originales.
+
+SIGUIENTE PASO: implementar autenticación real aditiva: Cuenta de acceso distinta de Persona, permisos distintos de Roles profesionales; bootstrap de primer Admin, login/sesiones/expiración/logout/perfil/cambio y recuperación de contraseña. No convertir el selector local en autenticación aparente. Se preguntó por proveedor de correo; no hay respuesta todavía, no simular envíos. Completar agrupación documental por evento/trabajo/RAID/corte y previsualización segura, orden/filtros e inline adicionales en catálogos, secundarios responsive de barras, identificación/persistencia de células al crecer y prueba de 10+ equipos/hover. Completar matriz visual 1280/1024 y full suites después del incremento completo. Conservar todas las limitaciones históricas.
+
+## Checkpoint anterior — refinamiento UX puntual, 2026-10-09
 
 Base master 8c512d9. Solicitud directa: Tablero, Gantt, RAID/hitos y flujo Persona → Proyecto → Equipo → Rol → Dedicación → Vigencia/líder. Conservados versión 0.13.0, fase oficial 13, SQLite 11, arquitectura, contratos, tests e histórico.
 

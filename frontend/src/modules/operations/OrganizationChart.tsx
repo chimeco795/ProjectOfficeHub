@@ -1,8 +1,14 @@
 import { useEffect, useState, useRef } from "react";
-import { api } from "../../api";
+import { api,json } from "../../api";
 import { dateKey } from "./calendarModel";
+import {Dialog} from '../../Dialog';
+import {SearchPicker,personChoices} from '../../components/SearchPicker';
+import {PersonAssignment} from './PersonAssignment';
+import {RecordEditor} from './Operations';
 export function OrganizationChart({ projectId }: { projectId: string }) {
   const [selected,setSelected]=useState<any>(null);
+  const [teams,setTeams]=useState<any[]>([]),[teamFilter,setTeamFilter]=useState('');
+  const [assignRole,setAssignRole]=useState<any>(null),[assignPerson,setAssignPerson]=useState<any>(null),[allPeople,setAllPeople]=useState<any[]>([]),[createPerson,setCreatePerson]=useState(false),[revision,setRevision]=useState(0);
   const pan=useRef<{x:number;y:number;left:number;top:number}|null>(null);
   const [roles, setRoles] = useState<any[]>([]),
     [members, setMembers] = useState<any[]>([]),
@@ -16,8 +22,12 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
       api("/roles"),
       api(`/projects/${projectId}/pmo/memberships`),
       api(`/projects/${projectId}/people`),
+      api(`/projects/${projectId}/pmo/teams`),
+      api('/people'),
     ])
-      .then(([r, m, p]) => {
+      .then(([r, m, p, t, all]) => {
+        setAllPeople(all);
+        setTeams(t.filter((x:any)=>!x.archived).sort((a:any,b:any)=>a.id.localeCompare(b.id)));
         setRoles(r);
         setMembers(
           m.filter(
@@ -30,11 +40,12 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
         setPeople(p);
       })
       .catch((e) => setError(e.message));
-  }, [projectId, today]);
+  }, [projectId, today,revision]);
+  function cell(teamId:string){const index=teams.findIndex(t=>t.id===teamId);if(index<0)return null;return <span className="org-cell" style={{color:['#246b58','#365baa','#9a5a17','#82378b','#9e3946'][index%5]}} title={teams[index].name}>{['●','◆','■','▲','⬟'][index%5]} C{index+1} · {teams[index].name}</span>;}
   function node(role: any, path: string[] = []): React.ReactNode {
     if (path.includes(role.id)) return null;
     const children = roles.filter((r) => r.reports_to === role.id),
-      persons = members.filter((m) => m.role_id === role.id);
+      persons = members.filter((m) => m.role_id === role.id&&(!teamFilter||m.team_id===teamFilter));
     return (
       <li key={role.id}>
         <div className="org-node">
@@ -57,10 +68,11 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
                         "Sin asignar")
                     : ""}
                 </small>
+                {cell(m.team_id)}
               </span>
             </button>
           ))}
-          {!persons.length && <small>Sin persona asignada</small>}
+          {!persons.length && <><small>{teamFilter?'Sin persona en este equipo':'Sin persona asignada'}</small><button onClick={()=>{setAssignRole(role);setAssignPerson(null);}}>+ Asignar persona</button></>}
           {!!children.length && (
             <button
               aria-expanded={!collapsed.includes(role.id)}
@@ -104,6 +116,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
         </div>
       </div>
       {error && <p role="alert">{error}</p>}
+      {!!teams.length&&<div className="catalog-toolbar"><label>Célula / equipo<select value={teamFilter} onChange={e=>setTeamFilter(e.target.value)}><option value="">Todos los equipos</option>{teams.map((t,index)=><option key={t.id} value={t.id}>C{index+1} · {t.name}</option>)}</select></label><div className="org-cell-legend" aria-label="Leyenda de células">{teams.map(t=><span key={t.id}>{cell(t.id)}</span>)}</div></div>}
       <div
         className="org-scroll"
         tabIndex={0}
@@ -137,6 +150,8 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
           desde Equipos; se conserva su rol anterior.
         </p>
       )}
+      {assignRole&&!createPerson&&<Dialog title={'Asignar persona · '+assignRole.name} onClose={()=>{setAssignRole(null);setAssignPerson(null);}}><p>Selecciona una persona existente y completa su equipo, rol y dedicación. Rol a asignar: <strong>{assignRole.name}</strong>.</p><SearchPicker label="Persona existente" value={assignPerson?.id||''} options={personChoices(allPeople)} onChange={v=>setAssignPerson(allPeople.find(p=>p.id===v)||null)}/>{assignPerson&&<PersonAssignment key={assignPerson.id} projectId={projectId} person={assignPerson} onAssigned={async()=>setRevision(r=>r+1)}/>}<button onClick={()=>setCreatePerson(true)}>+ Crear nueva persona</button></Dialog>}
+      {assignRole&&createPerson&&<RecordEditor title="Nueva persona" initial={{name:'',email:''}} fields={[{key:'name',label:'Nombre',required:true},{key:'email',label:'Correo',type:'email'}]} onClose={()=>setCreatePerson(false)} onSave={async value=>{const person=await api(`/projects/${projectId}/people`,{method:'POST',...json({new_person:value})});setAllPeople(old=>[...old.filter(p=>p.id!==person.id),person]);setAssignPerson(person);setCreatePerson(false);setRevision(r=>r+1);}}/>}
     </section>
   );
 }

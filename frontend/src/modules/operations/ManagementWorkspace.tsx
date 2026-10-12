@@ -8,6 +8,9 @@ import { Capacity } from "./Capacity";
 import { OrganizationChart } from "./OrganizationChart";
 import {ActionMenu} from '../../components/ActionMenu';
 import {PersonAssignment} from './PersonAssignment';
+import {CatalogView,useCatalogView} from '../../components/CatalogView';
+import '../master/catalog.css';
+import {dateKey} from './calendarModel';
 export function ManagementWorkspace({
   projectId,
   view,
@@ -16,6 +19,8 @@ export function ManagementWorkspace({
   view: string;
 }) {
   const base = "/projects/" + projectId;
+  const [catalogView,setCatalogView]=useCatalogView(view);
+  const [memberships,setMemberships]=useState<any[]>([]);
   const [people, setPeople] = useState<any[]>([]),
     [assigned, setAssigned] = useState<any[]>([]),
     [roles, setRoles] = useState<any[]>([]),
@@ -27,13 +32,14 @@ export function ManagementWorkspace({
     [error, setError] = useState(""),
     [query, setQuery] = useState("");
   async function reload() {
-    const [p, a, r, d, t, c] = await Promise.all([
+    const [p, a, r, d, t, c, m] = await Promise.all([
       api("/people"),
       api(base + "/people"),
       api("/roles"),
       api(base + "/availability"),
       api(base + "/pmo/teams"),
       api(base + "/working-calendars"),
+      api(base + "/pmo/memberships"),
     ]);
     setPeople(p);
     setAssigned(a);
@@ -41,6 +47,7 @@ export function ManagementWorkspace({
     setAbsences(d);
     setTeams(t);
     setCalendars(c);
+    setMemberships(m);
   }
   useEffect(() => {
     void reload().catch((e) => setError(e.message));
@@ -67,6 +74,13 @@ export function ManagementWorkspace({
       throw e;
     }
   }
+  function assignmentSummary(record:any) {
+    const today=dateKey(new Date());
+    const active=memberships.filter(m=>!m.archived&&(!m.valid_from||m.valid_from<=today)&&(!m.valid_to||m.valid_to>=today)&&(view==='people'?m.person_id===record.id:m.role_id===record.id));
+    const teamNames=[...new Set(active.map(m=>teams.find(t=>t.id===m.team_id)?.name).filter(Boolean))].join(', ');
+    const detail=view==='people'?active.map(m=>(roles.find(r=>r.id===m.role_id)?.name||m.role||'Sin rol')+' · '+m.allocation+'%').join(' / '):[...new Set(active.map(m=>people.find(p=>p.id===m.person_id)?.name).filter(Boolean))].join(', ');
+    return <><span>{teamNames||'Sin equipo'}</span><span>{detail||'Sin asignación vigente'}</span></>;
+  }
   return (
     <section className="panel management-workspace">
       <div className="section-heading">
@@ -82,54 +96,15 @@ export function ManagementWorkspace({
         )}
       </div>
       {error && <p role="alert">{error}</p>}
-      {view === "people" ? (
+      {view === "people" || view === "roles" ? (
         <>
-          <label>
-            Buscar persona
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Nombre o correo"
-            />
-          </label>
-          <div className="team-grid">
-            {people
-              .filter((p) =>
-                (p.name + " " + p.email)
-                  .toLowerCase()
-                  .includes(query.toLowerCase()),
-              )
-              .map((p) => (
-                <article className="person-card" key={p.id}>
-                  <span className="person-avatar">
-                    {p.name.slice(0, 2).toUpperCase()}
-                  </span>
-                  <h3>{p.name}</h3>
-                  <p>{p.email || "Sin correo"}</p>
-                  <button onClick={() => setSelected(p)}>Ver persona y asignación</button>
-                  <small>{assigned.some((a)=>a.id===p.id)?'En este proyecto':'Sin asignar al proyecto'}</small>
-                </article>
-              ))}
-          </div>
+          <div className="catalog-toolbar"><label className="catalog-search">{view==='people'?'Buscar persona':'Buscar rol'}<input value={query} onChange={e=>setQuery(e.target.value)} placeholder={view==='people'?'Nombre o correo':'Nombre del rol'}/></label><CatalogView value={catalogView} onChange={setCatalogView} label={titles[view]}/></div>
+          {catalogView==='list'?<div className="catalog-table-wrap"><table className="catalog-table"><thead><tr>{(view==='people'?['Nombre','Correo','Equipo','Rol','Dedicación','Líder','Estado','Acciones']:['Rol','Reporta a','Personas asignadas','Equipos','Estado','Acciones']).map(h=><th scope="col" key={h}>{h}</th>)}</tr></thead><tbody>{(view==='people'?people:roles).filter(record=>(record.name+' '+(record.email||'')).toLocaleLowerCase().includes(query.toLocaleLowerCase())).map(record=>{
+            const current=memberships.filter(m=>!m.archived&&(!m.valid_from||m.valid_from<=dateKey(new Date()))&&(!m.valid_to||m.valid_to>=dateKey(new Date()))&&(view==='people'?m.person_id===record.id:m.role_id===record.id));
+            const names=(key:string,source:any[])=>[...new Set(current.map(m=>source.find(x=>x.id===m[key])?.name).filter(Boolean))].join(', ')||'—';
+            return <tr key={record.id}><td><button className="catalog-name" onClick={()=>setSelected(record)}>{record.name}</button></td>{view==='people'?<><td>{record.email||'—'}</td><td>{names('team_id',teams)}</td><td>{names('role_id',roles)}</td><td>{current.length?current.map(m=>m.allocation+'%').join(' / '):'—'}</td><td>{names('leader_id',people)}</td><td>{assigned.some(a=>a.id===record.id)?'En el proyecto':'Sin asignar'}</td></>:<><td>{roles.find(r=>r.id===record.reports_to)?.name||'Raíz'}</td><td>{names('person_id',people)}</td><td>{names('team_id',teams)}</td><td>{record.archived?'Archivado':'Activo'}</td></>}<td><ActionMenu label={'Opciones de '+record.name}><button onClick={()=>setSelected(record)}>Ver ficha</button>{view==='people'&&<button onClick={()=>setSelected(record)}>Asignar a proyecto / equipo</button>}</ActionMenu></td></tr>;
+          })}</tbody></table></div>:<div className="catalog-cards">{(view==='people'?people:roles).filter(record=>(record.name+' '+(record.email||'')).toLocaleLowerCase().includes(query.toLocaleLowerCase())).map(record=><article className="catalog-card" key={record.id}><button className="catalog-card-open" onClick={()=>setSelected(record)}><strong>{record.name}</strong>{view==='people'?<><span>{record.email||'Sin correo'}</span><span>{assigned.some(a=>a.id===record.id)?'En este proyecto':'Sin asignar al proyecto'}</span></>:<><span>Reporta a: {roles.find(r=>r.id===record.reports_to)?.name||'Raíz'}</span><span>{record.archived?'Archivado':'Activo'}</span></>}{assignmentSummary(record)}</button><ActionMenu label={'Opciones de '+record.name}><button onClick={()=>setSelected(record)}>Ver ficha</button></ActionMenu></article>)}</div>}
         </>
-      ) : view === "roles" ? (
-        <div className="team-grid">
-          {roles.map((r) => (
-            <article className="person-card" key={r.id}>
-              <h3>{r.name}</h3>
-              <p>
-                Reporta a:{" "}
-                {roles.find((x) => x.id === r.reports_to)?.name || "Raíz"}
-              </p>
-              <p>
-                {r.archived ? "Archivado" : "Activo"} ·{" "}
-                {roles.filter((x) => x.reports_to === r.id).length} roles
-                subordinados
-              </p>
-              <button onClick={() => setSelected(r)}>Ver rol</button>
-            </article>
-          ))}
-        </div>
       ) : view === "organization" ? (
         <OrganizationChart projectId={projectId} />
       ) : (
@@ -181,8 +156,7 @@ export function ManagementWorkspace({
       )}
       {selected && view === "people" && (
         <Dialog title={selected.name} onClose={() => setSelected(null)}>
-          <PersonAssignment key={selected.id} projectId={projectId} person={selected} onAssigned={reload}/>
-          <details className="person-contact"><summary>Contacto y datos de la persona</summary>
+
           <div className="detail-grid">
             {(["name", "email"] as const).map((key) => (
               <ContextField
@@ -190,23 +164,23 @@ export function ManagementWorkspace({
                 label={key === "name" ? "Nombre" : "Correo"}
                 type={key === "email" ? "email" : "text"}
                 required={key === "name"}
-                value={selected[key]}
+                value={selected[key]||""}
                 onSave={(v) => savePerson(key, v)}
               />
             ))}
           </div>
+          <PersonAssignment key={selected.id} projectId={projectId} person={selected} onAssigned={reload}/>
+          <details className="person-contact"><summary>Más datos de contacto</summary>
           {(["phone", "mobile", "location", "contact_notes"] as const).map(
             (key, index) =>
-              selected[key] !== undefined &&
-              selected[key] !== null &&
-              (selected[key] !== "" || selected["_show" + key]) ? (
+              (selected[key] || selected["_show" + key]) ? (
                 <ContextField
                   key={key}
                   label={
                     ["Teléfono", "Celular", "Ubicación", "Otros datos"][index]
                   }
                   type={key === "contact_notes" ? "textarea" : "text"}
-                  value={selected[key]}
+                  value={selected[key]||""}
                   onSave={(v) => savePerson(key, v)}
                 />
               ) : (

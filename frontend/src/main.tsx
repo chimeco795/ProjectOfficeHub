@@ -1,4 +1,5 @@
 import {LocalIdentity} from "./components/LocalIdentity";
+import {CatalogView,useCatalogView} from './components/CatalogView';
 import {WorkspaceNav, WorkspaceTabs, viewLabel} from "./modules/workspace/Navigation";
 import "./modules/workspace/workspace.css";
 import { Migration } from "./modules/operations/Migration";
@@ -89,6 +90,7 @@ const fmt = (s: string | null) =>
     : "Sin definir";
 
 function App() {
+  const [portfolioView,setPortfolioView]=useCatalogView('portfolio','cards');
   const [projectSearch,setProjectSearch]=useState(""),[projectStatus,setProjectStatus]=useState("all");
   const [tableSection, setTableSection] = useState("actividades");
   const [dirty, setDirty] = useState(false);
@@ -338,7 +340,8 @@ function App() {
               </div>
               {!!projects.length&&<div className="planning-filters"><label>Buscar proyecto<input placeholder="Nombre o descripción" value={projectSearch} onChange={e=>setProjectSearch(e.target.value)}/></label><label>Estado del proyecto<select value={projectStatus} onChange={e=>setProjectStatus(e.target.value)}><option value="all">Todos los estados</option>{[...new Set(projects.map(p=>p.status))].map(state=><option key={state}>{state}</option>)}</select></label><span>{filteredProjects.length} de {projects.length} proyectos</span></div>}
               {!!projects.length&&!filteredProjects.length&&<p>No hay proyectos con estos filtros. <button onClick={()=>{setProjectSearch("");setProjectStatus("all");}}>Limpiar filtros</button></p>}
-              <div className="project-grid">
+              {!!projects.length&&<CatalogView value={portfolioView} onChange={setPortfolioView} label="Portafolio"/>}
+              {portfolioView==='list'?<div className="catalog-table-wrap"><table className="catalog-table"><thead><tr>{['Proyecto','Metodología','Estado','Go Live','Cortes'].map(h=><th key={h} scope="col">{h}</th>)}</tr></thead><tbody>{filteredProjects.map(p=><tr key={p.id}><td><button className="catalog-name" disabled={busy||!routeReady} onClick={()=>run(()=>selectProject(p))}>{p.name}</button></td><td>{p.methodology}</td><td>{p.status}</td><td>{fmt(p.go_live)}</td><td>{p.cut_count}</td></tr>)}</tbody></table></div>:<div className="project-grid">
                 {filteredProjects.map((p) => (
                   <button
                     disabled={busy || !routeReady}
@@ -361,7 +364,7 @@ function App() {
                     </span>
                   </button>
                 ))}
-              </div>
+              </div>}
               {!projects.length && (
                 <div className="empty">
                   <FolderKanban size={42} />

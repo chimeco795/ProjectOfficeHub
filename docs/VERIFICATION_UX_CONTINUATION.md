@@ -86,3 +86,30 @@ No se insertaron fixtures ni se realizaron escrituras de prueba en data/. No se 
 - Vista Hitos comprobada con selección vacía; no se fabricó un hito nuevo para la revisión.
 - Prueba móvil mediante viewport; no certifica dispositivos táctiles físicos. Nombres largos y filas profundas pueden truncarse; ficha y tooltip conservan el detalle.
 - Continúan abiertos exportación real .pohub, proveedor de extracción automática, widgets/paridad legacy y pruebas de estrés/arrastre de periodos anteriores. No se renumeran fases para estos pendientes.
+
+
+## Checkpoint parcial — catálogos y operación, 2026-10-12
+
+Solicitud nueva sobre master cad52e3. Versión 0.13.0, fase 13, SQLite 11. No se ha completado el incremento completo; el acceso real sigue pendiente.
+
+COMPLETADO: Lista/Cards reutilizable y preferencia por persona local en RAID/Personas/Roles/Documentos/Portafolio (Cards por defecto sólo Portafolio). RAID elimina Responsables, muestra ocho columnas, ordena y permite edición contextual de estado/prioridad/responsable/objetivo con versión. Personas y Roles muestran asignaciones vigentes del proyecto, sin duplicar entidades; ficha de persona comienza por nombre/correo y conserva asignación y contacto progresivo. Cards abren ficha, ⋮ contiene secundarios. Organigrama usa color/forma/Cn/nombre, leyenda/filtro y asignación desde rol vacío; reutiliza persona y membership o permite alta separada. Agenda concentra sus controles en una barra que se ajusta al ancho. Documentos comparte dataset/filtros entre Lista/Cards, agrupa por proyecto/tipo/fecha y filtra por relación; ficha, relaciones y descarga existentes se conservan; fuente ejecutiva abre en lectura.
+
+Comprobaciones actuales en QA 8015, datos sintéticos:
+
+| Vista | Evidencia |
+|---|---|
+| RAID | Tabla de ocho columnas a 1280; prioridad UX-R Media→Alta→Media por inline, recarga confirma restauración. Sin bloque Responsables. |
+| Personas | Lista a 1280/1024; tabla 713 px a viewport 1024, sin overflow de página. Ficha nombre/correo antes de asignación. Cards y preferencia tras reload comprobadas a 1280. |
+| Roles | Lista inicial a 1280 y Cards con persona/equipo/jerarquía. Nuevo rol permanece independiente. |
+| Organigrama | Filtro/leyenda C1 a 1024; + Asignar persona abre buscador y asignación existente. Analista QA→QA flujo contextual→Analista QA persistidos en la misma asignación, dedicación 40% conservada. No se crearon personas/equipos/roles ni nuevas memberships para esta prueba. |
+| Agenda | Barra a 1280/1024, controles de calendario Mes/Semana/Día conservados. Arrastres y recordatorios no recertificados en este checkpoint. |
+| Documentos | Lista a 1280, Cards a 1024; defecto de icono absoluto corregido y chips compactados. Un original muestra evento/trabajo/corte. Ficha TXT editable y fuente Word en lectura con descarga. No se subieron ni modificaron originales. |
+| Portafolio | Cards predeterminadas y Lista con mismos cuatro proyectos QA a 1024; selección abre el proyecto. |
+
+29 tests frontend correctos; TypeScript/Vite correctos (advertencia de bundle >500 kB conservada). Backend no modificado ni reejecutado; baseline previo 89 tests. git diff --check correcto. Cambios de prueba exclusivamente en QA, restaurados valores de prioridad y rol; su auditoría queda conservada. App normal 8011 sirve dist actual sin migración/reinicio/backend modificado.
+
+Evidencia local ignorada: .test-data/catalog-people-1024.png y catalog-documents-1024.png. Las imágenes se capturaron después de recargar y verificar el contenido; no reutilizar las de la entrega anterior como pruebas del incremento nuevo.
+
+PENDIENTE: autenticación real y validación Login/Logout/expiración/permisos; vincular preferencias a cuentas; SMTP o mecanismo real de recuperación (pregunta abierta, sin envíos ficticios); agrupación documental por evento/trabajo/RAID/corte y preview seguro; inline/orden/filtros adicionales en Personas/Roles; secundarios en ⋮ a anchos reducidos; células persistentes al cambiar el catálogo, hover y prueba de más de diez equipos; completar ambas vistas de cada área a 1280/1024, flujo de alta desde organigrama y full suites al cierre. El filtro del organigrama conserva la jerarquía completa y filtra personas; Cn se deriva de la lista actual de equipos ordenada por ID. No certificar estabilidad de etiquetas ante altas/bajas ni estrés.
+
+LIMITACIONES: preferencia de navegador por persona local, sin autenticación; contactos extra bajo desplegable; tabla ancha puede desplazarse dentro de su contenedor. No se cambió arquitectura, scheduler, histórico, snapshots, originales o schema. Siguen abiertos .pohub real, extracción automática, widgets/paridad legacy y límites anteriores.

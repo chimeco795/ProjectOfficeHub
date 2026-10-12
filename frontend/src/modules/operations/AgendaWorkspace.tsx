@@ -318,11 +318,9 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
             localmente.
           </p>
         </div>
-        <button className="primary" onClick={() => create(dateKey(new Date()))}>
-          Nuevo evento
-        </button>
+
       </div>
-      <ScopeToggle scope={scope} />
+
       {upcoming.length > 0 && (
         <p role="status" className="action-toast">
           Recordatorio:{" "}
@@ -341,7 +339,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           <button aria-label="Cerrar aviso" onClick={()=>setUndo(null)}>×</button>
         </p>
       )}
-      <div className="agenda-view-controls"><button aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>Filtros{query||archived||projectFilter?' · Activos':''}</button><button aria-pressed={view==='calendar'} onClick={()=>setView('calendar')}>Calendario</button><button aria-pressed={view==='list'} onClick={()=>setView('list')}>Lista</button></div>
+      <div className="catalog-toolbar agenda-toolbar"><ScopeToggle scope={scope}/><div className="view-switch" role="group" aria-label="Vista de Agenda"><button aria-pressed={view==='calendar'} onClick={()=>setView('calendar')}>Calendario</button><button aria-pressed={view==='list'} onClick={()=>setView('list')}>Lista</button></div><label className="catalog-search">Buscar eventos<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Título, persona, fecha o trabajo"/></label><button aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>Filtros{archived||projectFilter?' · Activos':''}</button><button className="primary" onClick={()=>create(dateKey(new Date()))}>+ Nuevo evento</button></div>
       {filtersOpen&&<div className="pmo-actions">
         {scope.all && (
           <label>
@@ -381,15 +379,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           </select>
           <small>Mientras la agenda está abierta, para tus eventos.</small>
         </label>
-        <label>
-          Buscar eventos
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Título, descripción, persona, fecha o trabajo"
-          />
-        </label>
+
         <label>
           <input
             type="checkbox"

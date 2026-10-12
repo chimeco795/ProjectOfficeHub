@@ -49,3 +49,15 @@
 .team-workspace>.section-heading>div:first-child{flex:1}
 .team-workspace>.detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:700px){.raid-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.raid-row .raid-title{grid-column:1/-1}.raid-controls{gap:16px}.raid-search{flex-basis:100%}.raid-controls>.context-field{flex-basis:150px}.team-workspace>.detail-grid{grid-template-columns:minmax(0,1fr)}.shell .schedule-axis,.shell .schedule-row{grid-template-columns:160px minmax(500px,1fr)}.shell .gantt-links{left:190px;width:calc(100% - 205px)}}
+
+.raid-controls .catalog-order{display:flex;flex-direction:column;gap:8px;width:130px;flex:none}
+.catalog-toolbar .operation-scope{margin:0}
+
+.catalog-table .document-associations{gap:4px}
+.catalog-table .association-chip{margin:0;padding:3px 5px;font-size:11px;line-height:15px}
+.catalog-table td:nth-last-child(3),.catalog-table td:nth-last-child(2){white-space:nowrap}
+.catalog-table .catalog-name{min-width:100px}
+
+.catalog-card .document-icon{position:static;flex:none;width:32px;height:32px;margin:0}
+.catalog-card .document-associations{gap:4px;margin-top:8px}
+.catalog-card .association-chip{margin:0;padding:3px 5px;font-size:11px;line-height:15px}
