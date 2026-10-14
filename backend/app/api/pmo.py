@@ -69,6 +69,18 @@ def save(pid,collection,value,identity=None):
         db.execute('BEGIN IMMEDIATE')
         return save_record(db,pid,collection,value,identity)
 
+def multi_team_roles(db):
+    roles={r['id']:dict(r) for r in db.execute('SELECT * FROM roles')}
+    allowed=set()
+    for lead in roles.values():
+        if ''.join(c for c in lead['name'].casefold() if c not in ' _-')!='techlead':continue
+        role=lead;seen=set()
+        while role and role['id'] not in seen:
+            seen.add(role['id'])
+            if not role['archived']:allowed.add(role['id'])
+            role=roles.get(role['reports_to'])
+    return allowed
+
 def save_record(db,pid,collection,value,identity=None):
     if collection not in CONFIG:raise HTTPException(404,'Módulo desconocido')
     table,model=CONFIG[collection]
@@ -78,7 +90,7 @@ def save_record(db,pid,collection,value,identity=None):
     old=scoped(db,table,pid,identity) if identity else {}
     if old and old['version']!=values.version:raise HTTPException(409,'El registro cambió; recarga antes de guardar')
     validate_refs(db,pid,values,old.get('role_id'))
-    if table=='memberships' and values.team_id and not values.archived and not values.allow_multiple_teams:
+    if table=='memberships' and values.team_id and not values.archived and not values.allow_multiple_teams and values.role_id not in multi_team_roles(db):
         conflict=db.execute('''SELECT 1 FROM memberships WHERE project_id=? AND person_id=? AND archived=0 AND team_id IS NOT NULL AND team_id!=? AND id!=?
             AND COALESCE(valid_from,'0001-01-01')<=? AND COALESCE(valid_to,'9999-12-31')>=?''',(pid,values.person_id,values.team_id,identity or '',str(values.valid_to or '9999-12-31'),str(values.valid_from or '0001-01-01'))).fetchone()
         if conflict and (not old or any(old[k]!=value.get(k) for k in ('team_id','person_id','valid_from','valid_to'))):raise HTTPException(422,'La persona ya tiene otro equipo en esa vigencia; marca la excepción explícita')

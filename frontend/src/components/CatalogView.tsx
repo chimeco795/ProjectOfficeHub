@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useSession,sessionValue,updateAccount} from './authState';
 import {api,json} from '../api';
+import {List,LayoutGrid} from 'lucide-react';
 let pending=Promise.resolve();
 
 export function useCatalogView(catalog:string, initial:'list'|'cards'='list') {
@@ -23,5 +24,5 @@ export function useCatalogView(catalog:string, initial:'list'|'cards'='list') {
   return [value,select] as const;
 }
 export function CatalogView({value,onChange,label}:{value:'list'|'cards';onChange:(v:'list'|'cards')=>void;label:string}) {
-  return <div className="view-switch" role="group" aria-label={'Vista de '+label}><button aria-pressed={value==='list'} onClick={()=>onChange('list')}>Lista</button><button aria-pressed={value==='cards'} onClick={()=>onChange('cards')}>Cards</button></div>;
+  return <div className="view-switch compact-view-switch" role="group" aria-label={'Vista de '+label}><button type="button" title="Vista Lista" aria-label="Vista Lista" aria-pressed={value==='list'} onClick={()=>onChange('list')}><List size={16}/></button><button type="button" title="Vista Cards" aria-label="Vista Cards" aria-pressed={value==='cards'} onClick={()=>onChange('cards')}><LayoutGrid size={16}/></button></div>;
 }

@@ -426,18 +426,7 @@ function OperationsContent({
   }
   return (
     <section className="panel">
-      <h2>
-        {
-          (
-            {
-              teams: "Equipos y asignaciones",
-              budget: "Presupuesto",
-              agenda: "Agenda",
-              documents: "Documentos",
-            } as Record<string, string>
-          )[view]
-        }
-      </h2>
+
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
       {view === "teams" && (

@@ -11,6 +11,8 @@ import {PersonAssignment} from './PersonAssignment';
 import {CatalogView,useCatalogView} from '../../components/CatalogView';
 import '../master/catalog.css';
 import {dateKey} from './calendarModel';
+import {SortHeader} from '../../components/SortHeader';
+import {useSession} from '../../components/authState';
 export function ManagementWorkspace({
   projectId,
   view,
@@ -19,6 +21,10 @@ export function ManagementWorkspace({
   view: string;
 }) {
   const base = "/projects/" + projectId;
+  const permission=useSession()?.account.security_role;
+  const canManage=permission==='Admin'||permission==='Gestor';
+  const [sort,setSort]=useState({key:'name',descending:false}),[scope,setScope]=useState('all');
+  const order=(key:string)=>setSort(s=>({key,descending:s.key===key&&!s.descending}));
   const [catalogView,setCatalogView]=useCatalogView(view);
   const [memberships,setMemberships]=useState<any[]>([]);
   const [people, setPeople] = useState<any[]>([]),
@@ -81,29 +87,59 @@ export function ManagementWorkspace({
     const detail=view==='people'?active.map(m=>(roles.find(r=>r.id===m.role_id)?.name||m.role||'Sin rol')+' · '+m.allocation+'%').join(' / '):[...new Set(active.map(m=>people.find(p=>p.id===m.person_id)?.name).filter(Boolean))].join(', ');
     return <><span>{teamNames||'Sin equipo'}</span><span>{detail||'Sin asignación vigente'}</span></>;
   }
+  async function saveRecord(record:any,key:string,value:any){
+    const saved=await api('/'+view+'/'+record.id,{method:'PUT',...json({...record,[key]:value})});
+    (view==='people'?setPeople:setRoles)(old=>old.map(r=>r.id===saved.id?saved:r));
+    setSelected((old:any)=>old?.id===saved.id?saved:old);
+  }
+  async function saveMember(member:any,key:string,value:any){
+    const saved=await api(base+'/pmo/memberships/'+member.id,{method:'PUT',...json({...member,[key]:value})});
+    setMemberships(old=>old.map(m=>m.id===saved.id?saved:m));
+  }
+  const today=dateKey(new Date());
+  const records=(view==='people'?people:roles).filter(r=>(r.name+' '+(r.email||'')).toLocaleLowerCase().includes(query.toLocaleLowerCase())&&(scope==='all'||(view==='people'?(scope==='assigned')===assigned.some(a=>a.id===r.id):(scope==='archived')===!!r.archived)));
+  const sortValue=(r:any)=>sort.key==='reports_to'?roles.find(p=>p.id===r.reports_to)?.name||'':r[sort.key]||'';
+  records.sort((a,b)=>String(sortValue(a)).localeCompare(String(sortValue(b)),'es',{numeric:true})*(sort.descending?-1:1));
+  const headers=view==='people'?[['Nombre','name'],['Correo','email'],['Equipo',''],['Rol',''],['Dedicación',''],['Líder',''],['Estado',''],['Acciones','']]:[['Rol','name'],['Reporta a','reports_to'],['Personas asignadas',''],['Equipos',''],['Estado',''],['Acciones','']];
+  function memberField(member:any,key:string,record:any){
+    const source=key==='team_id'?teams:key==='role_id'?roles:people;
+    const label=key==='team_id'?'Equipo':key==='role_id'?'Rol':key==='leader_id'?'Líder':'Dedicación (%)';
+    return <ContextField key={member.id} label={label+' de '+record.name} showLabel={false} disabled={!canManage} value={member[key]??''} type={key==='allocation'?'number':'text'} min={0} max={100} search={key!=='allocation'} options={key==='allocation'?undefined:[{value:'',label:'Sin '+label.toLocaleLowerCase()},...source.filter(r=>(!r.archived||r.id===member[key])&&(key!=='leader_id'||r.id!==member.person_id)).map(r=>({value:r.id,label:r.name}))]} display={key==='allocation'?member.allocation+'%':key==='role_id'&&!member.role_id?member.role||'Sin rol':undefined} onSave={v=>saveMember(member,key,key==='allocation'?Number(v):v||null)}/>;
+  }
   return (
     <section className="panel management-workspace">
-      <div className="section-heading">
-        <h2>{titles[view]}</h2>
-        {view !== "organization" && (
-          <button className="primary" onClick={() => setAdding(view)}>
-            {view === "people"
-              ? "Nueva persona"
-              : view === "roles"
-                ? "Nuevo rol"
-                : "Registrar ausencia"}
-          </button>
-        )}
-      </div>
+      {view==='availability'&&<div className="section-heading">
+        <button className="primary" disabled={!canManage} onClick={() => setAdding(view)}>Registrar ausencia</button>
+      </div>}
       {error && <p role="alert">{error}</p>}
       {view === "people" || view === "roles" ? (
         <>
-          <div className="catalog-toolbar"><label className="catalog-search">{view==='people'?'Buscar persona':'Buscar rol'}<input value={query} onChange={e=>setQuery(e.target.value)} placeholder={view==='people'?'Nombre o correo':'Nombre del rol'}/></label><CatalogView value={catalogView} onChange={setCatalogView} label={titles[view]}/></div>
-          {catalogView==='list'?<div className="catalog-table-wrap"><table className="catalog-table"><thead><tr>{(view==='people'?['Nombre','Correo','Equipo','Rol','Dedicación','Líder','Estado','Acciones']:['Rol','Reporta a','Personas asignadas','Equipos','Estado','Acciones']).map(h=><th scope="col" key={h}>{h}</th>)}</tr></thead><tbody>{(view==='people'?people:roles).filter(record=>(record.name+' '+(record.email||'')).toLocaleLowerCase().includes(query.toLocaleLowerCase())).map(record=>{
-            const current=memberships.filter(m=>!m.archived&&(!m.valid_from||m.valid_from<=dateKey(new Date()))&&(!m.valid_to||m.valid_to>=dateKey(new Date()))&&(view==='people'?m.person_id===record.id:m.role_id===record.id));
+          <div className="catalog-toolbar">
+            <label className="catalog-search">{view==='people'?'Buscar persona':'Buscar rol'}<input value={query} onChange={e=>setQuery(e.target.value)} placeholder={view==='people'?'Nombre o correo':'Nombre del rol'}/></label>
+            <label>{view==='people'?'Asignación':'Estado'}<select value={scope} onChange={e=>setScope(e.target.value)}><option value="all">Todos</option>{view==='people'?<><option value="assigned">En el proyecto</option><option value="unassigned">Sin asignar</option></>:<><option value="active">Activos</option><option value="archived">Archivados</option></>}</select></label>
+            <CatalogView value={catalogView} onChange={setCatalogView} label={titles[view]}/>
+            <button className="primary" disabled={!canManage} onClick={()=>setAdding(view)}>{view==='people'?'Nueva persona':'Nuevo rol'}</button>
+          </div>
+          {catalogView==='list'?<div className="catalog-table-wrap"><table className="catalog-table"><thead><tr>{headers.map(([label,key])=>key?<SortHeader key={label} label={label} column={key} sort={sort} onSort={order}/>:<th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{records.map(record=>{
+            const current=memberships.filter(m=>!m.archived&&(!m.valid_from||m.valid_from<=today)&&(!m.valid_to||m.valid_to>=today)&&(view==='people'?m.person_id===record.id:m.role_id===record.id));
             const names=(key:string,source:any[])=>[...new Set(current.map(m=>source.find(x=>x.id===m[key])?.name).filter(Boolean))].join(', ')||'—';
-            return <tr key={record.id}><td><button className="catalog-name" onClick={()=>setSelected(record)}>{record.name}</button></td>{view==='people'?<><td>{record.email||'—'}</td><td>{names('team_id',teams)}</td><td>{names('role_id',roles)}</td><td>{current.length?current.map(m=>m.allocation+'%').join(' / '):'—'}</td><td>{names('leader_id',people)}</td><td>{assigned.some(a=>a.id===record.id)?'En el proyecto':'Sin asignar'}</td></>:<><td>{roles.find(r=>r.id===record.reports_to)?.name||'Raíz'}</td><td>{names('person_id',people)}</td><td>{names('team_id',teams)}</td><td>{record.archived?'Archivado':'Activo'}</td></>}<td><ActionMenu label={'Opciones de '+record.name}><button onClick={()=>setSelected(record)}>Ver ficha</button>{view==='people'&&<button onClick={()=>setSelected(record)}>Asignar a proyecto / equipo</button>}</ActionMenu></td></tr>;
-          })}</tbody></table></div>:<div className="catalog-cards">{(view==='people'?people:roles).filter(record=>(record.name+' '+(record.email||'')).toLocaleLowerCase().includes(query.toLocaleLowerCase())).map(record=><article className="catalog-card" key={record.id}><button className="catalog-card-open" onClick={()=>setSelected(record)}><strong>{record.name}</strong>{view==='people'?<><span>{record.email||'Sin correo'}</span><span>{assigned.some(a=>a.id===record.id)?'En este proyecto':'Sin asignar al proyecto'}</span></>:<><span>Reporta a: {roles.find(r=>r.id===record.reports_to)?.name||'Raíz'}</span><span>{record.archived?'Archivado':'Activo'}</span></>}{assignmentSummary(record)}</button><ActionMenu label={'Opciones de '+record.name}><button onClick={()=>setSelected(record)}>Ver ficha</button></ActionMenu></article>)}</div>}
+            return <tr key={record.id}>
+              <td><ContextField label={(view==='people'?'Nombre':'Rol')+' de '+record.name} showLabel={false} value={record.name} required disabled={!canManage} onSave={v=>saveRecord(record,'name',v)}/></td>
+              {view==='people'?<>
+                <td><ContextField label={'Correo de '+record.name} className="catalog-email" showLabel={false} value={record.email||''} type="email" disabled={!canManage} onSave={v=>saveRecord(record,'email',v)}/></td>
+                <td>{current.length?current.map(m=>memberField(m,'team_id',record)):'Sin equipo'}</td>
+                <td>{current.length?current.map(m=>memberField(m,'role_id',record)):<button className="catalog-name" disabled={!canManage} onClick={()=>setSelected(record)}>Asignar rol</button>}</td>
+                <td>{current.length?current.map(m=>memberField(m,'allocation',record)):'—'}</td>
+                <td>{current.length?current.map(m=>memberField(m,'leader_id',record)):'—'}</td>
+                <td>{assigned.some(a=>a.id===record.id)?'En el proyecto':'Sin asignar'}</td>
+              </>:<>
+                <td><ContextField label={'Reporta a de '+record.name} showLabel={false} value={record.reports_to||''} display={roles.find(r=>r.id===record.reports_to)?.name||'Raíz'} search disabled={!canManage} options={[{value:'',label:'Raíz'},...roles.filter(r=>r.id!==record.id&&(!r.archived||r.id===record.reports_to)).map(r=>({value:r.id,label:r.name}))]} onSave={v=>saveRecord(record,'reports_to',v||null)}/></td>
+                <td>{names('person_id',people)}</td><td>{names('team_id',teams)}</td><td>{record.archived?'Archivado':'Activo'}</td>
+              </>}
+              <td><ActionMenu label={'Opciones de '+record.name}><button onClick={()=>setSelected(record)}>Ver ficha</button>{view==='people'&&<button onClick={()=>setSelected(record)}>Asignar rol / equipo</button>}</ActionMenu></td>
+            </tr>;
+          })}</tbody></table></div>:<div className="catalog-cards">{records.map(record=><article className="catalog-card" key={record.id}><button className="catalog-card-open" onClick={()=>setSelected(record)}><strong>{record.name}</strong>{view==='people'?<><span>{record.email||'Sin correo'}</span><span>{assigned.some(a=>a.id===record.id)?'En este proyecto':'Sin asignar al proyecto'}</span></>:<><span>Reporta a: {roles.find(r=>r.id===record.reports_to)?.name||'Raíz'}</span><span>{record.archived?'Archivado':'Activo'}</span></>}{assignmentSummary(record)}</button><ActionMenu label={'Opciones de '+record.name}><button onClick={()=>setSelected(record)}>Ver ficha</button></ActionMenu></article>)}</div>}
+          {!records.length&&<p>No hay resultados en esta selección.</p>}
         </>
       ) : view === "organization" ? (
         <OrganizationChart projectId={projectId} />

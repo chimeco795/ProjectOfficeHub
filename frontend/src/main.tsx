@@ -423,12 +423,12 @@ function App() {
                   </p>
                 </div>
                 <div className="button-row">
-                  <button
+                  {view === 'summary' && <button
                     disabled={dirty||!canManage}
                     onClick={() => setEditingProject(true)}
                   >
                     Editar proyecto
-                  </button>
+                  </button>}
                   {!operationViews.includes(view) && <button disabled={dirty||!canManage} onClick={() => setModal("cut")}>
                     <Plus size={17} /> Nuevo corte
                   </button>}

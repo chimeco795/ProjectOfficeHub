@@ -223,6 +223,7 @@ export function WorkDetails({
               .map((i) => ({ value: i.id, label: `${i.code} · ${i.name}` }))}
             search
             multiple
+            autoCommitMultiple
             disabled={busy || (!!editing && editing !== "dependencies")}
             onEditing={(open) => setEditing(open ? "dependencies" : "")}
             onSave={(v) => save("dependencies", v)}

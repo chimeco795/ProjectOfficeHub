@@ -168,3 +168,44 @@ Diseño de hash/sesiones/CSRF/recuperación contrastado con [OWASP Password Stor
 PENDIENTES CONSERVADOS: integrar un proveedor para correo automático, SSO/MFA si se solicitan, refinamiento de controles heredados según permiso, matriz UX completa a 1024, agrupación documental por relación/preview, células 10+/persistencia/hover, filtros/inline restantes, .pohub real, extracción de minutas y widgets/paridad legacy. Esta entrega cierra la prioridad de autenticación, no esos pendientes.
 
 Cierre de acceso: navegación al fragmento de recuperación en una pestaña abierta muestra el formulario vacío y permite volver al login sin reutilizar campos. Backend verifica que restablecer una cuenta también cierre la sesión del navegador cuando pertenecía a otra cuenta. Miembro puede previsualizar/aplicar fechas de trabajos de sus proyectos; la simulación global conserva permisos de gestión.
+
+## Consistencia UX/UI — Gestión y Planificación, 2026-10-14
+
+Base master cf54f1c. Sólo contexto/estado/verificación vigente y código afectado; sin auditoría general. Arquitectura, versión 0.13.0, fase 13 y SQLite 12 conservados. No se alteraron snapshots, publicados, originales, scheduler ni permisos de acceso.
+
+### Cambios
+
+- Barras de filtros con input/select/botón de 36 px, label con separación de 6 px y checkbox centrado en la misma altura del control. Responsable predictivo incluye chips dentro de esa altura; el popup sólo aparece al buscar y permanece flotante. Valores editables de listas mantienen altura al abrir el editor; correos en una línea con tooltip.
+- Sin títulos de sección repetidos dentro de Personas, Roles, Equipos, Organigrama, Lista/Tablero y paneles relacionados de RAID/Agenda/Documentos/Presupuesto. Se conservan nombres concretos de personas/equipos en sus fichas y subtítulos funcionales. Editar proyecto limitado a Vista general.
+- Selector compartido Lista/Cards de iconos, tooltip y aria-pressed; Tablero/Lista con el mismo patrón compacto. Preferencias de catálogo por cuenta conservadas.
+- Personas: nombre/correo y campos de asignaciones vigentes editables en celda mediante ContextField. Roles: nombre y reporta a; archivo permanece en acción explícita. Encabezados ordenables donde el dato es unívoco, filtro de asignación/estado y búsqueda. Varias asignaciones se editan por registro, sin combinar sus identidades. Trabajo conserva sus campos inline y añade avance (%); ordena entre hermanos, manteniendo padres antes de descendientes. Abrir la ficha sigue disponible desde ⋮ o desde el nombre del trabajo.
+- Rol sin equipo: asignar persona al proyecto y elegir rol crea membership con team_id null. Equipo se añade posteriormente en la misma asignación; no crea otro Rol ni Persona. Desde organigrama, el rol elegido se ofrece explícitamente para una primera asignación. Opciones de vigencia/líder siguen progresivas.
+- Multiequipo: TechLead y ancestros definidos en reports_to no requieren marcar allow_multiple_teams. Se reconocen espacios/guion/underscore en TechLead; no se presume que cualquier título Dirección/Manager pertenezca a ese rango. Roles inferiores/ramas ajenas mantienen excepción explícita. Añadir a otro equipo reutiliza un registro sin equipo cuando existe o usa el rol gestor vigente, y recuerda revisar la dedicación total. La regla profesional no cambia Admin/Gestor/Miembro/Consulta ni redistribuye dedicación automáticamente.
+- Organigrama: sólo término Equipo, distintivos E1… y leyenda; Mostrar integrantes activado por defecto. Desactivarlo retira personas y conserva roles, equipos asignados/gestionados, jerarquía, filtro y colapsos.
+- Modales: foco verde de 2 px hacia dentro, separación de encabezado/labels y campos compactos. Predecesores usa edición múltiple automática, sin botones Guardar/Cancelar: Enter finaliza, salida guarda, Escape descarta todo el borrador. Clic fuera también guarda después de quitar un chip enfocado; errores conservan el editor y la validación/versiones existentes.
+
+### Pruebas y evidencia
+
+`pytest backend/tests/test_management.py backend/tests/test_pmo.py backend/tests/test_gantt_resize.py backend/tests/test_auth.py -q`: **31/31**. Nueva prueba de rol sin equipo → mismo registro con equipo → TechLead/superior en varios equipos sin excepción; descendiente rechazado, desvincular equipo conserva rol y líder compartido. Se mantienen pruebas de versiones, scope, auditoría, migraciones, resize y acceso. Advertencia existente Starlette/httpx. No se reejecutó toda la suite: full 104 del checkpoint previo permanece como baseline histórica.
+
+`npm test`: **31/31**, incluyendo dos casos nuevos de jerarquía multiequipo (ramas ajenas, padres ausentes, ciclos y archivados). TypeScript (`tsc -b`) y Vite correctos. Aviso de bundle >500 kB conservado. `git diff --check` correcto.
+
+QA real exclusivo en .test-data/auth-browser, 8016, cuenta sintética. Dimensiones medidas: 1280×720/900, 1024×900 y 390×844; en esta pasada el override de viewport sí se aplicó, sin usar las capturas de autenticación como prueba nueva.
+
+| Vista | Comprobación |
+|---|---|
+| Lista de trabajo | Cinco controles principales: height 36 e igual y=443.25 a 1280; cuatro en primera fila y Nivel/checkbox/acciones alineados en segunda a 1024. Móvil dos columnas de 133.5 px, sin overflow de página. Avance T-01 25→26→25, orden por avance conserva UX-US antes de UX-T. Valores/dependencias restaurados tras reload. |
+| Personas | Correo sintético: Escape cancela, Enter guarda, blur restaura flujo@example.test; orden por correo, filtro y Lista/Cards. 1024: tabla puede desplazarse dentro del contenedor de 698 px, sin overflow de página. Barra final única, sin título repetido. Nueva persona QA eligió Analista QA con Sin equipo, después TechLead y equipo independiente. |
+| Roles | Nombre Analista QA guardado con Enter y restaurado por blur; Escape cancela. Filtro Activos, orden, Cards y lista a 1024. Rol TechLead creado separado de persona/equipo, reporta a Dirección QA. |
+| Equipos / Asignaciones | Dedicación Persona flujo UX 40→41→40 mediante blur/Enter. TechLead añadido a Equipo flujo UX y Equipo UX multiequipo sin pantalla de excepción; mismo rol, membresías distintas. 1024 sin overflow de página. |
+| Organigrama | Integrantes activos por defecto, apagar deja roles y ambos equipos bajo TechLead sin nombres de personas. Dirección QA identificada como superior. Filtro Equipo y leyenda E1/E2; revisión 1280/1024, sin título repetido. |
+| Detalle del trabajo | QA-DEP: añadir UX-MIN y Escape mantiene T-01; Enter guarda dos predecesores; añadir/quitar chip y clic fuera guarda; restaurado sólo T-01. Editor sin Guardar/Cancelar, popup vacío eliminado. Móvil: modal 374 px sin overflow horizontal, foco rgb(36,107,88) 2 px con offset -2. |
+| Planificación | Tablero/Lista con selector compacto; no Editar proyecto. Cronograma conserva barras, dependencias y Hoy; Mes→Semana comprobado. Revisión visual, no nueva certificación de drag/ruta crítica. |
+
+Capturas ignoradas por Git: .test-data/consistency-people.png, consistency-people-1024.png, consistency-roles-1024.png, consistency-team-1024.png, consistency-org-structure.png, consistency-org-1024.png, consistency-work-list.png, consistency-work-list-1024.png, consistency-work-list-mobile.png, consistency-predecessors.png y consistency-predecessors-mobile.png. Capturas intermedias documentan el flujo; la de Personas y Lista de trabajo corresponde al build final. Valores editados en fixtures anteriores restaurados; nuevas entidades de QA permanecen sólo en la base aislada, con auditoría.
+
+### Aplicación normal y pendientes
+
+Respaldo consistente .test-data/pre-consistency-normal-20261014.sqlite3 antes de reiniciar sólo 8011. Comparación posterior: las **36 tablas** coinciden con el respaldo (incluidas cuentas), integrity_check ok, foreign_key_check vacío, esquema 12. No migraciones ni fixtures en data/. Sesiones/cuentas existentes se preservan. No se intervino 8000 ni se recargó un formulario del usuario. App 8011 sirve dist nuevo; instancias antiguas distintas no se declaran actualizadas.
+
+Conservados pendientes ajenos: exportación .pohub real, correo/extracción automáticos, agrupación/preview documental, paridad/widgets legacy, estrés y estabilidad de E1… ante altas/bajas/10+ equipos. Dedicación total se revisa manualmente; no se adapta por capacidad. Algunas columnas de relaciones múltiples se leen y abren ficha en lugar de editarlas ambiguamente. Orden local de encabezados no reescribe prioridad ni jerarquía. Móvil mediante viewport, sin certificar dispositivo táctil físico. Esta entrega cierra los ajustes solicitados, sin cerrar la paridad general.

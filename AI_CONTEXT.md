@@ -1,6 +1,20 @@
 # Contexto de Project Office Hub
 
-## Checkpoint activo — autenticación real, 2026-10-14
+## Checkpoint activo — consistencia UX/UI en Gestión y Planificación, 2026-10-14
+
+Base master cf54f1c. Solicitud puntual actual; no reauditado el repo. Conservados arquitectura, versión 0.13.0, fase 13 y SQLite 12, histórico, permisos y contratos/versiones.
+
+COMPLETADO: controles de barras a 36 px, labels/checkbox alineados y búsqueda predictiva sin popup vacío. Lista/Cards comparte iconos y tooltip; Tablero/Lista usa el mismo patrón compacto. Sin títulos internos repetidos en Gestión/Planificación y paneles relacionados. Editar proyecto aparece sólo en Vista general. Personas/Roles: inline contextual seguro, orden desde encabezados y filtros; trabajo añade avance inline y orden entre hermanos preservando jerarquía. Foco de modal de 2 px hacia dentro, separado de labels. Predecesores: multiselección/chips sin Guardar/Cancelar, Enter o salida guarda, Escape cancela; salida por puntero cubre chips que pierden foco al eliminarse.
+
+ASIGNACIÓN: persona → proyecto → rol/dedicación, equipo opcional; inicio desde Personas u organigrama sin requerir equipos. Equipo se añade después en la misma asignación. TechLead (también Tech Lead/Tech_Lead/Tech-Lead) y sus superiores definidos por reports_to permiten múltiples equipos sin excepción manual; descendientes y ramas ajenas mantienen la excepción. No se crean rangos por nombres arbitrarios ni se conceden permisos de acceso. Personas, Roles, Equipos y memberships siguen distintos. Dedicación por asignación, sin redistribución automática. Organigrama usa Equipo/E1…, Mostrar integrantes activado por defecto; desactivado conserva roles/equipos y relaciones, sin nombres de personas.
+
+VERIFICADO: 31 backend focalizadas (management/pmo/gantt_resize/auth), 31 frontend (29 existentes + 2 de jerarquía multiequipo), TypeScript/Vite y diff check. QA 8016 aislado: correo Enter/blur/Escape restaurado; nombre de rol guardado/restaurado; dedicación 40→41→40; avance 25→26→25; predecesores añadidos/cancelados/guardados y restaurados; alta de persona con rol sin equipo, luego TechLead en dos equipos sin excepción. Matriz 1280/1024 reales y móvil 390 en VERIFICATION_UX_CONTINUATION.md. No afirmar full suite nueva: baseline full 104 pertenece al commit de autenticación.
+
+NORMAL: respaldo .test-data/pre-consistency-normal-20261014.sqlite3, reiniciado sólo 8011 para cargar regla PMO nueva; comparación de 36 tablas idénticas al respaldo, integrity ok/FK vacío/esquema 12. Se conservan cuentas y datos existentes del usuario. Sin fixtures en data/, migraciones ni escrituras QA sobre normal. 8000 reservado no intervenido. App http://127.0.0.1:8011/ sirve dist actual; no recargar un formulario del usuario en progreso.
+
+PENDIENTES FUERA DE ESTE INCREMENTO: .pohub real, proveedor de correo/extracción, preview/agrupación documental, equipos 10+/estabilidad de E1… ante altas, estrés, widgets/paridad legacy y límites históricos. Viewport móvil no certifica dispositivo táctil físico. Arrastres no recertificados por esta pasada; lógica conservada y resize cubierto por tests focalizados.
+
+## Checkpoint anterior — autenticación real, 2026-10-14
 
 Base master 8c39910. Se implementó la prioridad autorizada “autenticación real”. Versión 0.13.0 y fase oficial 13 conservadas; SQLite 12 es una migración aditiva necesaria para cuentas, sesiones, recuperación, límites de intentos y auditoría de acceso.
 

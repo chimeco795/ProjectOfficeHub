@@ -107,3 +107,28 @@ def test_progressive_team_assignment_without_role(client):
     updated=client.put(b+'/pmo/memberships/'+row['id'],json={**row,'role_id':role['id'],'allocation':40})
     assert updated.status_code==200 and updated.json()['role_id']==role['id']
     assert len(client.get(b+'/pmo/memberships').json())==1
+
+def test_role_without_team_and_management_of_multiple_teams(client):
+    _,_,b=base(client)
+    person=client.post(b+'/people',json={'new_person':{'name':'Lider independiente'}}).json()
+    director=client.post('/api/roles',json={'name':'Direccion multiequipo'}).json()
+    lead=client.post('/api/roles',json={'name':'TechLead','reports_to':director['id']}).json()
+    analyst=client.post('/api/roles',json={'name':'Especialista','reports_to':lead['id']}).json()
+    teams=[client.post(b+'/pmo/teams',json={'name':n,'lead_id':person['id']}).json() for n in ['Primero','Segundo','Tercero']]
+    # A role is meaningful before, and independently of, a team.
+    created=client.post(b+'/pmo/memberships',json={'person_id':person['id'],'role_id':lead['id'],'allocation':30})
+    assert created.status_code==201,created.text
+    row=created.json();assert row['team_id'] is None and row['role_id']==lead['id']
+    attached=client.put(b+'/pmo/memberships/'+row['id'],json={**row,'team_id':teams[0]['id']})
+    assert attached.status_code==200 and attached.json()['role_id']==lead['id']
+    second=client.post(b+'/pmo/memberships',json={'person_id':person['id'],'role_id':lead['id'],'team_id':teams[1]['id'],'allocation':30})
+    assert second.status_code==201 and not second.json()['allow_multiple_teams']
+    senior=client.post(b+'/pmo/memberships',json={'person_id':person['id'],'role_id':director['id'],'team_id':teams[2]['id'],'allocation':30})
+    assert senior.status_code==201,senior.text
+    # Descendants and unrelated titles retain the explicit exception rule.
+    regular=client.post(b+'/pmo/memberships',json={'person_id':person['id'],'role_id':analyst['id'],'team_id':teams[2]['id'],'allocation':10})
+    assert regular.status_code==422
+    assert all(t['lead_id']==person['id'] for t in client.get(b+'/pmo/teams').json())
+    detached=client.put(b+'/pmo/memberships/'+attached.json()['id'],json={**attached.json(),'team_id':None})
+    assert detached.status_code==200 and detached.json()['role_id']==lead['id']
+    assert len(client.get(b+'/pmo/memberships').json())==3

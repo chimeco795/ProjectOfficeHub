@@ -24,7 +24,7 @@ export function MasterCatalog({projectId}: {projectId:string}) {
   const visible=items.filter(i=>i.kind===kind && !!i.archived===archived && `${i.code} ${i.name} ${i.owner_name}`.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>String(a[order as keyof Item]||'').localeCompare(String(b[order as keyof Item]||''),'es',{numeric:true}));
   const menu=(item:Item)=><ActionMenu label={'Opciones de '+item.code}><button onClick={()=>setEditing(item)}>Ver detalle</button><button disabled={saving===item.id} onClick={async()=>{if(!window.confirm(item.archived?'¿Restaurar este elemento?':'¿Archivar este elemento?'))return;try{await save(item,'archived',!item.archived);}catch(e){setError((e as Error).message);}}}>{item.archived?'Restaurar':'Archivar'}</button></ActionMenu>;
   return <>
-    <section className="panel"><div className="section-heading"><div><h2>RAID e hitos</h2><p>Riesgos, supuestos, incidencias, dependencias e hitos vigentes que alimentan los nuevos cortes semanales.</p></div>
+    <section className="panel"><div className="section-heading"><div><p>Riesgos, supuestos, incidencias, dependencias e hitos vigentes que alimentan los nuevos cortes semanales.</p></div>
       <button className="primary" disabled={readOnly} onClick={()=>setEditing(emptyItem(kind))}>Nuevo elemento</button></div>
       {error&&<p role="alert" className="message error">{error}</p>}
       <div className="raid-controls">

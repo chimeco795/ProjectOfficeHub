@@ -5,9 +5,11 @@ import {Dialog} from '../../Dialog';
 import {SearchPicker,personChoices} from '../../components/SearchPicker';
 import {PersonAssignment} from './PersonAssignment';
 import {RecordEditor} from './Operations';
+import {multiTeamRoles} from './teamRoleModel';
 export function OrganizationChart({ projectId }: { projectId: string }) {
   const [selected,setSelected]=useState<any>(null);
   const [teams,setTeams]=useState<any[]>([]),[teamFilter,setTeamFilter]=useState('');
+  const [showMembers,setShowMembers]=useState(true);
   const [assignRole,setAssignRole]=useState<any>(null),[assignPerson,setAssignPerson]=useState<any>(null),[allPeople,setAllPeople]=useState<any[]>([]),[createPerson,setCreatePerson]=useState(false),[revision,setRevision]=useState(0);
   const pan=useRef<{x:number;y:number;left:number;top:number}|null>(null);
   const [roles, setRoles] = useState<any[]>([]),
@@ -41,16 +43,20 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
       })
       .catch((e) => setError(e.message));
   }, [projectId, today,revision]);
-  function cell(teamId:string){const index=teams.findIndex(t=>t.id===teamId);if(index<0)return null;return <span className="org-cell" style={{color:['#246b58','#365baa','#9a5a17','#82378b','#9e3946'][index%5]}} title={teams[index].name}>{['●','◆','■','▲','⬟'][index%5]} C{index+1} · {teams[index].name}</span>;}
+  const multiRoles=multiTeamRoles(roles);
+  function cell(teamId:string){const index=teams.findIndex(t=>t.id===teamId);if(index<0)return null;return <span className="org-cell" style={{color:['#246b58','#365baa','#9a5a17','#82378b','#9e3946'][index%5]}} title={teams[index].name}>{['●','◆','■','▲','⬟'][index%5]} E{index+1} · {teams[index].name}</span>;}
   function node(role: any, path: string[] = []): React.ReactNode {
     if (path.includes(role.id)) return null;
     const children = roles.filter((r) => r.reports_to === role.id),
       persons = members.filter((m) => m.role_id === role.id&&(!teamFilter||m.team_id===teamFilter));
+    const roleTeams=[...new Set([...persons.map(m=>m.team_id).filter(Boolean),...teams.filter(t=>(!teamFilter||t.id===teamFilter)&&members.some(m=>m.role_id===role.id&&m.person_id===t.lead_id)).map(t=>t.id)])];
     return (
       <li key={role.id}>
         <div className="org-node">
           <button className="org-select" onClick={()=>setSelected({role})}><strong>{role.name}</strong></button>
-          {persons.map((m) => (
+          {multiRoles.has(role.id)&&<small>Gestión de múltiples equipos</small>}
+          {!showMembers&&roleTeams.map(id=><div key={String(id)}>{cell(String(id))}</div>)}
+          {showMembers&&persons.map((m) => (
             <button className="org-person" key={m.id} onClick={()=>setSelected({role,member:m})}>
               <span className="person-avatar">
                 {(people.find((p) => p.id === m.person_id)?.name || "?").slice(
@@ -72,7 +78,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
               </span>
             </button>
           ))}
-          {!persons.length && <><small>{teamFilter?'Sin persona en este equipo':'Sin persona asignada'}</small><button onClick={()=>{setAssignRole(role);setAssignPerson(null);}}>+ Asignar persona</button></>}
+          {showMembers&&!persons.length && <><small>{teamFilter?'Sin persona en este equipo':'Sin persona asignada'}</small><button onClick={()=>{setAssignRole(role);setAssignPerson(null);}}>+ Asignar persona</button></>}
           {!!children.length && (
             <button
               aria-expanded={!collapsed.includes(role.id)}
@@ -98,7 +104,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
   return (
     <section>
       <div className="section-heading">
-        <h3>Roles y asignaciones vigentes</h3>
+        <label className="check-control"><input type="checkbox" checked={showMembers} onChange={e=>{setShowMembers(e.target.checked);setSelected(null);}}/>Mostrar integrantes</label>
         <div className="button-row">
           <button
             aria-label="Reducir zoom del organigrama"
@@ -116,7 +122,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
         </div>
       </div>
       {error && <p role="alert">{error}</p>}
-      {!!teams.length&&<div className="catalog-toolbar"><label>Célula / equipo<select value={teamFilter} onChange={e=>setTeamFilter(e.target.value)}><option value="">Todos los equipos</option>{teams.map((t,index)=><option key={t.id} value={t.id}>C{index+1} · {t.name}</option>)}</select></label><div className="org-cell-legend" aria-label="Leyenda de células">{teams.map(t=><span key={t.id}>{cell(t.id)}</span>)}</div></div>}
+      {!!teams.length&&<div className="catalog-toolbar"><label>Equipo<select value={teamFilter} onChange={e=>setTeamFilter(e.target.value)}><option value="">Todos los equipos</option>{teams.map((t,index)=><option key={t.id} value={t.id}>E{index+1} · {t.name}</option>)}</select></label><div className="org-cell-legend" aria-label="Leyenda de equipos">{teams.map(t=><span key={t.id}>{cell(t.id)}</span>)}</div></div>}
       <div
         className="org-scroll"
         tabIndex={0}
@@ -150,7 +156,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
           desde Equipos; se conserva su rol anterior.
         </p>
       )}
-      {assignRole&&!createPerson&&<Dialog title={'Asignar persona · '+assignRole.name} onClose={()=>{setAssignRole(null);setAssignPerson(null);}}><p>Selecciona una persona existente y completa su equipo, rol y dedicación. Rol a asignar: <strong>{assignRole.name}</strong>.</p><SearchPicker label="Persona existente" value={assignPerson?.id||''} options={personChoices(allPeople)} onChange={v=>setAssignPerson(allPeople.find(p=>p.id===v)||null)}/>{assignPerson&&<PersonAssignment key={assignPerson.id} projectId={projectId} person={assignPerson} onAssigned={async()=>setRevision(r=>r+1)}/>}<button onClick={()=>setCreatePerson(true)}>+ Crear nueva persona</button></Dialog>}
+      {assignRole&&!createPerson&&<Dialog title={'Asignar persona · '+assignRole.name} onClose={()=>{setAssignRole(null);setAssignPerson(null);}}><p>Selecciona una persona existente. El equipo es opcional; el rol y la dedicación se asignan al proyecto.</p><SearchPicker label="Persona existente" value={assignPerson?.id||''} options={personChoices(allPeople)} onChange={v=>setAssignPerson(allPeople.find(p=>p.id===v)||null)}/>{assignPerson&&<PersonAssignment key={assignPerson.id} projectId={projectId} person={assignPerson} initialRoleId={assignRole.id} onAssigned={async()=>setRevision(r=>r+1)}/>}<button onClick={()=>setCreatePerson(true)}>+ Crear nueva persona</button></Dialog>}
       {assignRole&&createPerson&&<RecordEditor title="Nueva persona" initial={{name:'',email:''}} fields={[{key:'name',label:'Nombre',required:true},{key:'email',label:'Correo',type:'email'}]} onClose={()=>setCreatePerson(false)} onSave={async value=>{const person=await api(`/projects/${projectId}/people`,{method:'POST',...json({new_person:value})});setAllPeople(old=>[...old.filter(p=>p.id!==person.id),person]);setAssignPerson(person);setCreatePerson(false);setRevision(r=>r+1);}}/>}
     </section>
   );

@@ -2,7 +2,7 @@
 
 Actualizado: 2026-10-14 · versión 0.13.0 · esquema SQLite 12. Las etapas UX mantienen la fase oficial 13.
 
-ACTUAL: autenticación real entregada sobre 8c39910; 104 backend, 29 frontend y TypeScript/Vite correctos. App normal 8011 requiere cuenta; configuración inicial disponible para que el usuario cree el primer Admin. Cuentas y Personas, permisos y Roles profesionales independientes. Datos anteriores conservados y esquema 12 aditivo. El incremento UX general sigue abierto en sus otros pendientes.
+ACTUAL: consistencia UX/UI en Gestión y Planificación entregada sobre cf54f1c; 31 backend focalizadas, 31 frontend y TypeScript/Vite correctos. Controles alineados, inline y encabezados, rol sin equipo, organigrama con integrantes opcionales y TechLead/superiores multiequipo. Autenticación real conservada (full suite previa 104). Datos, cuentas, versión/fase/esquema e histórico preservados.
 
 
 | Área | Disponible | Pendiente o límite |
@@ -14,7 +14,7 @@ ACTUAL: autenticación real entregada sobre 8c39910; 104 backend, 29 frontend y 
 | Planificación | Tablero 1–4 columnas con popover/drag/⋮ y expansión amplia; Gantt con columna de identidad fija, zoom, orden por puntero y mover/resize con Deshacer | Días naturales sin festivos/capacidad; cabecera colapsada no recertificada para reordenación por arrastre |
 | RAID e hitos | Lista por defecto, Cards compactas clicables y filtros alineados | Usa el mismo catálogo y ficha contextual existente |
 | Roadmap | Agile sprints/releases, Waterfall fases/entregables/hitos, Hybrid periodos + entregables, catálogo compartido | Arrastre de periodos asigna trabajo, no mueve fechas; no convierte periodos heredados en fases |
-| Personas y equipos | Asignación visible desde Personas y Equipos: proyecto/equipo/rol/dedicación; líder/vigencia progresivos; contacto y catálogo de roles independientes | Roles heredados preservados sin conversión automática; asignaciones anteriores conservadas |
+| Personas y equipos | Asignación desde Personas y Equipos: proyecto/rol/dedicación, equipo opcional; inline seguro, líder/vigencia progresivos; TechLead y superiores por jerarquía multiequipo; organigrama con integrantes opcionales | Roles heredados preservados sin conversión automática; asignaciones anteriores conservadas |
 | Capacidad | Asignaciones por fechas y entre proyectos, ausencias globales y horarios por proyecto/equipo | Ausencias contextualizan; no descuentan horas ni redistribuyen tareas automáticamente |
 | Comentarios | Notas por trabajo, fecha y auditoría, reintentos sin duplicados | Comentarios legacy todavía solo en original importado |
 | Agenda | Mes/semana/día y lista, eje semanal común, scope por Persona vinculada a la cuenta, filtros/colores por proyecto y recordatorios locales | Sin invitaciones externas; recordatorios requieren agenda abierta |

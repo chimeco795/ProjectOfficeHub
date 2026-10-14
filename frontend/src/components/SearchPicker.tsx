@@ -42,7 +42,7 @@ export function SearchPicker({
   };
   return (
     <div
-      className="search-picker"
+      className={'search-picker '+(multiple?'multiple-picker':'single-picker')}
       ref={root}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
@@ -73,7 +73,7 @@ export function SearchPicker({
           disabled={disabled}
           role="combobox"
           aria-label={label}
-          aria-expanded={open}
+          aria-expanded={open&&!!query.trim()}
           aria-controls={id}
           aria-autocomplete="list"
           aria-activedescendant={
@@ -115,7 +115,7 @@ export function SearchPicker({
           }}
         />
       </div>
-      {open && (
+      {open && !!query.trim() && (
         <>
           <ul id={id} role="listbox" aria-label={label + " disponibles"} className="floating-choices" style={{position:'fixed',left:popup.left,top:popup.top,width:popup.width,maxHeight:popup.height}}>
             {query.trim() &&

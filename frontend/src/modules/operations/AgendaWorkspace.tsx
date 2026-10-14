@@ -312,7 +312,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
     <section className="panel">
       <div className="section-heading">
         <div>
-          <h2>Agenda</h2>
+
           <p>
             Reuniones y compromisos del proyecto. Las invitaciones se registran
             localmente.

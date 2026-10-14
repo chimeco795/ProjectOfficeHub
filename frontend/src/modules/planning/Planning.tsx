@@ -34,6 +34,8 @@ import { useEffect, useRef, useState } from "react";
 import { api, json } from "../../api";
 import type { Project } from "../../types";
 import { Dialog } from "../../Dialog";
+import {ContextField} from '../../components/ContextField';
+import {SortHeader} from '../../components/SortHeader';
 import { type Item, type Person, emptyItem } from "../master/ItemEditor";
 import "./planning.css";
 export type Work = Item & {
@@ -93,6 +95,8 @@ function PlanningWorkspace({
 }) {
   usePreferenceIdentity();
   const [milestones, setMilestones] = useState<Item[]>([]);
+  const [sort,setSort]=useState({key:'',descending:false});
+  const sortBy=(key:string)=>setSort(s=>({key,descending:s.key===key&&!s.descending}));
   const {notify,feedback}=useActionFeedback();
   const [columnDrag,setColumnDrag]=useState('');
   function changeColumns(next:string[]) {const before=columns;setColumns(next);notify('Columnas actualizadas',async()=>setColumns(before));}
@@ -273,18 +277,10 @@ function PlanningWorkspace({
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
-  const title = (
-    {
-      backlog: "Lista de trabajo",
-      board: "Tablero",
-      gantt: "Cronograma",
-      roadmap: roadmapLabel(project.methodology),
-    } as Record<string, string>
-  )[view];
-  async function update(item: Work, key: keyof Work, value: string) {
+  async function update(item: Work, key: keyof Work, value: any) {
     const saved = await api(`${base}/items/${item.id}`, {
       method: "PUT",
-      ...json({ ...item, [key]: value || null }),
+      ...json({ ...item, [key]: value === '' ? null : value }),
     });
     setItems((current) => current.map((i) => (i.id === saved.id ? saved : i)));
   }
@@ -319,28 +315,26 @@ function PlanningWorkspace({
     <section className="panel">
       <div className="section-heading">
         <div>
-          <h2>{title}</h2>
-          <p>
-            Organiza entregables y tareas, asigna responsables y sigue su
-            avance. Metodología: {project.methodology}.
-          </p>
+          <span className="planning-count">{visible.length} trabajos</span>
         </div>
         <div className="planning-actions">
           {["board", "backlog"].includes(view) && (
-            <div className="view-switch" aria-label="Vista del trabajo">
+            <div className="view-switch compact-view-switch" role="group" aria-label="Vista del trabajo">
               <button
                 aria-label="Vista Tablero"
+                title="Vista Tablero"
                 aria-pressed={view === "board"}
                 onClick={() => onViewChange("board")}
               >
-                <KanbanSquare size={16} /> Tablero
+                <KanbanSquare size={16} />
               </button>
               <button
                 aria-label="Vista Lista"
+                title="Vista Lista"
                 aria-pressed={view === "backlog"}
                 onClick={() => onViewChange("backlog")}
               >
-                <List size={16} /> Lista
+                <List size={16} />
               </button>
             </div>
           )}
@@ -671,18 +665,24 @@ function PlanningWorkspace({
           <table>
             <thead>
               <tr>
-                <th>Trabajo</th>
+                <SortHeader label="Trabajo" column="name" sort={sort} onSort={sortBy}/>
                 <th>Tipo / padre</th>
-                <th>Responsable</th>
-                <th>Estado</th>
-                <th>Prioridad</th>
-                <th>Compromiso</th>
-                <th>Avance</th>
+                <SortHeader label="Responsable" column="owner_name" sort={sort} onSort={sortBy}/>
+                <SortHeader label="Estado" column="status" sort={sort} onSort={sortBy}/>
+                <SortHeader label="Prioridad" column="executive_priority" sort={sort} onSort={sortBy}/>
+                <SortHeader label="Compromiso" column="target_date" sort={sort} onSort={sortBy}/>
+                <SortHeader label="Avance" column="progress" sort={sort} onSort={sortBy}/>
                 <th>Predecesores</th>
               </tr>
             </thead>
             <tbody>
-              {hierarchy(visible, items).map(({ item: i, depth }) => (
+              {hierarchy(visible,sort.key?[...items].sort((a,b)=>{
+                const key=sort.key as keyof Work;
+                const priority={Baja:1,Media:2,Alta:3,'Crítica':4};
+                const value=(w:Work):string|number=>key==='status'?states[w.status]||w.status:key==='executive_priority'?priority[w.executive_priority as keyof typeof priority]||0:key==='progress'?w.progress??-1:String(w[key]??'');
+                const av=value(a),bv=value(b);
+                return (typeof av==='number'&&typeof bv==='number'?av-bv:String(av).localeCompare(String(bv),'es',{numeric:true}))*(sort.descending?-1:1);
+              }):items).map(({ item: i, depth }) => (
                 <tr key={i.id}>
                   <td>
                     <button
@@ -742,7 +742,7 @@ function PlanningWorkspace({
                       i.target_date || "Sin fecha",
                     )}
                   </td>
-                  <td>{i.progress == null ? "Sin dato" : `${i.progress}%`}</td>
+                  <td><ContextField label={'Avance de '+i.code} showLabel={false} value={i.progress??''} display={i.progress==null?'Sin dato':i.progress+'%'} type="number" min={0} max={100} onSave={v=>update(i,'progress',v===''?null:Number(v))}/></td>
                   <td>
                     {i.dependencies
                       .map((d) => items.find((x) => x.id === d)?.code || d)

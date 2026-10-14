@@ -161,7 +161,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
     <section className="panel operation-workspace">
       <div className="section-heading">
         <div>
-          <h2>Documentos</h2>
+
           <p>
             Archivos del proyecto y fuentes de sus reportes, reunidos sin copiar
             el contenido.

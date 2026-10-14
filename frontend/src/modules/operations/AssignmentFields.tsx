@@ -5,8 +5,8 @@ import {personChoices} from '../../components/SearchPicker';
 export function AssignmentFields({member,roles,teams,people,onSave}:{member:any;roles:any[];teams:any[];people:any[];onSave:(key:string,value:any)=>Promise<void>}) {
   const m=member;
   return <div className="member-fields">
-    <ContextField label="Equipo" value={m.team_id||''} search options={[{value:'',label:'Sin equipo'},...teams.filter(t=>!t.archived||t.id===m.team_id).map(t=>({value:t.id,label:t.name}))]} onSave={v=>onSave('team_id',v||null)}/>
     <ContextField label="Rol" value={m.role_id||''} display={roles.find(r=>r.id===m.role_id)?.name||m.role||'Sin rol'} search options={[{value:'',label:'Sin rol'},...roles.filter(r=>!r.archived||r.id===m.role_id).map(r=>({value:r.id,label:r.name}))]} onSave={v=>onSave('role_id',v||null)}/>
+    <ContextField label="Equipo" value={m.team_id||''} search options={[{value:'',label:'Sin equipo'},...teams.filter(t=>!t.archived||t.id===m.team_id).map(t=>({value:t.id,label:t.name}))]} onSave={v=>onSave('team_id',v||null)}/>
     <ContextField label="Dedicación (%)" value={m.allocation} type="number" min={0} max={100} onSave={v=>onSave('allocation',Number(v))}/>
     <details className="assignment-options"><summary>Vigencia y líder</summary><div className="member-fields">
       <ContextField label="Desde" value={m.valid_from||''} type="date" onSave={v=>onSave('valid_from',v||null)}/>

@@ -18,6 +18,7 @@ export function ContextField({
   onEditing,
   showLabel = true,
   confirm = false,
+  autoCommitMultiple = false,
   requiresWrite = true,
 }: {
   label: string;
@@ -36,6 +37,7 @@ export function ContextField({
   onEditing?: (editing: boolean) => void;
   showLabel?: boolean;
   confirm?: boolean;
+  autoCommitMultiple?: boolean;
   requiresWrite?: boolean;
 }) {
   const securityRole=useSession()?.account.security_role;
@@ -48,7 +50,7 @@ export function ContextField({
   const form = useRef<HTMLFormElement>(null),
     saving = useRef(false);
   useEffect(()=>{if(!saved)return;const timer=setTimeout(()=>setSaved(false),2500);return()=>clearTimeout(timer);},[saved]);
-  const explicit = confirm || multiple || type === "textarea";
+  const explicit = confirm || (multiple && !autoCommitMultiple) || type === "textarea";
   const close = () => {
     setOpen(false);
     onEditing?.(false);
@@ -81,6 +83,14 @@ export function ContextField({
       setBusy(false);
     }
   }
+  // Removing a focused chip can leave focus on the document without a blur event.
+  // An outside pointer must still finish an automatic multi-selection editor.
+  useEffect(()=>{
+    if(!open||!autoCommitMultiple||explicit)return;
+    const outside=(event:PointerEvent)=>{if(!form.current?.contains(event.target as Node))void commit();};
+    document.addEventListener('pointerdown',outside,true);
+    return()=>document.removeEventListener('pointerdown',outside,true);
+  });
   const text =
     display ??
     (options
@@ -147,7 +157,7 @@ export function ContextField({
               multiple={multiple}
               onChange={(next) => {
                 setDraft(next);
-                if (!explicit) void commit(next);
+                if (!explicit && !multiple) void commit(next);
               }}
             />
           ) : options ? (
