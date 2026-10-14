@@ -1,13 +1,25 @@
 import {useEffect, useState} from 'react';
-import {useLocalPersonId} from './LocalIdentity';
+import {useSession,sessionValue,updateAccount} from './authState';
+import {api,json} from '../api';
+let pending=Promise.resolve();
 
 export function useCatalogView(catalog:string, initial:'list'|'cards'='list') {
-  const person=useLocalPersonId();
-  const key=`pohub.catalog-view.${person||'local'}.${catalog}`;
-  const read=(): 'list'|'cards'=>localStorage.getItem(key)==='cards'?'cards':localStorage.getItem(key)==='list'?'list':initial;
+  const account=useSession()?.account;
+  const key=`pohub.catalog-view.account.${account?.id||'local'}.${catalog}`;
+  const stored=account?.preferences.catalog_views?.[catalog];
+  const read=(): 'list'|'cards'=>stored|| (localStorage.getItem(key)==='cards'?'cards':localStorage.getItem(key)==='list'?'list':initial);
   const [value,setValue]=useState<'list'|'cards'>(read);
-  useEffect(()=>setValue(read()),[key]);
-  function select(next:'list'|'cards'){localStorage.setItem(key,next);setValue(next);}
+  useEffect(()=>setValue(read()),[key,stored]);
+  function select(next:'list'|'cards'){
+    setValue(next);
+    const accountId=account?.id;
+    pending=pending.then(async()=>{
+      const current=sessionValue()?.account;
+      if(!current||current.id!==accountId)return;
+      try{const saved=await api('/auth/preferences',{method:'PUT',...json({catalog_views:{...current.preferences.catalog_views,[catalog]:next}})});localStorage.setItem(key,next);updateAccount(saved);}
+      catch(e){if(sessionValue()?.account.id===accountId){setValue(read());window.dispatchEvent(new CustomEvent('pohub-preference-error',{detail:(e as Error).message}));}}
+    });
+  }
   return [value,select] as const;
 }
 export function CatalogView({value,onChange,label}:{value:'list'|'cards';onChange:(v:'list'|'cards')=>void;label:string}) {

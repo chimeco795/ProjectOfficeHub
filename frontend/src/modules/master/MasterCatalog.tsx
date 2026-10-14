@@ -9,8 +9,10 @@ import {ContextField} from '../../components/ContextField';
 import {ActionMenu} from '../../components/ActionMenu';
 import {personChoices} from '../../components/SearchPicker';
 import './catalog.css';
+import {useSession} from '../../components/authState';
 
 export function MasterCatalog({projectId}: {projectId:string}) {
+  const readOnly=useSession()?.account.security_role==='Consulta';
   const [items,setItems]=useState<Item[]>([]),[people,setPeople]=useState<Person[]>([]);
   const [kind,setKind]=useState("Risk"),[query,setQuery]=useState(""),[archived,setArchived]=useState(false);
   const [view,setView]=useCatalogView('raid');
@@ -23,10 +25,10 @@ export function MasterCatalog({projectId}: {projectId:string}) {
   const menu=(item:Item)=><ActionMenu label={'Opciones de '+item.code}><button onClick={()=>setEditing(item)}>Ver detalle</button><button disabled={saving===item.id} onClick={async()=>{if(!window.confirm(item.archived?'¿Restaurar este elemento?':'¿Archivar este elemento?'))return;try{await save(item,'archived',!item.archived);}catch(e){setError((e as Error).message);}}}>{item.archived?'Restaurar':'Archivar'}</button></ActionMenu>;
   return <>
     <section className="panel"><div className="section-heading"><div><h2>RAID e hitos</h2><p>Riesgos, supuestos, incidencias, dependencias e hitos vigentes que alimentan los nuevos cortes semanales.</p></div>
-      <button className="primary" onClick={()=>setEditing(emptyItem(kind))}>Nuevo elemento</button></div>
+      <button className="primary" disabled={readOnly} onClick={()=>setEditing(emptyItem(kind))}>Nuevo elemento</button></div>
       {error&&<p role="alert" className="message error">{error}</p>}
       <div className="raid-controls">
-        <ContextField label="Tipo de elemento" value={kind} options={Object.entries(kinds).map(([value,label])=>({value,label}))} onSave={async v=>setKind(v)}/>
+        <ContextField requiresWrite={false} label="Tipo de elemento" value={kind} options={Object.entries(kinds).map(([value,label])=>({value,label}))} onSave={async v=>setKind(v)}/>
         <label className="raid-search">Buscar elemento<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Código, nombre o responsable" /></label>
         <label className="raid-archived"><input type="checkbox" checked={archived} onChange={e=>setArchived(e.target.checked)} /> Ver archivados</label>
         <label className="catalog-order">Ordenar<select value={order} onChange={e=>setOrder(e.target.value)}>{[['name','Nombre'],['code','Código'],['target_date','Objetivo'],['status','Estado']].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>

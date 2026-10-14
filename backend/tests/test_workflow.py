@@ -1,7 +1,7 @@
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 import pytest
-from fastapi.testclient import TestClient
+from auth_client import TestClient
 from docx import Document
 from openpyxl import Workbook
 from app import db

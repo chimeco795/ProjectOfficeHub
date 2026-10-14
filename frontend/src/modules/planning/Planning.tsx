@@ -1,3 +1,4 @@
+import {usePreferenceIdentity,preferenceKeyFor} from '../../components/authState';
 import { StagePlan } from "./StagePlan";
 import { ActionMenu } from '../../components/ActionMenu';
 import { useActionFeedback } from '../../components/ActionFeedback';
@@ -78,7 +79,8 @@ export function Planning(props: {
   onViewChange: (view: string) => void;
 }) {
   const person = useLocalPersonId();
-  return <PlanningWorkspace key={`${props.project.id}.${person}`} {...props} />;
+  const preferenceIdentity=usePreferenceIdentity();
+  return <PlanningWorkspace key={`${props.project.id}.${person}.${preferenceIdentity}`} {...props} />;
 }
 function PlanningWorkspace({
   project,
@@ -89,6 +91,7 @@ function PlanningWorkspace({
   view: string;
   onViewChange: (view: string) => void;
 }) {
+  usePreferenceIdentity();
   const [milestones, setMilestones] = useState<Item[]>([]);
   const {notify,feedback}=useActionFeedback();
   const [columnDrag,setColumnDrag]=useState('');
@@ -127,7 +130,7 @@ function PlanningWorkspace({
     [level, setLevel] = useState("operational"),
     [stateFilter, setStateFilter] = useState("all"),
     [dragging, setDragging] = useState("");
-  const preferenceKey = `pohub.columns.${localPersonId() || "local"}.${project.id}`;
+  const preferenceKey = preferenceKeyFor('columns',project.id);
   const [filtersOpen, setFiltersOpen] = useState(false),
     [columnsOpen, setColumnsOpen] = useState(false);
   const columnsButton = useRef<HTMLButtonElement>(null);
@@ -604,7 +607,7 @@ function PlanningWorkspace({
             simulation={simulation}
             onShift={previewShift}
             busy={busy || !!shift}
-            preferenceKey={`pohub.gantt.order.${localPersonId() || 'local'}.${project.id}`}
+            preferenceKey={preferenceKeyFor('gantt.order',project.id)}
           />
           <ScheduleSimulation
             projectId={project.id}

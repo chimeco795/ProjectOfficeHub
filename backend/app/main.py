@@ -23,6 +23,17 @@ async def lifespan(app):
     yield
 
 app=FastAPI(title='Project Office Hub',version='0.13.0',lifespan=lifespan)
+from .auth import router as auth_router, access_middleware
+app.include_router(auth_router)
+app.middleware('http')(access_middleware)
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.exception_handlers import request_validation_exception_handler
+@app.exception_handler(RequestValidationError)
+async def validation_error(request, exc):
+    if request.url.path.startswith('/api/auth/'):
+        return JSONResponse({'detail':'Revisa los campos. Correo válido y contraseñas nuevas de al menos 12 caracteres.'},status_code=422)
+    return await request_validation_exception_handler(request, exc)
 from .api.projects import router as projects_router
 app.include_router(projects_router)
 from .api.master import router as master_router

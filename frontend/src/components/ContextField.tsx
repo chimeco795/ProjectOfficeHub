@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { SearchPicker, type Choice } from "./SearchPicker";
+import {useSession} from './authState';
 export function ContextField({
   label,
   value,
@@ -17,6 +18,7 @@ export function ContextField({
   onEditing,
   showLabel = true,
   confirm = false,
+  requiresWrite = true,
 }: {
   label: string;
   value: any;
@@ -34,7 +36,10 @@ export function ContextField({
   onEditing?: (editing: boolean) => void;
   showLabel?: boolean;
   confirm?: boolean;
+  requiresWrite?: boolean;
 }) {
+  const securityRole=useSession()?.account.security_role;
+  disabled=disabled||(securityRole==='Consulta'&&requiresWrite);
   const [open, setOpen] = useState(false),
     [saved,setSaved]=useState(false),
     [draft, setDraft] = useState(value),

@@ -315,7 +315,7 @@ export function DocumentWorkspace({ projectId }: { projectId: string }) {
                 />
               </label>
               <SearchPicker
-                label="Autor (usuario local)"
+                label="Autor (persona PMO)"
                 value={author}
                 options={personChoices(people)}
                 onChange={(v) => setAuthor(String(v))}

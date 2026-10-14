@@ -2,7 +2,7 @@ import json
 import sqlite3
 
 import pytest
-from fastapi.testclient import TestClient
+from auth_client import TestClient
 
 from app import db
 from app.main import app
@@ -104,7 +104,7 @@ def test_v2_migration_preserves_published_data(tmp_path, monkeypatch):
         cut = connection.execute('SELECT * FROM cuts').fetchone()
         assert cut['status'] == 'publicado'
         assert json.loads(cut['project_snapshot']) == {'name': 'Nombre histórico'}
-        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 11
+        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0] == 12
     backups = list(tmp_path.glob('backup-v2-*.sqlite3'))
     assert len(backups) == 1
     with sqlite3.connect(backups[0]) as connection:

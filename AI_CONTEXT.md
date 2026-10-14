@@ -1,6 +1,20 @@
 # Contexto de Project Office Hub
 
-## Checkpoint activo — catálogos y operación, 2026-10-12
+## Checkpoint activo — autenticación real, 2026-10-14
+
+Base master 8c39910. Se implementó la prioridad autorizada “autenticación real”. Versión 0.13.0 y fase oficial 13 conservadas; SQLite 12 es una migración aditiva necesaria para cuentas, sesiones, recuperación, límites de intentos y auditoría de acceso.
+
+COMPLETADO: cuentas distintas de Personas, permisos Admin/Gestor/Miembro/Consulta distintos de Roles profesionales; vínculo person_id opcional y explícito por Admin. Contraseñas scrypt con sal aleatoria; sesiones opacas revocables, cookie HttpOnly/SameSite Strict, comprobación de origen y CSRF, login/Recordarme/expiración/logout, menú de usuario/perfil/preferencias/cambio de contraseña y administración de cuentas. Toda API de datos y descargas exige sesión. Gestor administra PMO; Miembro modifica trabajo/eventos/documentos/comentarios sólo en proyectos de su persona vinculada; Consulta lee. Lectura global compartida entre cuentas autenticadas, sin ACL de lectura por proyecto. Cambios de permisos/vínculo/estado revocan sesiones; último Admin activo protegido. Preferencias Lista/Cards almacenadas por cuenta; tablero/dashboard/Gantt permanecen locales por cuenta y reutilizan preferencias anteriores de la persona vinculada cuando no hay valor nuevo.
+
+RECUPERACIÓN REAL: Admin genera enlace de un solo uso de 30 minutos; el titular introduce la nueva contraseña. Fallback del propietario local en backend/app/recover_account.py cuando es el único Admin y no tiene sesión. Tokens almacenados sólo como hash, fragmento URL y revocación de todas las sesiones al restablecer. Sin correo automático/proveedor conectado, SSO ni MFA: /recover responde de forma neutral y explica la alternativa; no simular envíos.
+
+VERIFICADO: 104 pruebas backend (89 anteriores + 15 de acceso), 29 frontend, TypeScript/Vite y git diff --check. QA aislado en .test-data/auth-browser, 8016, cookie pohub_auth_qa. Login/Recordarme tras reload, perfil/preferencias, Consulta con filtros utilizables y campos de edición bloqueados, logout y caducidad→relogin→mismo proyecto/vista; RAID Media→Alta→Media confirmado con Admin. Formulario de configuración inicial revisado a 1280/1024 reales; QA de cuenta/perfil a 1280 efectivo. Detalles y límites de viewport en docs/VERIFICATION_UX_CONTINUATION.md.
+
+NORMAL: backup pre-auth-normal-20261014.sqlite3 y respaldo detenido pre-auth-normal-stopped-20261014.sqlite3, fuera de Git. Migración ensayada en copia; tras reiniciar sólo 8011, 31 tablas previas conservan valores, schema_version añade 12, integrity_check ok y foreign_key_check vacío. No se crearon cuentas ni fixtures en data/. App normal http://127.0.0.1:8011/ lista para que el usuario cree su primer Admin e introduzca personalmente su contraseña. Proceso 8000 no intervenido; no dar por actualizadas otras instancias antiguas en memoria.
+
+PENDIENTE: proveedor de correo automático, SSO/Entra ID/MFA si se autorizan; agrupaciones documentales por relaciones/preview, refinamientos restantes de catálogos/barras/células 10+ y cierre visual completo del incremento UX anterior. .pohub real, extracción automática de minutas y paridad/widgets legacy siguen abiertos. No reiniciar auditoría ni renumerar fases.
+
+## Checkpoint anterior — catálogos y operación, 2026-10-12
 
 Incremento en curso sobre master cad52e3, solicitud attachments/d6374663-6298-42e9-9d7a-7bd93f46fa75/Texto pegado.txt. Conservados versión 0.13.0, fase oficial 13 y SQLite 11. Este checkpoint es parcial: no declarar completada la solicitud completa ni el acceso real.
 

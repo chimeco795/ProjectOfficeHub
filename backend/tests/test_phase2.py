@@ -1,7 +1,7 @@
 import json
 import sqlite3
 import pytest
-from fastapi.testclient import TestClient
+from auth_client import TestClient
 from app import db
 from app.main import app
 from test_workflow import doc_bytes
@@ -94,7 +94,7 @@ def test_v1_migration_preserves_data_and_creates_backup(tmp_path,monkeypatch):
     with db.connection() as connection:
         assert connection.execute('SELECT name,version FROM projects').fetchone()['name']=='Proyecto existente'
         assert connection.execute('SELECT status FROM cuts').fetchone()['status']=='borrador'
-        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==11
+        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==12
     backups=list(tmp_path.glob('backup-v1-*.sqlite3'))
     assert len(backups)==1
     with sqlite3.connect(backups[0]) as connection:

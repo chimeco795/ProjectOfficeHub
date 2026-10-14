@@ -113,3 +113,58 @@ Evidencia local ignorada: .test-data/catalog-people-1024.png y catalog-documents
 PENDIENTE: autenticación real y validación Login/Logout/expiración/permisos; vincular preferencias a cuentas; SMTP o mecanismo real de recuperación (pregunta abierta, sin envíos ficticios); agrupación documental por evento/trabajo/RAID/corte y preview seguro; inline/orden/filtros adicionales en Personas/Roles; secundarios en ⋮ a anchos reducidos; células persistentes al cambiar el catálogo, hover y prueba de más de diez equipos; completar ambas vistas de cada área a 1280/1024, flujo de alta desde organigrama y full suites al cierre. El filtro del organigrama conserva la jerarquía completa y filtra personas; Cn se deriva de la lista actual de equipos ordenada por ID. No certificar estabilidad de etiquetas ante altas/bajas ni estrés.
 
 LIMITACIONES: preferencia de navegador por persona local, sin autenticación; contactos extra bajo desplegable; tabla ancha puede desplazarse dentro de su contenedor. No se cambió arquitectura, scheduler, histórico, snapshots, originales o schema. Siguen abiertos .pohub real, extracción automática, widgets/paridad legacy y límites anteriores.
+
+
+## Autenticación real — entrega del 2026-10-14
+
+Base master 8c39910. Prioridad autorizada por el usuario. Se conserva versión 0.13.0/fase 13; migración SQLite 11→12 aditiva para acceso. El incremento UX restante no se declara cerrado.
+
+### Completado
+
+- Cuenta de acceso (correo/nombre/hash/estado/permiso/person_id opcional/preferencias/versión) independiente de Persona PMO y de roles profesionales. Crear cuenta no crea Persona, Rol, Equipo ni Asignación. Primer Admin mediante pantalla local, sin contraseña predeterminada.
+- Sesiones opacas aleatorias, persistidas como hash, cookie HttpOnly/SameSite Strict; Secure cuando el transporte es HTTPS. Local actual usa HTTP exclusivamente en loopback. CSRF ligado a sesión, origen estricto en escrituras, límites persistentes de intentos, respuestas neutrales y errores de validación que no devuelven contraseñas.
+- Todas las APIs de datos y descargas protegidas; health/status/login/bootstrap/recover/reset son las excepciones públicas. Logout invalida la sesión y desmonta el estado del workspace. Reautenticación tras caducidad recupera proyecto/vista cuando hay contexto. Respuestas antiguas se comparan con la sesión que las originó antes de modificar identidad.
+- Normal: 30 minutos de inactividad y máximo 12 horas, cookie de sesión. Recordarme: 7 días de inactividad y máximo 30 días, cookie persistente. El frontend comprueba el vencimiento por intervalo, evitando overflow de setTimeout con treinta días; la autoridad final es el backend.
+- Admin administra cuentas y PMO. Gestor administra PMO, sin administrar cuentas. Miembro escribe trabajo/eventos/documentos/comentarios en proyectos de su Persona vinculada. Consulta sólo lee datos PMO; puede cambiar su propio perfil/contraseña/preferencias. Las lecturas del PMO son compartidas entre usuarios autenticados: no hay ACL de lectura por proyecto en esta entrega.
+- Cambiar permiso/estado/vínculo revoca sesiones de la cuenta afectada; cambio/restablecimiento de contraseña revoca las demás/todas, respectivamente. No se permite retirar el último Admin activo. No existe borrado físico de cuentas desde esta interfaz.
+- Menú en cabecera con nombre/avatar, perfil, preferencias, contraseña, cuentas para Admin y logout. Lista/Cards se guarda en cuenta y se separa entre usuarios. Diseño/orden/columnas permanecen en navegador por cuenta; se conserva una copia inicial de la preferencia histórica de su persona vinculada cuando falta el nuevo valor. Persona por defecto de agenda/documentos/minutas deriva del vínculo explícito, no de un selector libre de identidad.
+- Recuperación: enlace Admin de un solo uso, 30 minutos, token guardado como hash y fragmento URL; sin login automático después del reset. Propietario local puede emitir el enlace mediante recover_account.py. /recover usa “Si existe una cuenta asociada, recibirás instrucciones” y explica que no está configurado el envío automático. No se enviaron mensajes ni se fingió email.
+
+### Comprobaciones
+
+`pytest backend/tests -q`: **104/104**, incluyendo los 89 originales autenticados con un Admin de prueba a través de los endpoints reales y 15 casos nuevos de acceso. Se conservaron las garantías de migraciones anteriores, publicados, snapshots, originales, scheduler, versiones y auditoría. Tests de acceso cubren API sin sesión, bootstrap único/local, ausencia de Personas ficticias, hash/no exposición de contraseña, cookies/CSRF/origen, rotación/Recordarme/logout/idle/expiry, credenciales neutrales y rate limit, tres permisos inferiores, proyectos propios/ajenos para escritura, perfil/preferencias aislados, revocación, último Admin, reset vencido/single-use/propietario local y descargas. Cookie alternativa probada contra interferencia entre instancias. Advertencia previa de Starlette/httpx, sin fallos.
+
+`npm test`: **29/29**; TypeScript y Vite correctos. Se mantiene el aviso de bundle >500 kB; no se cambió arquitectura para eliminarlo. git diff --check correcto.
+
+Revisión real con fixture aislado .test-data/auth-browser y servidor 8016:
+
+| Flujo | Evidencia |
+|---|---|
+| Login / Recordarme | Login con cuenta sintética → Portafolio; Recordarme permanece tras recarga sin caducidad inmediata. |
+| Perfil / cuentas | Cuenta Administrador QA distinta de Persona flujo UX; vínculo visible/opcional; cuatro permisos y gestión de cuentas sólo en menú Admin. Formularios de contraseña revisados vacíos, sin introducir nuevas credenciales mediante navegador. Cambios/reset completos probados en backend. |
+| Preferencias | Personas Cards guardado desde preferencias y recuperado después de reload. Consulta tiene defaults propios. |
+| Consulta | Crear proyecto/nuevo elemento y ContextFields de edición deshabilitados; filtro RAID/Hitos permanece funcional. Menu sin cuentas y backend rechaza operaciones privilegiadas. Acciones heredadas adicionales pueden seguir apareciendo, pero no eluden la autorización del servidor. |
+| Caducidad | Sesiones Admin vencidas mediante fixture exclusivo QA; siguiente operación muestra Login, retira los datos y reingreso vuelve a Personas del mismo proyecto. |
+| PMO existente | RAID UX-R Media→Alta→Media con Admin, guardado/recarga y controles busy sin perder la ficha; sólo datos sintéticos y auditoría de la prueba. |
+| Logout / recuperación | Logout retira workspace y muestra Login; solicitud de recuperación devuelve texto neutral con limitación de correo, sin envío externo. |
+
+Dimensiones **medidas**, no supuestas: configuración inicial normal a 1280×900 y 1024×900, sin overflow horizontal. Las superficies de QA navegadas por la herramienta mantuvieron 1280×720 aunque se solicitó override de 1024; por ello no se certifican sus diálogos/Portafolio a 1024 en esta entrega. Esa revisión, junto con la matriz UX restante, queda pendiente. Evidencia .test-data/auth-setup-1280.png, auth-setup-1024.png y auth-password-1280.png, ignorada por Git; no citar la captura provisional mal nombrada como prueba de 1024.
+
+### Migración y aplicación normal
+
+Respaldo consistente del SQLite en ejecución: .test-data/pre-auth-normal-20261014.sqlite3. Ensayo en .test-data/auth-normal-copy: 31 tablas originales con mismos valores, schema_version añade 12; integridad ok y sin errores FK, sin cuentas creadas. Después de detener sólo el proceso normal 8011 se tomó pre-auth-normal-stopped-20261014.sqlite3 y se reinició 8011 con el backend nuevo. Comparación post-migración contra ese último respaldo: todos los valores anteriores conservados, integridad/FK correctas y cero cuentas de prueba en data/. No se modificaron publicaciones, originales, fechas de trabajo ni catálogos reales. La configuración inicial del usuario está disponible; su primera contraseña debe introducirla personalmente. No se intervino el proceso reservado 8000 ni se declara actualizado ningún proceso antiguo que aún esté en memoria.
+
+### Operación y límites
+
+1. Abrir http://127.0.0.1:8011/ y crear el primer Admin (nombre/correo/frase de al menos 12 caracteres/confirmación).
+2. Menú de usuario → Cuentas y permisos: crear cuentas o vincularlas a una Persona existente. Guardar permisos/vínculo cierra sesiones de esa cuenta; volver a ingresar.
+3. Recuperación con Admin: generar enlace temporal desde ⋮ de la cuenta y entregarlo únicamente al titular; el titular introduce la nueva contraseña.
+4. Si se pierde la única cuenta Admin y no hay otra sesión, propietario local: desde backend ejecutar `..\.venv\Scripts\python.exe -m app.recover_account --email correo@ejemplo.com`. Se imprime un enlace local de 30 minutos, no una contraseña. Este comando requiere el acceso del propietario al archivo SQLite, fuera del límite de seguridad web.
+
+`PMO_SESSION_COOKIE` permite separar cookies en entornos de prueba que comparten host; QA usa pohub_auth_qa y normal el nombre predeterminado. App instalada es local, sin TLS/SSO/MFA ni transportador de email. No se afirma proteger el archivo SQLite frente a usuarios del sistema operativo con acceso al archivo. Auth está aislado en un módulo/router y las cuentas tienen IDs independientes para una futura integración Entra ID; no hay integración activa.
+
+Diseño de hash/sesiones/CSRF/recuperación contrastado con [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html), [Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html), [CSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) y [Forgot Password](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
+
+PENDIENTES CONSERVADOS: integrar un proveedor para correo automático, SSO/MFA si se solicitan, refinamiento de controles heredados según permiso, matriz UX completa a 1024, agrupación documental por relación/preview, células 10+/persistencia/hover, filtros/inline restantes, .pohub real, extracción de minutas y widgets/paridad legacy. Esta entrega cierra la prioridad de autenticación, no esos pendientes.
+
+Cierre de acceso: navegación al fragmento de recuperación en una pestaña abierta muestra el formulario vacío y permite volver al login sin reutilizar campos. Backend verifica que restablecer una cuenta también cierre la sesión del navegador cuando pertenecía a otra cuenta. Miembro puede previsualizar/aplicar fechas de trabajos de sus proyectos; la simulación global conserva permisos de gestión.

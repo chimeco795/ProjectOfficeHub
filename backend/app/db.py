@@ -84,3 +84,5 @@ def initialize():
         migrate_executive_links(db, DATA)
         migrate_management(db, DATA)
         migrate_minutes(db, DATA)
+        from .auth import migrate_access
+        migrate_access(db, DATA)

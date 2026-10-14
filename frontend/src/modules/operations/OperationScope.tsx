@@ -51,7 +51,7 @@ export function ScopeToggle({
         </button>
       </div>
       {!scope.person && (
-        <small>Selecciona usuario local para consultar sus proyectos.</small>
+        <small>Vincula tu cuenta con una persona PMO para consultar sus proyectos.</small>
       )}
       {scope.error && <small role="alert">{scope.error}</small>}
     </div>

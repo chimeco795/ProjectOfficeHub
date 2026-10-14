@@ -7,7 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { Eye, Grid3X3, GripVertical, Maximize2, X } from "lucide-react";
-import { useLocalPersonId } from "../../components/LocalIdentity";
+import { usePreferenceIdentity,preferenceKeyFor } from "../../components/authState";
 import {useActionFeedback} from '../../components/ActionFeedback';
 import {
   arrange,
@@ -27,8 +27,8 @@ const labels = [
   "Accesos de operación",
 ];
 export function Dashboard(props: { projectId: string; children: ReactNode }) {
-  const person = useLocalPersonId();
-  const preferenceKey = `pohub.dashboard.${person || "local"}.${props.projectId}`;
+  usePreferenceIdentity();
+  const preferenceKey = preferenceKeyFor("dashboard",props.projectId);
   return (
     <DashboardGrid key={preferenceKey} preferenceKey={preferenceKey}>
       {props.children}

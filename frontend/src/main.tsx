@@ -1,3 +1,5 @@
+import {SessionGate} from './components/Session';
+import {useSession} from './components/authState';
 import {LocalIdentity} from "./components/LocalIdentity";
 import {CatalogView,useCatalogView} from './components/CatalogView';
 import {WorkspaceNav, WorkspaceTabs, viewLabel} from "./modules/workspace/Navigation";
@@ -90,6 +92,7 @@ const fmt = (s: string | null) =>
     : "Sin definir";
 
 function App() {
+  const canManage=["Admin","Gestor"].includes(useSession()?.account.security_role||"");
   const [portfolioView,setPortfolioView]=useCatalogView('portfolio','cards');
   const [projectSearch,setProjectSearch]=useState(""),[projectStatus,setProjectStatus]=useState("all");
   const [tableSection, setTableSection] = useState("actividades");
@@ -280,7 +283,7 @@ function App() {
           <FolderKanban size={19} /> Portafolio
         </button>
         <button className={"nav "+(view==="migration"?"active":"")} onClick={()=>navigate("migration")}><Files size={19}/>Migrar archivo .pohub</button>
-        {project && <><div className="workspace-label">PROYECTO ACTUAL</div><div className="workspace-project"><span>{project.name.slice(0,2).toUpperCase()}</span><div><strong>{project.name}</strong><small>{project.methodology} · {project.status}</small></div></div><WorkspaceNav methodology={project.methodology} view={view} onNavigate={navigate}/><LocalIdentity/></>}
+        {project && <><div className="workspace-label">PROYECTO ACTUAL</div><div className="workspace-project"><span>{project.name.slice(0,2).toUpperCase()}</span><div><strong>{project.name}</strong><small>{project.methodology} · {project.status}</small></div></div><WorkspaceNav methodology={project.methodology} view={view} onNavigate={navigate}/></>}
         <div className="side-bottom">
           <ShieldCheck size={19} />
           <div>
@@ -295,7 +298,7 @@ function App() {
             {view === "migration" ? "Migración .pohub" : operationViews.includes(view) && project ? (["teams","people","roles","organization","availability","budget"].includes(view) ? "Gestión" : ["agenda","documents"].includes(view) ? "Operación" : "Planificación") : project ? (view === "master" ? "RAID e hitos" : view === "audit" ? "Auditoría del proyecto" : view === "summary" ? "Resumen del proyecto" : "Seguimiento Ejecutivo") : "Portafolio"}
           </span>
           <span className="phase">{project ? viewLabel(view, project.methodology) : "Espacio de trabajo"}</span>
-        </header>
+        <LocalIdentity /></header>
         <div className="content">
           {error && (
             <div role="alert" className="message error">
@@ -320,7 +323,7 @@ function App() {
                   <h1>Proyectos</h1>
                   <p>Organiza tus proyectos y consulta su seguimiento ejecutivo.</p>
                 </div>
-                <button className="primary" onClick={() => (setProjectStep(1), setModal("project"))}>
+                <button className="primary" disabled={!canManage} onClick={() => (setProjectStep(1), setModal("project"))}>
                   <Plus size={18} /> Crear proyecto
                 </button>
               </div>
@@ -371,7 +374,7 @@ function App() {
                   <h2>Tu portafolio empieza aquí</h2>
                   <p>Crea un proyecto para definir sus objetivos, fechas y metodología.</p>
                   <button
-                    className="primary"
+                    className="primary" disabled={!canManage}
                     onClick={() => (setProjectStep(1), setModal("project"))}
                   >
                     Crear proyecto
@@ -421,12 +424,12 @@ function App() {
                 </div>
                 <div className="button-row">
                   <button
-                    disabled={dirty}
+                    disabled={dirty||!canManage}
                     onClick={() => setEditingProject(true)}
                   >
                     Editar proyecto
                   </button>
-                  {!operationViews.includes(view) && <button disabled={dirty} onClick={() => setModal("cut")}>
+                  {!operationViews.includes(view) && <button disabled={dirty||!canManage} onClick={() => setModal("cut")}>
                     <Plus size={17} /> Nuevo corte
                   </button>}
                 </div>
@@ -1128,6 +1131,6 @@ function SourceList({ sources }: { sources: Source[] }) {
 }
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <SessionGate><App /></SessionGate>
   </React.StrictMode>,
 );
