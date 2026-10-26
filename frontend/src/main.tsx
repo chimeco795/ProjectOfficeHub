@@ -1,3 +1,4 @@
+import {FeedbackState} from './components/UiPatterns';
 import {SessionGate} from './components/Session';
 import {useSession} from './components/authState';
 import {LocalIdentity} from "./components/LocalIdentity";
@@ -161,7 +162,7 @@ function App() {
         if (!id && route.get("view") === "migration") setView("migration");
         if (id) {
           const found = list.find(p => p.id === id);
-          if (!found) throw Error("El proyecto del enlace no existe.");
+          if (!found) throw Error("El proyecto del enlace no está disponible para tu cuenta.");
           await selectProject(found, route.get("view") || "summary", route.get("cut") || "");
         }
       } catch (e) { if (active) setError((e as Error).message); }
@@ -282,7 +283,7 @@ function App() {
         >
           <FolderKanban size={19} /> Portafolio
         </button>
-        <button className={"nav "+(view==="migration"?"active":"")} onClick={()=>navigate("migration")}><Files size={19}/>Migrar archivo .pohub</button>
+        <button disabled={!canManage} className={"nav "+(view==="migration"?"active":"")} onClick={()=>navigate("migration")}><Files size={19}/>Migrar archivo .pohub</button>
         {project && <><div className="workspace-label">PROYECTO ACTUAL</div><div className="workspace-project"><span>{project.name.slice(0,2).toUpperCase()}</span><div><strong>{project.name}</strong><small>{project.methodology} · {project.status}</small></div></div><WorkspaceNav methodology={project.methodology} view={view} onNavigate={navigate}/></>}
         <div className="side-bottom">
           <ShieldCheck size={19} />
@@ -300,21 +301,14 @@ function App() {
           <span className="phase">{project ? viewLabel(view, project.methodology) : "Espacio de trabajo"}</span>
         <LocalIdentity /></header>
         <div className="content">
-          {error && (
-            <div role="alert" className="message error">
-              {error}
-              <button onClick={() => setError("")} aria-label="Cerrar error">
-                <X size={16} />
-              </button>
-            </div>
-          )}
+          {error&&<FeedbackState kind="error" onDismiss={()=>setError('')}>{error}</FeedbackState>}
           {notice && (
             <div role="status" className="message success">
               {notice}
             </div>
           )}
           {view === "migration" ? (
-            <Migration projects={projects} onApplied={async()=>{setProjects(await api("/projects"));}}/>
+            canManage?<Migration projects={projects} onApplied={async()=>{setProjects(await api("/projects"));}}/>:<FeedbackState kind="error">Las importaciones globales requieren permisos de gestión.</FeedbackState>
           ) : !project ? (
             <>
               <div className="page-heading">
@@ -368,7 +362,8 @@ function App() {
                   </button>
                 ))}
               </div>}
-              {!projects.length && (
+              {!projects.length&&!canManage&&<FeedbackState>No tienes proyectos autorizados. Solicita al administrador vincular tu cuenta con una Persona participante.</FeedbackState>}
+              {!projects.length && canManage && (
                 <div className="empty">
                   <FolderKanban size={42} />
                   <h2>Tu portafolio empieza aquí</h2>

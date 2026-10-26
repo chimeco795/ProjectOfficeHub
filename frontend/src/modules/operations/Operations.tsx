@@ -1,3 +1,4 @@
+import {teamLabel,TeamBadge} from './teamIdentity';
 import { DocumentWorkspace } from "./DocumentWorkspace";
 import {TeamWorkspace} from './TeamWorkspace';
 import {ManagementWorkspace} from './ManagementWorkspace';
@@ -208,7 +209,7 @@ function OperationsContent({
     })),
     teamOptions = teams
       .filter((t) => !t.archived)
-      .map((t) => ({ value: t.id, label: t.name }));
+      .map((t) => ({ value: t.id, label: teamLabel(t) }));
   const archive: Field = {
     key: "archived",
     label: "Archivado",
@@ -514,7 +515,7 @@ function OperationsContent({
                   )
                   .map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.name}
+                      {teamLabel(t)}
                     </option>
                   ))}
               </select>
@@ -526,7 +527,7 @@ function OperationsContent({
               .filter((t) => !!t.archived === archived)
               .map((t) => (
                 <article className="work-card" key={t.id}>
-                  <h3>{t.name}</h3>
+                  <h3>{teamLabel(t)}</h3>
                   <p>
                     Líder:{" "}
                     {people.find((p) => p.id === t.lead_id)?.name ||

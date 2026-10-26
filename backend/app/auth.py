@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from .db import connection
+from .access_scope import account_context,guard_read
 
 router = APIRouter(prefix='/api/auth', tags=['Access'])
 COOKIE = os.environ.get('PMO_SESSION_COOKIE','pohub_session')
@@ -135,6 +136,7 @@ def write_allowed(db, account, path):
 
 async def access_middleware(request, call_next):
     path = request.url.path
+    context_token=None
     try:
         if path.startswith('/api/'):
             unsafe = request.method not in ('GET','HEAD','OPTIONS')
@@ -151,6 +153,8 @@ async def access_middleware(request, call_next):
                         raise HTTPException(401, 'La sesión terminó. Inicia sesión para continuar.')
                     account = db.execute('SELECT * FROM access_accounts WHERE id=?', (row['account_id'],)).fetchone()
                     request.state.account = dict(account)
+                    context_token=account_context.set(dict(account))
+                    if not unsafe:guard_read(db,path)
                     request.state.session_hash = digest(token)
                     request.state.csrf = row['csrf']
                     request.state.expires_at = row['expires_at']
@@ -162,8 +166,11 @@ async def access_middleware(request, call_next):
                     if now-row['last_seen'] > 60:
                         db.execute('UPDATE access_sessions SET last_seen=? WHERE token_hash=?', (now, digest(token)))
     except HTTPException as exc:
+        if context_token is not None:account_context.reset(context_token)
         return JSONResponse({'detail': exc.detail}, status_code=exc.status_code, headers={'Cache-Control':'no-store'})
-    response = await call_next(request)
+    try:response = await call_next(request)
+    finally:
+        if context_token is not None:account_context.reset(context_token)
     if path.startswith('/api/'):
         response.headers['Cache-Control'] = 'no-store'
     response.headers['Referrer-Policy'] = 'no-referrer'

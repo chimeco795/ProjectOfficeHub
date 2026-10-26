@@ -5,6 +5,7 @@ from pydantic import BaseModel,Field,model_validator
 from ..db import connection,encode
 from ..services import master
 from .pmo import scoped
+from ..access_scope import filter_roles,filter_projects
 router=APIRouter(prefix='/api',tags=['Management'])
 
 class Role(BaseModel):
@@ -12,10 +13,11 @@ class Role(BaseModel):
     reports_to:str|None=None
     version:int=Field(default=1,ge=1)
     archived:bool=False
+    manages_multiple_teams:bool=False
 
 @router.get('/roles')
 def roles():
-    with connection() as db:return [dict(r) for r in db.execute('SELECT * FROM roles ORDER BY name')]
+    with connection() as db:return filter_roles(db,[dict(r) for r in db.execute('SELECT * FROM roles ORDER BY name')])
 
 @router.post('/roles',status_code=201)
 def create_role(value:Role):return save_role(value)
@@ -35,9 +37,10 @@ def save_role(value,identity=None):
         while parent:
             if parent in seen:raise HTTPException(422,'Jerarquía de roles circular')
             seen.add(parent);parent=master.require(db,'roles',parent)['reports_to']
-        if old:db.execute('UPDATE roles SET name=?,name_key=?,reports_to=?,archived=?,version=version+1 WHERE id=?',(name,name.casefold(),value.reports_to,value.archived,identity))
+        manages=value.manages_multiple_teams if 'manages_multiple_teams' in value.model_fields_set else old.get('manages_multiple_teams',False)
+        if old:db.execute('UPDATE roles SET name=?,name_key=?,reports_to=?,archived=?,manages_multiple_teams=?,version=version+1 WHERE id=?',(name,name.casefold(),value.reports_to,value.archived,manages,identity))
         else:
-            identity=master.uid();db.execute('INSERT INTO roles(id,name,name_key,reports_to,archived) VALUES(?,?,?,?,?)',(identity,name,name.casefold(),value.reports_to,value.archived))
+            identity=master.uid();db.execute('INSERT INTO roles(id,name,name_key,reports_to,archived,manages_multiple_teams) VALUES(?,?,?,?,?,?)',(identity,name,name.casefold(),value.reports_to,value.archived,manages))
         saved=master.require(db,'roles',identity);master.audit(db,None,identity,'editar_rol' if old else 'crear_rol',old,saved);return saved
 
 class Contact(BaseModel):
@@ -127,4 +130,4 @@ def calendar(project_id:str,value:WorkingCalendar):
 def my_projects(person_id:str):
     with connection() as db:
         master.require(db,'people',person_id)
-        return [dict(r) for r in db.execute('SELECT p.* FROM projects p JOIN project_people m ON m.project_id=p.id WHERE m.person_id=? ORDER BY p.name',(person_id,))]
+        return filter_projects(db,[dict(r) for r in db.execute('SELECT p.* FROM projects p JOIN project_people m ON m.project_id=p.id WHERE m.person_id=? ORDER BY p.name',(person_id,))])

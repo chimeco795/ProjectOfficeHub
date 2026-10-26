@@ -23,6 +23,9 @@ class Period(Versioned):
 class Team(Versioned):
     name:str=Field(min_length=1,max_length=200)
     lead_id:str|None=None
+    code:str|None=Field(default=None,pattern=r'^[A-Z0-9][A-Z0-9_-]{0,11}$')
+    color:str=Field(default='#246b58',pattern=r'^#[0-9a-fA-F]{6}$')
+    shape:Literal['circle','diamond','square','triangle','hexagon']='circle'
 
 class Membership(Versioned):
     role_id:str|None=None

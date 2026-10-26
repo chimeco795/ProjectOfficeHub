@@ -86,3 +86,5 @@ def initialize():
         migrate_minutes(db, DATA)
         from .auth import migrate_access
         migrate_access(db, DATA)
+        from .consolidation import migrate_consolidation
+        migrate_consolidation(db, DATA)

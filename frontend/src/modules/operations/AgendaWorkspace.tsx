@@ -1,3 +1,4 @@
+import {useActionFeedback} from '../../components/ActionFeedback';
 import { ScopeToggle, useOperationScope, projectColor } from "./OperationScope";
 import { dateKey } from "./calendarModel";
 import { useEffect, useState } from "react";
@@ -32,6 +33,7 @@ export type AgendaEvent = {
 export function AgendaWorkspace({ projectId }: { projectId: string }) {
   const base = "/projects/" + projectId;
   const [filtersOpen,setFiltersOpen]=useState(false);
+  const {notify,feedback}=useActionFeedback();
   const scope = useOperationScope(projectId),
     scopeKey = scope.ids.join(",");
   const [projectFilter, setProjectFilter] = useState(""),
@@ -58,24 +60,12 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
     [archived, setArchived] = useState(false),
     [view, setView] = useState("calendar"),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false),
-    [pending, setPending] = useState<{
-      event: AgendaEvent;
-      date: string;
-      time: string;
-    } | null>(null),
-    [undo, setUndo] = useState<{
-      event: AgendaEvent;
-      date: string;
-      time: string;
-    } | null>(null);
+    [busy, setBusy] = useState(false);
   useEffect(() => {
     let active = true;
     setEvents([]);
     setSelected("");
     setEditing(null);
-    setPending(null);
-    setUndo(null);
     setProjectFilter("");
     setError("");
     Promise.all([
@@ -232,14 +222,10 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
       saved.project_id = value.event.project_id;
       setEvents((all) => all.map((e) => (e.id === saved.id ? saved : e)));
       setSelected(saved.id);
-      setUndo(
-        remember
-          ? { event: saved, date: value.event.date, time: value.event.time }
-          : null,
-      );
-      setPending(null);
+      if(remember)notify('Evento movido',()=>move({event:saved,date:value.event.date,time:value.event.time},false));
     } catch (e) {
       setError((e as Error).message);
+      if(!remember)throw e;
     } finally {
       setBusy(false);
     }
@@ -309,7 +295,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
     </div>
   );
   return (
-    <section className="panel">
+    <section className="panel">{feedback}
       <div className="section-heading">
         <div>
 
@@ -330,15 +316,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
         </p>
       )}
       {error && <p role="alert">{error}</p>}
-      {undo && (
-        <p role="status">
-          Evento movido.{" "}
-          <button disabled={busy} onClick={() => void move(undo, false)}>
-            Deshacer movimiento
-          </button>
-          <button aria-label="Cerrar aviso" onClick={()=>setUndo(null)}>×</button>
-        </p>
-      )}
+
       <div className="catalog-toolbar agenda-toolbar"><ScopeToggle scope={scope}/><div className="view-switch" role="group" aria-label="Vista de Agenda"><button aria-pressed={view==='calendar'} onClick={()=>setView('calendar')}>Calendario</button><button aria-pressed={view==='list'} onClick={()=>setView('list')}>Lista</button></div><label className="catalog-search">Buscar eventos<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Título, persona, fecha o trabajo"/></label><button aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}>Filtros{archived||projectFilter?' · Activos':''}</button><button className="primary" onClick={()=>create(dateKey(new Date()))}>+ Nuevo evento</button></div>
       {filtersOpen&&<div className="pmo-actions">
         {scope.all && (
@@ -481,34 +459,7 @@ export function AgendaWorkspace({ projectId }: { projectId: string }) {
           onSave={save}
         />
       )}
-      {pending && (
-        <Dialog
-          title="Mover evento"
-          onClose={() => {
-            if (!busy) setPending(null);
-          }}
-        >
-          <h3>{pending.event.title}</h3>
-          <p>
-            {pending.event.date} {pending.event.time.slice(0, 5)} →{" "}
-            {pending.date} {pending.time.slice(0, 5)}
-          </p>
-          <p>
-            Duración: {pending.event.duration_minutes ?? "sin definir"} minutos.
-            Se conservan invitados, descripción y relaciones.
-          </p>
-          <button disabled={busy} onClick={() => setPending(null)}>
-            Cancelar
-          </button>
-          <button
-            className="primary"
-            disabled={busy}
-            onClick={() => void move(pending, true)}
-          >
-            Confirmar movimiento
-          </button>
-        </Dialog>
-      )}
+
     </section>
   );
 }

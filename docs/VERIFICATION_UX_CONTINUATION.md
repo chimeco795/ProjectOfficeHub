@@ -209,3 +209,49 @@ Capturas ignoradas por Git: .test-data/consistency-people.png, consistency-peopl
 Respaldo consistente .test-data/pre-consistency-normal-20261014.sqlite3 antes de reiniciar sólo 8011. Comparación posterior: las **36 tablas** coinciden con el respaldo (incluidas cuentas), integrity_check ok, foreign_key_check vacío, esquema 12. No migraciones ni fixtures en data/. Sesiones/cuentas existentes se preservan. No se intervino 8000 ni se recargó un formulario del usuario. App 8011 sirve dist nuevo; instancias antiguas distintas no se declaran actualizadas.
 
 Conservados pendientes ajenos: exportación .pohub real, correo/extracción automáticos, agrupación/preview documental, paridad/widgets legacy, estrés y estabilidad de E1… ante altas/bajas/10+ equipos. Dedicación total se revisa manualmente; no se adapta por capacidad. Algunas columnas de relaciones múltiples se leen y abren ficha en lugar de editarlas ambiguamente. Orden local de encabezados no reescribe prioridad ni jerarquía. Móvil mediante viewport, sin certificar dispositivo táctil físico. Esta entrega cierra los ajustes solicitados, sin cerrar la paridad general.
+
+## Consolidación UX y reglas explícitas — 2026-10-22
+
+Base master 5027f0a. Prioridades solicitadas: Design System, ACL, propiedad de Rol, identidad de Equipo y documentación/tests. Versión 0.13.0/fase 13 sin cambios. **SQLite 13** es la necesidad técnica aditiva para campos nuevos; la autenticación real permanece en schema 12. No se reaudita todo el repo ni se sustituye arquitectura.
+
+### COMPLETADO
+
+- Patrones comunes: Dialog, ConfirmDialog/useConfirmation, ActionMenu, Toolbar, FeedbackState y useActionFeedback. ConfirmDialog sin icono decorativo, header/contenido/footer separados, título verbo+sustantivo sin pregunta, consecuencia breve, botones en fila y principal derecha repitiendo verbo. Se usa en cambios de cuenta que revocan sesiones y generación de enlace. Cancelar no aplica la acción.
+- Todos los window.confirm de código frontend eliminados. Archivar/restaurar elemento, rol, equipo o asignación actúa directamente y ofrece toast/Deshacer con la versión devuelta. Conflictos no se pisan. Aviso disponible en top layer del diálogo activo; Agenda usa el mismo feedback y su modal de movimiento sin uso se retiró. Menús y toolbars flotantes/compartidos conservan los contratos de operación.
+- ACL reutiliza project_people, sin tabla paralela. Admin/Gestor globales; Miembro/Consulta sólo proyectos donde participa su Persona. Sin vínculo o participación, portafolio vacío con explicación. Middleware comprueba cada lectura, incluyendo alias /cuts y /records/audit. Listados de proyectos/personas/roles/equipos y proyectos de una persona se filtran; capacidad excluye proyectos ocultos; migraciones/globales y original completo requieren gestión. Campos de liderazgo fuera del catálogo visible se ocultan y auditoría global de catálogos no se entrega a lectores restringidos.
+- Escritura operativa de Miembro conservada en sus proyectos; Consulta sólo lectura PMO, con perfil/preferencias/contraseña propios. API sigue siendo autoridad. Autores de documentos escritos por Miembro se validan dentro de su catálogo visible. Cambiar participación repercute en la petición siguiente sin exigir nueva sesión.
+- roles.manages_multiple_teams configurable desde listado/ficha/alta de Roles. La capacidad se hereda hacia superiores y se explica en UI; no concede permisos de seguridad. El nombre no participa en ejecución. Migración marca sólo TechLead previo para conservar comportamiento; roles nuevos con ese nombre no reciben capacidad por defecto.
+- teams.code único/corto, color y shape persistidos; backfill EQn sólo una vez. Equipos permite editar identidad; TeamBadge/teamLabel reutilizados en organigrama, fichas, selectores, asignaciones y agrupaciones de planificación. Código+forma+nombre identifican sin depender sólo de color. Ordenar o renombrar no recalcula código/color/forma.
+- README refleja autenticación de schema 12 y esquema vigente 13; ARCHITECTURE describe módulos actuales y separa historia. No se borró verification histórica. AI_CONTEXT distingue completado, pendiente y limitaciones.
+
+### Pruebas
+
+`pytest backend/tests -q`: **112/112**, suite completa, después del último ajuste de validación de autor. Incluye autenticación, permisos, scheduler/resize, migraciones previas, publicaciones, snapshots, originales, versiones y auditoría existentes. Nuevos casos: ACL Miembro/Consulta sobre dos proyectos, alias/descargas/scoped ID cruzado, catálogos/capacidad, retirada de participación con sesión vigente, lector sin Persona, Admin/Gestor globales, propiedad explícita sin inferencia de nombre, identidad estable/única/validada, migración idempotente con backup y conservación de todas las columnas anteriores. Advertencia Starlette/httpx existente.
+
+`npm test`: **32/32**. Jerarquía por propiedad explícita (incluye nombre TechLead sin permiso), padres ausentes/ciclos/archivados e identidad no dependiente del orden/color. TypeScript (`tsc -b`) y Vite correctos; aviso previo de bundle >500 kB. `git diff --check` correcto.
+
+QA exclusivo en .test-data/consolidation-browser-20261022, puerto 8017, cookie independiente pohub_consolidation_qa, copia del fixture sintético anterior. No se crearon cuentas ni entidades de prueba en data/.
+
+| Vista/flujo | Evidencia |
+|---|---|
+| Login / Portafolio | Admin/Gestor ven 4 proyectos. Logout retira workspace; Miembro y Consulta vinculados a la misma Persona ven 2. No aparecen proyectos Agile/Cascada ajenos ni sus contadores. |
+| Permisos | Enlace conocido a proyecto ajeno, abierto en nueva pestaña como Miembro, muestra error genérico y vuelve a portafolio autorizado. API rechaza datos/descargas/alias ajenos con 404. Consulta tiene Nuevo rol/Nuevo equipo y campos de gestión deshabilitados; menús de cuenta sin administración. |
+| Confirmación | Guardar permisos de una cuenta QA abre Actualizar permisos, consecuencia, Cancelar/Actualizar; capturado y cancelado sin modificar la cuenta ni conceder acceso. |
+| Deshacer | QA flujo contextual archivado desde su ficha sin confirmación; toast dentro de capa modal, Deshacer restaura Activo con versión nueva. |
+| Roles | TechLead QA renombrado Coordinación QA conserva capacidad. Campo Multiequipo Sí→No→Sí se guarda explícitamente; Dirección QA muestra Heredado. Nombre sin efecto sobre la regla. |
+| Equipos | Equipo QA pasa de EQ2 a código SRE, color rojo y hexágono mediante edición contextual. Esos valores aparecen en ficha y selectores después de guardar. |
+| Organigrama | Mostrar integrantes apagado mantiene roles/equipos; SRE/hexágono/rojo y EQ1/círculo se reutilizan en leyenda, filtro y nodos. Coordinación QA conserva múltiples equipos tras renombrar. |
+
+Capturas locales ignoradas: .test-data/consolidation-confirm.png, consolidation-undo.png, consolidation-member-portfolio.png, consolidation-denied-project.png y consolidation-org.png. Datos QA conservan sus cambios sintéticos y auditoría; no se confunden con base real. Revisión principal a viewport de escritorio 1280; no se certificó en esta entrega hardware táctil ni estrés de cientos de equipos.
+
+### Migración normal
+
+Respaldo consistente .test-data/pre-consolidation-normal-20261022.sqlite3, ensayo en .test-data/consolidation-normal-copy-20261022 y aplicación normal verificados. Comparación de **36 tablas**: todos los valores de columnas existentes coinciden; sólo campos nuevos y versión 13 añadidos, integrity_check ok y foreign_key_check vacío. Incluye originales BLOB, snapshots, publicaciones, cuentas y sesiones. Backup automático v12 conservado. No se modificó scheduler ni se hicieron pruebas sobre datos reales.
+
+Normal 8011 iniciado con código nuevo. 8000 reservado no intervenido; no se atribuye la ACL nueva a procesos antiguos que sigan en memoria. No se introducen contraseñas ni se elige una Persona para cuentas reales.
+
+### PENDIENTE / LIMITACIONES
+
+Fuera de este alcance: exportación real .pohub, proveedor de correo/extracción, preview/agrupación documental, widgets/paridad legacy y SSO/MFA si se solicitan. Sin promesas de envío de correo. La ACL es por proyecto, no por campo o documento individual del proyecto autorizado. Personas/equipos compartidos y roles relacionados/ancestros se muestran dentro de ese alcance; no existe un catálogo ACL duplicado. El propietario del archivo SQLite conserva acceso de sistema operativo.
+
+La capacidad multiequipo hereda hacia superiores; desactivarla en un superior no anula una capacidad heredada desde un subordinado, que se muestra como Heredado. Código de equipo estable al ordenar, pero editable por gestión; no es etiqueta histórica inmutable. Dedicación no se redistribuye automáticamente. Preferencias de diseño siguen locales por cuenta y catálogo Lista/Cards en servidor. Algunos secundarios operativos heredados pueden seguir visibles para lectores antes del rechazo de API; ninguna acción elude permisos. Backend bloquea fuera del alcance aunque se fuerce un URL o llamada. Arrastres físicos y móvil completo no recertificados por esta pasada; sus verificaciones anteriores permanecen históricas.

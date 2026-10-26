@@ -1,3 +1,5 @@
+import {useSession} from '../../components/authState';
+import {teamLabel} from './teamIdentity';
 import {useEffect,useState} from 'react';
 import {api,json} from '../../api';
 import {SearchPicker} from '../../components/SearchPicker';
@@ -5,6 +7,7 @@ import {AssignmentFields} from './AssignmentFields';
 import {dateKey} from './calendarModel';
 
 export function PersonAssignment({projectId,person,onAssigned,initialRoleId}:{projectId:string;person:any;onAssigned:()=>Promise<void>;initialRoleId?:string}) {
+  const canManage=['Admin','Gestor'].includes(useSession()?.account.security_role||'');
   const base='/projects/'+projectId;
   const [teams,setTeams]=useState<any[]>([]),[roles,setRoles]=useState<any[]>([]),[people,setPeople]=useState<any[]>([]),[members,setMembers]=useState<any[]>([]);
   const [loaded,setLoaded]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -26,11 +29,11 @@ export function PersonAssignment({projectId,person,onAssigned,initialRoleId}:{pr
     <h3>Asignación al proyecto</h3>
     <p className="assignment-path">Rol y dedicación · Equipo opcional · Vigencia y líder</p>
     {error&&<p role="alert">{error}</p>}{notice&&<small role="status">{notice}</small>}
-    {!loaded?<p>Cargando asignación…</p>:!assigned?<button className="primary" disabled={busy} onClick={()=>void assignProject()}>Asignar a este proyecto</button>:<>
+    {!loaded?<p>Cargando asignación…</p>:!assigned?<button className="primary" disabled={busy||!canManage} onClick={()=>void assignProject()}>Asignar a este proyecto</button>:<>
       <small>Persona asignada al proyecto</small>
-      {assignments.length?assignments.map(m=><section className="person-assignment-record" key={m.id} aria-label="Asignación de la persona"><AssignmentFields member={m} roles={roles} teams={teams} people={people} onSave={(key,value)=>update(m,key,value)}/></section>):initialRoleId?<button className="primary" disabled={busy} onClick={()=>void addRole(initialRoleId)}>Asignar rol {roles.find(r=>r.id===initialRoleId)?.name}</button>:<SearchPicker label="Asignar rol" value="" disabled={busy} options={roles.filter(r=>!r.archived).map(r=>({value:r.id,label:r.name}))} onChange={v=>void addRole(String(v))}/>}
+      {assignments.length?assignments.map(m=><section className="person-assignment-record" key={m.id} aria-label="Asignación de la persona"><AssignmentFields member={m} roles={roles} teams={teams} people={people} onSave={(key,value)=>update(m,key,value)}/></section>):initialRoleId?<button className="primary" disabled={busy||!canManage} onClick={()=>void addRole(initialRoleId)}>Asignar rol {roles.find(r=>r.id===initialRoleId)?.name}</button>:<SearchPicker label="Asignar rol" value="" disabled={busy||!canManage} options={roles.filter(r=>!r.archived).map(r=>({value:r.id,label:r.name}))} onChange={v=>void addRole(String(v))}/>}
       {!assignments.length&&!roles.some(r=>!r.archived)&&<small>Crea un rol desde la pestaña Roles. No necesitas un equipo.</small>}
     </>}
-    {!!previous.length&&<details className="assignment-options"><summary>Asignaciones anteriores · {previous.length}</summary><ul>{previous.map(m=><li key={m.id}>{teams.find(t=>t.id===m.team_id)?.name||'Sin equipo'} · {roles.find(r=>r.id===m.role_id)?.name||m.role||'Sin rol'} · {m.allocation}% · {m.valid_from||'Sin inicio'} → {m.valid_to}</li>)}</ul></details>}
+    {!!previous.length&&<details className="assignment-options"><summary>Asignaciones anteriores · {previous.length}</summary><ul>{previous.map(m=><li key={m.id}>{(teams.find(t=>t.id===m.team_id)?teamLabel(teams.find(t=>t.id===m.team_id)):'Sin equipo')} · {roles.find(r=>r.id===m.role_id)?.name||m.role||'Sin rol'} · {m.allocation}% · {m.valid_from||'Sin inicio'} → {m.valid_to}</li>)}</ul></details>}
   </div>;
 }

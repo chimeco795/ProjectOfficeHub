@@ -2,13 +2,15 @@ from fastapi import APIRouter
 
 from ..domain.projects import Project, ProjectUpdate
 from ..repositories import projects
+from ..db import connection
+from ..access_scope import filter_projects
 
 router = APIRouter(prefix='/api/projects', tags=['Projects'])
 
 
 @router.get('')
 def list_projects():
-    return projects.list_projects()
+    with connection() as db:return filter_projects(db,projects.list_projects())
 
 
 @router.post('', status_code=201)

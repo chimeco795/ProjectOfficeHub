@@ -1,3 +1,5 @@
+import {useActionFeedback} from '../../components/ActionFeedback';
+import {useSession} from '../../components/authState';
 import { SearchPicker, personChoices } from "../../components/SearchPicker";
 import { useState } from "react";
 import { Dialog } from "../../Dialog";
@@ -19,6 +21,8 @@ export const emptyItem = (kind="Risk"): Item => ({id:"",project_id:"",kind,code:
 export function ItemEditor({ initial, people, items, title, onClose, onSave, contextual=false }: {
   initial: Item; people:Person[]; items:Item[]; title:string; onClose:()=>void; onSave:(value:Item)=>Promise<Item|void>; contextual?:boolean;
 }) {
+  const {notify,feedback}=useActionFeedback();
+  const readOnly=useSession()?.account.security_role==='Consulta';
   const [value,setValue]=useState(initial),[busy,setBusy]=useState(false),[error,setError]=useState("");
   const set=(key:keyof Item,next:unknown)=>setValue({...value,[key]:next});
   async function saveField(key:keyof Item,next:unknown) {
@@ -26,8 +30,14 @@ export function ItemEditor({ initial, people, items, title, onClose, onSave, con
     try {const saved=await onSave({...value,[key]:next}); if(saved)setValue(saved);}
     finally {setBusy(false);}
   }
+  async function archive(){
+    if(busy)return;
+    setBusy(true);setError('');
+    try{const before=value;const saved=await onSave({...value,archived:!value.archived});if(saved){setValue(saved);notify(before.archived?'Elemento restaurado':'Elemento archivado',async()=>{const restored=await onSave({...saved,archived:before.archived});if(restored)setValue(restored);});}}
+    catch(e){setError((e as Error).message);}finally{setBusy(false);}
+  }
   if(contextual&&initial.id)return <Dialog title="Detalle del elemento" onClose={()=>{if(!busy)onClose();}}>
-    <p>{value.code} · {kinds[value.kind]}</p>
+    {feedback}<p>{value.code} · {kinds[value.kind]}</p>
     <div className="detail-fields">
       <ContextField label="Código" value={value.code} required disabled={busy} onSave={v=>saveField('code',v)}/>
       <ContextField label="Nombre" value={value.name} required disabled={busy} onSave={v=>saveField('name',v)}/>
@@ -44,7 +54,7 @@ export function ItemEditor({ initial, people, items, title, onClose, onSave, con
     </div>
     <ContextField label="Detalle" value={value.description} type="textarea" disabled={busy} onSave={v=>saveField('description',v)}/>
     <ContextField label="Respuesta / mitigación" value={value.response} type="textarea" disabled={busy} onSave={v=>saveField('response',v)}/>
-    <ActionMenu label="Opciones del elemento"><button disabled={busy} onClick={async()=>{if(!window.confirm(value.archived?'¿Restaurar este elemento?':'¿Archivar este elemento?'))return;try {await saveField('archived',!value.archived);}catch(e){setError((e as Error).message);}}}>{value.archived?'Restaurar':'Archivar'}</button></ActionMenu>
+    <ActionMenu label="Opciones del elemento"><button disabled={busy||readOnly} onClick={()=>void archive()}>{value.archived?'Restaurar':'Archivar'}</button></ActionMenu>
     {error&&<p role="alert">{error}</p>}
     <p>Los cortes publicados conservan sus valores históricos.</p>
     <Attachments projectId={value.project_id} kind="item" id={value.id}/>

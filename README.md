@@ -1,38 +1,31 @@
 # Project Office Hub
 
-Producto PMO con un catálogo maestro de proyectos y Seguimiento Ejecutivo dentro de cada proyecto. React + TypeScript + Vite, FastAPI y SQLite. Uso local en este incremento.
+PMO local con un catálogo de proyectos y Seguimiento Ejecutivo por proyecto. React/TypeScript/Vite, FastAPI y SQLite; sin un segundo catálogo ni doble escritura.
 
-## Estado
+## Estado actual — 22 de octubre de 2026
 
-Fases 0–4 completadas el 5 de octubre de 2026. Incremento de diseño y uso cotidiano disponible: versión 0.13.0, esquema SQLite 11: proyectos, seguimiento semanal, catálogo RAID/hitos/actividades, personas compartidas, conciliación explícita y snapshots protegidos.
+Versión **0.13.0**, fase oficial **13**. La autenticación real se incorporó en **schema 12**; el esquema actual **13** añade únicamente la capacidad multiequipo explícita y la identidad persistente de equipos. No es una fase o versión nueva.
 
-Desde **RAID e hitos** administra el estado actual. Al crear un corte puedes partir del catálogo o copiar una semana anterior. Revisa y acepta los registros; en **Conciliar con el catálogo** vincula los riesgos, dependencias, hitos y actividades antes de publicar. Vincular no sobrescribe los valores semanales. Traer datos actuales vuelve a dejar el registro pendiente; aplicar cambios al catálogo exige revisar y guardar el formulario. **Auditoría del proyecto** reúne los eventos históricos.
+- Acceso con cuentas independientes de Personas, contraseñas scrypt, sesiones revocables, CSRF, expiración, Recordarme y cierre de sesión.
+- Admin/Gestor ven todos los proyectos. Miembro y Consulta sólo ven proyectos donde participa su Persona vinculada mediante `project_people`; sin vínculo/participación no reciben proyectos. Consulta es sólo lectura; Miembro conserva escritura operativa en su alcance. Las rutas directas de cortes, registros y descargas también están protegidas.
+- Roles profesionales distintos de permisos de acceso. `manages_multiple_teams` configurable, heredable hacia superiores por jerarquía; ningún nombre concede capacidades en ejecución.
+- Equipo compartido con código único, color y forma persistentes. La identidad se conserva al ordenar, renombrar o vincular a otros proyectos; el código puede editarse explícitamente.
+- Diálogo, confirmación, menú ⋮, toolbar, estados y toast/Deshacer compartidos. Archivados reversibles se ejecutan sin confirmación nativa; Deshacer comprueba la versión guardada.
+- Catálogo RAID/hitos/trabajo, planificación, agenda, equipos, documentos y cortes publicados con originales/snapshots protegidos. Importar genera propuestas revisables.
 
-Incremento operativo de fase 5 disponible: Backlog, Board, Gantt, Roadmap, equipos, presupuesto, agenda y documentos operan sobre SQLite. Migración .pohub con validación previa, asignación de proyectos, transacción atómica y originales descargables. El usuario aún no tiene su exportación: la migración real y la paridad completa siguen pendientes. Véase docs/VERIFICATION_PHASE5.md para la matriz de alcance. Los ZIP originales permanecen intactos.
+Pendientes y límites actuales: [STATUS](docs/STATUS.md), [contexto](AI_CONTEXT.md) y [última verificación](docs/VERIFICATION_UX_CONTINUATION.md). La historia de fases se consulta aparte; sus cifras y limitaciones corresponden a cada entrega.
 
-## Diseño y operación diaria
+## Inicio local
 
-Navegación por módulos y pestañas, vista general con compromisos reales, portafolio con búsqueda y filtros, tablero por arrastre y agenda mensual/semanal/diaria. Ver docs/VERIFICATION_PHASE6.md. Esta entrega no cierra la migración real pendiente de fase 5.
-
-## Reporte ejecutivo
-
-Los indicadores se toman del resumen semanal guardado. La gráfica muestra publicaciones anteriores y el corte actual; las series importadas se consultan por separado y nunca sustituyen cifras oficiales. Cero es un dato válido; campos ausentes siguen sin definir. Los borradores muestran solo registros aceptados inicialmente, con una opción explícita para incluir pendientes y dudosos. Los reportes publicados usan únicamente datos históricos.
-
-Desde el reporte puedes abrir el resumen, consultar/editar registros, ir a sus tablas o volver al proyecto. La marca y plantilla continúan configurándose por corte. Validación: `npm --prefix frontend test`, `npm --prefix frontend run build` y `python -m pytest -q` con el entorno virtual activado. Véase docs/VERIFICATION_PHASE4.md.
-
-## Inicio en este equipo
-
-Desde la raíz del repositorio:
+Desde la raíz:
 
 ```powershell
-.\Start.ps1
+.\Start.ps1 -Port 8011
 ```
 
-Abrir http://127.0.0.1:8000. Para otro puerto: `.\Start.ps1 -Port 8011`. La base productiva local empieza vacía; no se insertan proyectos de ejemplo. Ctrl+C detiene el servidor.
+Abrir http://127.0.0.1:8011/. En una instalación vacía, el titular configura su primer Admin con su propia contraseña; no hay credenciales predeterminadas ni datos de ejemplo. En una base existente se conservan cuentas, proyectos y sesiones. Sólo el proceso que se reinicia carga el código nuevo.
 
-## Instalación reproducible
-
-Requisitos: Python 3.12+ y Node.js 22+ con npm.
+Requisitos: Python 3.12+ y Node.js 22+.
 
 ```powershell
 python -m venv .venv
@@ -41,74 +34,48 @@ Set-Location frontend
 npm ci
 npm run build
 Set-Location ..
-.\Start.ps1
+.\Start.ps1 -Port 8011
 ```
 
-Para desarrollo, ejecutar `..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000` desde backend y `npm run dev` desde frontend.
+## Acceso y recuperación
 
-## Uso
+Admin administra cuentas y su vínculo opcional a una Persona existente. Cambiar permiso, vínculo o estado revoca las sesiones afectadas; el último Admin activo está protegido. No se mezclan Persona, Rol, Equipo, Asignación y Cuenta.
 
-1. Crear proyecto en Portafolio y definir metodología, prioridad, objetivo y fechas.
-2. Abrir su resumen; editar la ficha guarda cambios con control de versión.
-3. Entrar en Seguimiento Ejecutivo para consultar o crear cortes del proyecto.
-4. La URL conserva proyecto, vista y corte al recargar o abrirla en otra pestaña.
+Sesión normal: 30 minutos sin actividad y máximo 12 horas; Recordarme: 7 días sin actividad y máximo 30 días. Cookies HttpOnly/SameSite Strict, Secure sobre HTTPS; ejecución local actual en loopback HTTP. `PMO_SESSION_COOKIE` permite separar instancias de QA.
 
-Fecha objetivo, Go Live y cierre son campos independientes. Una publicación anterior conserva los datos de proyecto que tenía al publicarse.
+Recuperación mediante enlace de un solo uso de 30 minutos generado por Admin. No hay proveedor de correo automático, SSO ni MFA conectados. Si el propietario local pierde el único Admin, desde `backend` puede ejecutar:
 
-## Seguimiento Ejecutivo — fase 2
+```powershell
+..\.venv\Scripts\python.exe -m app.recover_account --email correo@ejemplo.com
+```
 
-Crear un corte vacío o desde la semana anterior, indicar fecha y periodo, e importar documentos .docx y .xlsx. Revisar los registros, corregirlos y aceptarlos; también se pueden editar tablas o agregar registros manuales. Los originales permanecen conservados.
-
-En Actualización semanal, guardar porcentajes y resumen. Publicar exige no tener pendientes ni dudosos y convierte el corte en solo lectura. El histórico muestra avances, estado y pendientes; Trazabilidad del corte muestra creación, importaciones, correcciones y publicación. Una nueva semana copiada queda pendiente de revisión y comienza sin porcentajes ni resumen semanal.
-
-Si otra ventana modifica contenido, se rechaza publicar con una versión antigua. Recargar el corte permite revisar la información nueva. Los cambios en una semana posterior no alteran publicaciones anteriores.
+El titular introduce la contraseña nueva; restablecer revoca sesiones y no inicia sesión automáticamente. El acceso web no protege el archivo SQLite frente a quien ya puede leerlo como usuario del sistema operativo.
 
 ## Datos y migraciones
 
-Datos locales en `data/pmo.sqlite3`, excluidos de Git. `PMO_DATA_DIR` permite utilizar otra carpeta. Se conservan los datos normales creados por el usuario; no se importó su base legacy .pohub. Las pruebas de navegador usan `.test-data/browser` y no forman parte de la base normal.
+`data/pmo.sqlite3` está excluido de Git; `PMO_DATA_DIR` permite elegir otra carpeta. No se importó la base legacy real del usuario. QA usa carpetas aisladas bajo `.test-data/`.
 
-Al iniciar se ejecutan las migraciones necesarias hasta esquema 11. La v3 agrega metodología, prioridad, fecha objetivo y fecha de actualización; la v4 protege publicaciones y guarda su serie histórica. Si contiene proyectos, se crea primero el respaldo `backup-v2-<fecha>.sqlite3` o `backup-v3-<fecha>.sqlite3`, según la migración. Los proyectos anteriores reciben Hybrid y prioridad Media como valores iniciales revisables; no se inventa una fecha objetivo ni se cambian snapshots publicados.
+El arranque aplica migraciones aditivas hasta **13**. Schema 12 agrega tablas de acceso. Schema 13 agrega `roles.manages_multiple_teams` y `teams.code/color/shape`: una sola vez puede marcar el TechLead existente para conservar comportamiento y asigna códigos EQn persistidos a los equipos existentes. Los nombres dejan de intervenir después. Las bases pobladas reciben respaldo previo `backup-v11-*.sqlite3` o `backup-v12-*.sqlite3` según corresponda. No se reescriben publicaciones, snapshots, originales ni fechas del scheduler.
 
-Para un respaldo manual, detener la aplicación y copiar la carpeta data. Para restaurar, conservar la copia actual y arrancar con otra carpeta mediante PMO_DATA_DIR. No apuntar este incremento a la única copia de una base anterior.
+Para respaldar/restaurar, conservar la base actual y usar una copia consistente en otra carpeta mediante `PMO_DATA_DIR`; no sustituir la única copia de una base anterior.
 
-## Verificación
+## Verificación actual
 
 ```powershell
-Set-Location backend
-..\.venv\Scripts\python.exe -m pytest -q
-Set-Location ..\frontend
-npm run build
+.\.venv\Scripts\python.exe -m pytest backend/tests -q
+npm --prefix frontend test
+npm --prefix frontend run build
 ```
 
-Resultado vigente: 86 pruebas backend, 29 frontend y TypeScript/Vite correctos. Ver docs/VERIFICATION_PHASE13.md para verificaciones y límites. [Verificación de fase 2](docs/VERIFICATION_PHASE2.md). Véase [verificación](docs/VERIFICATION.md) para el alcance y las advertencias heredadas.
+Resultado del incremento: **112 backend**, **32 frontend**, TypeScript y Vite correctos. Ver [evidencia y límites](docs/VERIFICATION_UX_CONTINUATION.md). El aviso de bundle >500 kB y la advertencia Starlette/httpx se mantienen; no hubo cambio de arquitectura para eliminarlos.
 
-## Documentación
+## Historia y documentación
 
+Las verificaciones históricas se conservan: [fase 2](docs/VERIFICATION_PHASE2.md), [fase 5/migración](docs/VERIFICATION_PHASE5.md), [fase 13](docs/VERIFICATION_PHASE13.md) y [continuaciones UX](docs/VERIFICATION_UX_CONTINUATION.md). Sus referencias a ausencia de autenticación, esquema 11 o usuario local describen ese momento, no el estado vigente.
+
+- [Arquitectura actual e historia](docs/ARCHITECTURE.md)
+- [Modelo de datos histórico](docs/DATA_MODEL.md), complementado por las migraciones y el estado actual
 - [Plan de integración](docs/INTEGRATION_PLAN.md)
-- [Arquitectura implementada](docs/ARCHITECTURE.md)
-- [Modelo de datos](docs/DATA_MODEL.md)
-- [Contexto de continuidad](AI_CONTEXT.md)
 - [Inventario de fuentes](docs/SOURCE_INVENTORY.md)
 
-Rama principal: master. El servidor escucha en localhost; este incremento no incluye autenticación ni despliegue multiusuario.
-
-El cronograma permite filtrar alertas y revisar fechas que se cruzan con sus predecesores. El análisis orientativo no modifica fechas. Ver docs/VERIFICATION_PHASE7.md.
-
-Desde Cronograma puedes simular fechas y revisar holgura antes de aplicar los cambios. La aplicación actualiza el catálogo en una transacción y conserva los reportes publicados. Modelo: días naturales, duraciones completas, relaciones fin-inicio, sin recursos ni festivos. Ver docs/VERIFICATION_PHASE8.md.
-
-Equipo incluye capacidad por fechas entre proyectos y organigrama compartido. Los trabajos admiten comentarios y asignación a iteraciones/releases mediante arrastre. Estado vigente y pendientes: docs/STATUS.md; verificación: docs/VERIFICATION_PHASE9.md.
-
-Revisión UX/UI 0.10.0: alta rápida, edición progresiva e inline, equipo por tareas, Gantt jerárquico y biblioteca compartida de documentos. Alcance y verificación: [VERIFICATION_PHASE10](docs/VERIFICATION_PHASE10.md).
-
-Revisión UX/UI 0.11.0: ficha display-to-edit, agenda con duración/movimiento confirmado, usuario local, documentos con autor/descripción y PDF/PNG del reporte. [Alcance y verificación](docs/VERIFICATION_PHASE11.md). Incremento histórico 12: edición inline con Enter/blur/Escape, personas predictivas, Gantt expandible y captura PMO para el corte. [Verificación actual](docs/VERIFICATION_PHASE12.md) y [matriz de fuentes](docs/EXECUTIVE_SOURCE_MAP.md). Migración real de fase 5 pendiente.
-
-Incremento 13: dashboard de ocho widgets con modos Lectura/Diseño, arrastre/resize y preferencias por persona local y proyecto. Crear proyecto usa dos pasos. Tablero/Lista comparten filtros; columnas visibles y extremos colapsables se recuerdan. Filtros ocultos inicialmente y metodología con contenido específico: Agile sprints/releases, Waterfall fases/entregables/hitos, Hybrid periodos y entregables. Gantt con zoom día/semana/mes/trimestre. [Verificación](docs/VERIFICATION_PHASE13.md).
-
-
-## Continuación UX del 8 de octubre de 2026
-
-Las tres etapas de esta solicitud mantienen la versión 0.13.0 y la fase oficial 13. Tablero de una a cuatro columnas persistentes, ficha compacta, periodos por equipo/responsable y Gantt con movimiento horizontal validado. Personas, roles, equipos y asignaciones son conceptos independientes; organigrama, ausencias y horarios conservan los datos heredados sin convertir roles automáticamente.
-
-Agenda con semana compartida, alcance de proyectos asignados al usuario local y recordatorios mientras la aplicación está abierta. Documentos con múltiples vínculos a trabajos, eventos y cortes, sin duplicar bytes. Las minutas TXT/DOCX conservan el original y admiten propuestas manuales que requieren aceptación, vinculación o descarte explícitos. No hay extracción automática ni servicio de IA conectado.
-
-[Verificación y límites](docs/VERIFICATION_UX_CONTINUATION.md) · [Matriz de suficiencia ejecutiva](docs/EXECUTIVE_SUFFICIENCY.md). Las migraciones 10 y 11 son aditivas y crean respaldos de bases pobladas antes de aplicarse. El resize del Gantt y la certificación manual de algunos arrastres HTML5 siguen pendientes.
+Master es la rama principal. Continúan pendientes la exportación real `.pohub`, extracción automática de minutas, correo automático y paridad/widgets legacy. El calendario usa días naturales sin redistribución automática por capacidad; los recordatorios requieren Agenda abierta.

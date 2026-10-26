@@ -112,7 +112,7 @@ def test_role_without_team_and_management_of_multiple_teams(client):
     _,_,b=base(client)
     person=client.post(b+'/people',json={'new_person':{'name':'Lider independiente'}}).json()
     director=client.post('/api/roles',json={'name':'Direccion multiequipo'}).json()
-    lead=client.post('/api/roles',json={'name':'TechLead','reports_to':director['id']}).json()
+    lead=client.post('/api/roles',json={'name':'TechLead','reports_to':director['id'],'manages_multiple_teams':True}).json()
     analyst=client.post('/api/roles',json={'name':'Especialista','reports_to':lead['id']}).json()
     teams=[client.post(b+'/pmo/teams',json={'name':n,'lead_id':person['id']}).json() for n in ['Primero','Segundo','Tercero']]
     # A role is meaningful before, and independently of, a team.

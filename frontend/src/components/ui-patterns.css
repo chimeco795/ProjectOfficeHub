@@ -1,0 +1,11 @@
+.ui-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:16px 0;min-width:0}
+.ui-state{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 0;color:#607083;line-height:1.5}
+.ui-state-error{color:#9e3946}.ui-state-loading{color:#365baa}
+.native-dialog.confirm-dialog{width:440px;max-width:calc(100vw - 32px);padding:0!important;text-align:left}
+.confirm-dialog .dialog-head{padding:20px 24px;margin:0!important;border-bottom:1px solid #e1e8eb;align-items:center}
+.confirm-dialog .dialog-head h2{font-size:18px;text-align:left}
+.confirm-content{padding:20px 24px}.confirm-content p{margin:0;line-height:1.6}
+.confirm-footer{display:flex;justify-content:flex-end;gap:8px;padding:16px 24px;border-top:1px solid #e1e8eb}
+.confirm-footer button{min-height:36px}
+.team-identity{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;font-weight:600;margin-right:6px}
+.team-symbol{font-size:16px}.team-identity .team-code{color:#334155}

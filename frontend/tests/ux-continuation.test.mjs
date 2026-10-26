@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
-function data(file) {return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(readFileSync(new URL(file,import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText.replace('./workPresentation',dataPresentation)).toString('base64');}
+function data(file) {return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(readFileSync(new URL(file,import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText.replace('./workPresentation',dataPresentation).replace('../operations/teamIdentityModel',dataIdentity)).toString('base64');}
 const dataPresentation='data:text/javascript;base64,'+Buffer.from(ts.transpileModule(readFileSync(new URL('../src/modules/planning/workPresentation.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText).toString('base64');
+const dataIdentity='data:text/javascript;base64,'+Buffer.from(ts.transpileModule(readFileSync(new URL('../src/modules/operations/teamIdentityModel.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText).toString('base64');
 const {restoreColumns,reorderColumn}=await import(data('../src/modules/planning/columnModel.ts'));
 const {deliveryGroups}=await import(data('../src/modules/planning/deliveryModel.ts'));
 const {reorderSibling,restoreOrder}=await import(data('../src/modules/planning/orderModel.ts'));

@@ -6,6 +6,7 @@ from pydantic import BaseModel,Field,field_validator
 from ..db import connection
 from ..services import master
 from ..services.capacity import capacity
+from ..access_scope import project_ids
 router=APIRouter(prefix='/api',tags=['Collaboration'])
 
 @router.get('/projects/{project_id}/capacity')
@@ -15,6 +16,8 @@ def get_capacity(project_id:str,start:date,end:date):
         people=[dict(r) for r in db.execute('SELECT p.id,p.name FROM people p JOIN project_people x ON x.person_id=p.id WHERE x.project_id=? ORDER BY p.name,p.id',(project_id,))]
         rows=[dict(r) for r in db.execute('''SELECT m.*,p.name project_name FROM memberships m JOIN projects p ON p.id=m.project_id
             WHERE m.person_id IN (SELECT person_id FROM project_people WHERE project_id=?) AND m.archived=0 ORDER BY m.id''',(project_id,))]
+        allowed=project_ids(db)
+        if allowed is not None:rows=[r for r in rows if r['project_id'] in allowed]
         result=capacity(people,rows,start,end)
         for person in result:
             person['availability']=[dict(r) for r in db.execute('SELECT * FROM availability WHERE person_id=? AND archived=0 AND start_date<=? AND end_date>=?',(person['id'],end.isoformat(),start.isoformat()))]

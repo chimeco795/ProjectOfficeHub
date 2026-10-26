@@ -1,3 +1,5 @@
+import {useSession} from '../../components/authState';
+import {TeamBadge,teamLabel} from './teamIdentity';
 import { useEffect, useState, useRef } from "react";
 import { api,json } from "../../api";
 import { dateKey } from "./calendarModel";
@@ -7,6 +9,7 @@ import {PersonAssignment} from './PersonAssignment';
 import {RecordEditor} from './Operations';
 import {multiTeamRoles} from './teamRoleModel';
 export function OrganizationChart({ projectId }: { projectId: string }) {
+  const canManage=['Admin','Gestor'].includes(useSession()?.account.security_role||'');
   const [selected,setSelected]=useState<any>(null);
   const [teams,setTeams]=useState<any[]>([]),[teamFilter,setTeamFilter]=useState('');
   const [showMembers,setShowMembers]=useState(true);
@@ -44,7 +47,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
       .catch((e) => setError(e.message));
   }, [projectId, today,revision]);
   const multiRoles=multiTeamRoles(roles);
-  function cell(teamId:string){const index=teams.findIndex(t=>t.id===teamId);if(index<0)return null;return <span className="org-cell" style={{color:['#246b58','#365baa','#9a5a17','#82378b','#9e3946'][index%5]}} title={teams[index].name}>{['●','◆','■','▲','⬟'][index%5]} E{index+1} · {teams[index].name}</span>;}
+  function cell(teamId:string){const team=teams.find(t=>t.id===teamId);return team?<TeamBadge team={team}/>:null;}
   function node(role: any, path: string[] = []): React.ReactNode {
     if (path.includes(role.id)) return null;
     const children = roles.filter((r) => r.reports_to === role.id),
@@ -78,7 +81,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
               </span>
             </button>
           ))}
-          {showMembers&&!persons.length && <><small>{teamFilter?'Sin persona en este equipo':'Sin persona asignada'}</small><button onClick={()=>{setAssignRole(role);setAssignPerson(null);}}>+ Asignar persona</button></>}
+          {showMembers&&!persons.length && <><small>{teamFilter?'Sin persona en este equipo':'Sin persona asignada'}</small><button disabled={!canManage} onClick={()=>{setAssignRole(role);setAssignPerson(null);}}>+ Asignar persona</button></>}
           {!!children.length && (
             <button
               aria-expanded={!collapsed.includes(role.id)}
@@ -122,7 +125,7 @@ export function OrganizationChart({ projectId }: { projectId: string }) {
         </div>
       </div>
       {error && <p role="alert">{error}</p>}
-      {!!teams.length&&<div className="catalog-toolbar"><label>Equipo<select value={teamFilter} onChange={e=>setTeamFilter(e.target.value)}><option value="">Todos los equipos</option>{teams.map((t,index)=><option key={t.id} value={t.id}>E{index+1} · {t.name}</option>)}</select></label><div className="org-cell-legend" aria-label="Leyenda de equipos">{teams.map(t=><span key={t.id}>{cell(t.id)}</span>)}</div></div>}
+      {!!teams.length&&<div className="catalog-toolbar"><label>Equipo<select value={teamFilter} onChange={e=>setTeamFilter(e.target.value)}><option value="">Todos los equipos</option>{teams.map(t=><option key={t.id} value={t.id}>{teamLabel(t)}</option>)}</select></label><div className="org-cell-legend" aria-label="Leyenda de equipos">{teams.map(t=><span key={t.id}>{cell(t.id)}</span>)}</div></div>}
       <div
         className="org-scroll"
         tabIndex={0}

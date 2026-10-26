@@ -1,6 +1,24 @@
 # Contexto de Project Office Hub
 
-## Checkpoint activo — consistencia UX/UI en Gestión y Planificación, 2026-10-14
+## Checkpoint activo — consolidación UX y reglas explícitas, 2026-10-22
+
+Base master 5027f0a. Versión 0.13.0/fase 13 conservadas. **Schema 13 necesario**: campos aditivos de Rol y Equipo; schema 12 sigue siendo la base de autenticación. Sin reauditoría general, cambio arquitectónico, catálogo ACL paralelo ni modificación de scheduler/publicados/snapshots/originales.
+
+COMPLETADO: Dialog/ConfirmDialog, menú ⋮, toolbar, FeedbackState y toast/Deshacer compartidos. Confirmación sin icono decorativo, título verbal, cuerpo/footer separados y principal derecha; cambios de permisos/generación de enlace piden confirmación interna. Eliminados todos los window.confirm; archivados de elemento/rol/equipo/asignación se ejecutan con Deshacer versionado. Toast accesible en el diálogo activo. Agenda reutiliza el toast y retira modal de confirmación sin uso.
+
+COMPLETADO: ACL por petición con project_people; Admin/Gestor globales, Miembro/Consulta sólo proyectos de su Persona vinculada. Sin vínculo/participación: cero proyectos. Portafolio, alias de cortes/registros, descargas, catálogos relacionados, proyectos de una persona y capacidad filtrados; migraciones/originales globales sólo gestión. Miembro conserva escritura operativa autorizada; Consulta sólo lectura PMO y cambios propios de cuenta. Autor de documento escrito por Miembro debe ser visible. Rutas ajenas 404 sin datos; cambios de participación afectan sesiones vigentes.
+
+COMPLETADO: roles.manages_multiple_teams explícito, configurable desde Roles, heredado hacia superiores; no se infiere por nombre en ejecución. Sólo migración puede marcar TechLead previo. Equipo con code único, color y shape persistidos, editables desde ficha; TeamBadge/teamLabel compartidos en organigrama, equipos, asignaciones y agrupación de planificación. Nunca usar índices de lista para identidad. README/ARCHITECTURE actualizados con estado vigente separado de antecedentes; verification histórica conservada.
+
+VERIFICADO: full backend **112/112**, frontend **32/32**, TypeScript/Vite y diff check. QA aislado .test-data/consolidation-browser-20261022, puerto 8017, cookie pohub_consolidation_qa. Admin/Gestor ven 4 proyectos, Miembro/Consulta 2; enlace a proyecto ajeno rechazado sin mostrar sus datos. Confirmación cancelada sin guardar; rol archivado/deshecho desde modal; TechLead QA renombrado Coordinación QA mantiene capacidad y permite No→Sí; equipo SRE/rojo/hexágono conserva identidad en organigrama. No son datos normales. Ver última sección de VERIFICATION_UX_CONTINUATION.md.
+
+DATOS NORMALES: respaldo .test-data/pre-consolidation-normal-20261022.sqlite3, ensayo en copia y migración normal comprobados: **36 tablas, todos los valores de columnas anteriores conservados**, integridad ok/FK vacío. Schema 13 añade sólo campos previstos y versión. Backup automático v12 en data/. Normal 8011 iniciado con código nuevo; 8000 reservado no intervenido. No se crean cuentas ni fixtures normales. No dar por actualizados otros procesos antiguos en memoria.
+
+PENDIENTE: exportación real .pohub, proveedor de correo/extracción de minutas, preview/agrupación documental y widgets/paridad legacy; SSO/MFA sólo si se solicitan. Estrés y arrastres físicos no recertificados por esta entrega. No reiniciar análisis ni renumerar fases.
+
+LIMITACIONES: ACL es por proyecto, no por campo ni documento individual dentro de un proyecto autorizado; personas/roles/equipos compartidos se muestran sólo si relacionados con el alcance (más ancestros de roles y propia Persona). Datos globales de catálogo no forman parte de auditoría del lector restringido. Metadatos de catálogos compartidos afectan sus proyectos; no se alteran snapshots. Sin TLS/SMTP/SSO/MFA activos; archivo SQLite protegido por permisos del SO. Dedicación no se redistribuye automáticamente. Códigos son estables al ordenar pero editables explícitamente, no etiquetas históricas inmutables. API sigue siendo autoridad de escritura; algunas acciones operativas heredadas pueden permanecer visibles antes del rechazo de permiso, sin eludirlo.
+
+## Checkpoint anterior — consistencia UX/UI en Gestión y Planificación, 2026-10-14
 
 Base master cf54f1c. Solicitud puntual actual; no reauditado el repo. Conservados arquitectura, versión 0.13.0, fase 13 y SQLite 12, histórico, permisos y contratos/versiones.
 

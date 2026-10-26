@@ -1,3 +1,7 @@
+import {teamLabel} from './teamIdentity';
+import {multiTeamRoles} from './teamRoleModel';
+import {useActionFeedback} from '../../components/ActionFeedback';
+import {Toolbar,FeedbackState} from '../../components/UiPatterns';
 import { useEffect, useState } from "react";
 import { api, json } from "../../api";
 import { ContextField } from "../../components/ContextField";
@@ -20,6 +24,7 @@ export function ManagementWorkspace({
   projectId: string;
   view: string;
 }) {
+  const {notify,feedback}=useActionFeedback();
   const base = "/projects/" + projectId;
   const permission=useSession()?.account.security_role;
   const canManage=permission==='Admin'||permission==='Gestor';
@@ -83,7 +88,7 @@ export function ManagementWorkspace({
   function assignmentSummary(record:any) {
     const today=dateKey(new Date());
     const active=memberships.filter(m=>!m.archived&&(!m.valid_from||m.valid_from<=today)&&(!m.valid_to||m.valid_to>=today)&&(view==='people'?m.person_id===record.id:m.role_id===record.id));
-    const teamNames=[...new Set(active.map(m=>teams.find(t=>t.id===m.team_id)?.name).filter(Boolean))].join(', ');
+    const teamNames=[...new Set(active.map(m=>(teams.find(t=>t.id===m.team_id)?teamLabel(teams.find(t=>t.id===m.team_id)):null)).filter(Boolean))].join(', ');
     const detail=view==='people'?active.map(m=>(roles.find(r=>r.id===m.role_id)?.name||m.role||'Sin rol')+' · '+m.allocation+'%').join(' / '):[...new Set(active.map(m=>people.find(p=>p.id===m.person_id)?.name).filter(Boolean))].join(', ');
     return <><span>{teamNames||'Sin equipo'}</span><span>{detail||'Sin asignación vigente'}</span></>;
   }
@@ -100,29 +105,29 @@ export function ManagementWorkspace({
   const records=(view==='people'?people:roles).filter(r=>(r.name+' '+(r.email||'')).toLocaleLowerCase().includes(query.toLocaleLowerCase())&&(scope==='all'||(view==='people'?(scope==='assigned')===assigned.some(a=>a.id===r.id):(scope==='archived')===!!r.archived)));
   const sortValue=(r:any)=>sort.key==='reports_to'?roles.find(p=>p.id===r.reports_to)?.name||'':r[sort.key]||'';
   records.sort((a,b)=>String(sortValue(a)).localeCompare(String(sortValue(b)),'es',{numeric:true})*(sort.descending?-1:1));
-  const headers=view==='people'?[['Nombre','name'],['Correo','email'],['Equipo',''],['Rol',''],['Dedicación',''],['Líder',''],['Estado',''],['Acciones','']]:[['Rol','name'],['Reporta a','reports_to'],['Personas asignadas',''],['Equipos',''],['Estado',''],['Acciones','']];
+  const headers=view==='people'?[['Nombre','name'],['Correo','email'],['Equipo',''],['Rol',''],['Dedicación',''],['Líder',''],['Estado',''],['Acciones','']]:[['Rol','name'],['Reporta a','reports_to'],['Personas asignadas',''],['Equipos',''],['Multiequipo',''],['Estado',''],['Acciones','']];
   function memberField(member:any,key:string,record:any){
     const source=key==='team_id'?teams:key==='role_id'?roles:people;
     const label=key==='team_id'?'Equipo':key==='role_id'?'Rol':key==='leader_id'?'Líder':'Dedicación (%)';
-    return <ContextField key={member.id} label={label+' de '+record.name} showLabel={false} disabled={!canManage} value={member[key]??''} type={key==='allocation'?'number':'text'} min={0} max={100} search={key!=='allocation'} options={key==='allocation'?undefined:[{value:'',label:'Sin '+label.toLocaleLowerCase()},...source.filter(r=>(!r.archived||r.id===member[key])&&(key!=='leader_id'||r.id!==member.person_id)).map(r=>({value:r.id,label:r.name}))]} display={key==='allocation'?member.allocation+'%':key==='role_id'&&!member.role_id?member.role||'Sin rol':undefined} onSave={v=>saveMember(member,key,key==='allocation'?Number(v):v||null)}/>;
+    return <ContextField key={member.id} label={label+' de '+record.name} showLabel={false} disabled={!canManage} value={member[key]??''} type={key==='allocation'?'number':'text'} min={0} max={100} search={key!=='allocation'} options={key==='allocation'?undefined:[{value:'',label:'Sin '+label.toLocaleLowerCase()},...source.filter(r=>(!r.archived||r.id===member[key])&&(key!=='leader_id'||r.id!==member.person_id)).map(r=>({value:r.id,label:key==='team_id'?teamLabel(r):r.name}))]} display={key==='allocation'?member.allocation+'%':key==='role_id'&&!member.role_id?member.role||'Sin rol':undefined} onSave={v=>saveMember(member,key,key==='allocation'?Number(v):v||null)}/>;
   }
   return (
-    <section className="panel management-workspace">
+    <section className="panel management-workspace">{feedback}
       {view==='availability'&&<div className="section-heading">
         <button className="primary" disabled={!canManage} onClick={() => setAdding(view)}>Registrar ausencia</button>
       </div>}
       {error && <p role="alert">{error}</p>}
       {view === "people" || view === "roles" ? (
         <>
-          <div className="catalog-toolbar">
+          <Toolbar label="Controles de gestión" className="catalog-toolbar">
             <label className="catalog-search">{view==='people'?'Buscar persona':'Buscar rol'}<input value={query} onChange={e=>setQuery(e.target.value)} placeholder={view==='people'?'Nombre o correo':'Nombre del rol'}/></label>
             <label>{view==='people'?'Asignación':'Estado'}<select value={scope} onChange={e=>setScope(e.target.value)}><option value="all">Todos</option>{view==='people'?<><option value="assigned">En el proyecto</option><option value="unassigned">Sin asignar</option></>:<><option value="active">Activos</option><option value="archived">Archivados</option></>}</select></label>
             <CatalogView value={catalogView} onChange={setCatalogView} label={titles[view]}/>
             <button className="primary" disabled={!canManage} onClick={()=>setAdding(view)}>{view==='people'?'Nueva persona':'Nuevo rol'}</button>
-          </div>
+          </Toolbar>
           {catalogView==='list'?<div className="catalog-table-wrap"><table className="catalog-table"><thead><tr>{headers.map(([label,key])=>key?<SortHeader key={label} label={label} column={key} sort={sort} onSort={order}/>:<th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{records.map(record=>{
             const current=memberships.filter(m=>!m.archived&&(!m.valid_from||m.valid_from<=today)&&(!m.valid_to||m.valid_to>=today)&&(view==='people'?m.person_id===record.id:m.role_id===record.id));
-            const names=(key:string,source:any[])=>[...new Set(current.map(m=>source.find(x=>x.id===m[key])?.name).filter(Boolean))].join(', ')||'—';
+            const names=(key:string,source:any[])=>[...new Set(current.map(m=>{const row=source.find(x=>x.id===m[key]);return row?(key==='team_id'?teamLabel(row):row.name):null;}).filter(Boolean))].join(', ')||'—';
             return <tr key={record.id}>
               <td><ContextField label={(view==='people'?'Nombre':'Rol')+' de '+record.name} showLabel={false} value={record.name} required disabled={!canManage} onSave={v=>saveRecord(record,'name',v)}/></td>
               {view==='people'?<>
@@ -134,12 +139,12 @@ export function ManagementWorkspace({
                 <td>{assigned.some(a=>a.id===record.id)?'En el proyecto':'Sin asignar'}</td>
               </>:<>
                 <td><ContextField label={'Reporta a de '+record.name} showLabel={false} value={record.reports_to||''} display={roles.find(r=>r.id===record.reports_to)?.name||'Raíz'} search disabled={!canManage} options={[{value:'',label:'Raíz'},...roles.filter(r=>r.id!==record.id&&(!r.archived||r.id===record.reports_to)).map(r=>({value:r.id,label:r.name}))]} onSave={v=>saveRecord(record,'reports_to',v||null)}/></td>
-                <td>{names('person_id',people)}</td><td>{names('team_id',teams)}</td><td>{record.archived?'Archivado':'Activo'}</td>
+                <td>{names('person_id',people)}</td><td>{names('team_id',teams)}</td><td><ContextField label={'Multiequipo de '+record.name} showLabel={false} value={record.manages_multiple_teams?'yes':'no'} disabled={!canManage} display={record.manages_multiple_teams?'Sí':multiTeamRoles(roles).has(record.id)?'Heredado':'No'} options={[{value:'no',label:'No'},{value:'yes',label:'Sí'}]} onSave={v=>saveRecord(record,'manages_multiple_teams',v==='yes')}/></td><td>{record.archived?'Archivado':'Activo'}</td>
               </>}
               <td><ActionMenu label={'Opciones de '+record.name}><button onClick={()=>setSelected(record)}>Ver ficha</button>{view==='people'&&<button onClick={()=>setSelected(record)}>Asignar rol / equipo</button>}</ActionMenu></td>
             </tr>;
           })}</tbody></table></div>:<div className="catalog-cards">{records.map(record=><article className="catalog-card" key={record.id}><button className="catalog-card-open" onClick={()=>setSelected(record)}><strong>{record.name}</strong>{view==='people'?<><span>{record.email||'Sin correo'}</span><span>{assigned.some(a=>a.id===record.id)?'En este proyecto':'Sin asignar al proyecto'}</span></>:<><span>Reporta a: {roles.find(r=>r.id===record.reports_to)?.name||'Raíz'}</span><span>{record.archived?'Archivado':'Activo'}</span></>}{assignmentSummary(record)}</button><ActionMenu label={'Opciones de '+record.name}><button onClick={()=>setSelected(record)}>Ver ficha</button></ActionMenu></article>)}</div>}
-          {!records.length&&<p>No hay resultados en esta selección.</p>}
+          {!records.length&&<FeedbackState>No hay resultados en esta selección.</FeedbackState>}
         </>
       ) : view === "organization" ? (
         <OrganizationChart projectId={projectId} />
@@ -169,7 +174,7 @@ export function ManagementWorkspace({
           </div>
           {calendars.map((c) => (
             <p key={c.id}>
-              {teams.find((t) => t.id === c.team_id)?.name || "Proyecto"} ·{" "}
+              {(teams.find(t=>t.id===c.team_id)?teamLabel(teams.find(t=>t.id===c.team_id)):'Proyecto')} ·{" "}
               {c.days
                 .map(
                   (d: number) =>
@@ -256,22 +261,24 @@ export function ManagementWorkspace({
         {error&&<p role="alert">{error}</p>}
         <div className="detail-grid"><ContextField label="Nombre" required value={selected.name} onSave={async v=>{const saved=await api('/roles/'+selected.id,{method:'PUT',...json({...selected,name:v})});setSelected(saved);await reload();}}/>
         <ContextField label="Reporta a" value={selected.reports_to||''} search options={[{value:'',label:'Raíz'},...roles.filter(r=>r.id!==selected.id&&!r.archived).map(r=>({value:r.id,label:r.name}))]} onSave={async v=>{const saved=await api('/roles/'+selected.id,{method:'PUT',...json({...selected,reports_to:v||null})});setSelected(saved);await reload();}}/></div>
-        <p>{roles.filter(r=>r.reports_to===selected.id).length} roles subordinados · {selected.archived?'Archivado':'Activo'}</p>
-        <ActionMenu label="Opciones del rol"><button onClick={async()=>{if(window.confirm(selected.archived?'¿Restaurar este rol?':'¿Archivar este rol? Las asignaciones existentes se conservan.')){try{const saved=await api('/roles/'+selected.id,{method:'PUT',...json({...selected,archived:!selected.archived})});setSelected(saved);await reload();}catch(e){setError((e as Error).message);}}}}>{selected.archived?'Restaurar rol':'Archivar rol'}</button></ActionMenu>
+        <ContextField label="Gestiona múltiples equipos" value={selected.manages_multiple_teams?'yes':'no'} disabled={!canManage} options={[{value:'no',label:'No'},{value:'yes',label:'Sí'}]} onSave={v=>saveRecord(selected,'manages_multiple_teams',v==='yes')}/><small>Se hereda hacia roles superiores. No concede permisos de acceso al PMO.</small><p>{roles.filter(r=>r.reports_to===selected.id).length} roles subordinados · {selected.archived?'Archivado':'Activo'}</p>
+        <ActionMenu disabled={!canManage} label="Opciones del rol"><button onClick={async()=>{try{const saved=await api('/roles/'+selected.id,{method:'PUT',...json({...selected,archived:!selected.archived})});setSelected(saved);await reload();const before=selected;notify(before.archived?'Rol restaurado':'Rol archivado',async()=>{const restored=await api('/roles/'+saved.id,{method:'PUT',...json({...saved,archived:before.archived})});setSelected(restored);await reload();});}catch(e){setError((e as Error).message);}}}>{selected.archived?'Restaurar rol':'Archivar rol'}</button></ActionMenu>
       </Dialog>}
       {adding === "roles" && (
         <RecordEditor
-          title="Rol"
+          title="Crear rol"
           initial={
             selected || {
               name: "",
               reports_to: null,
+              manages_multiple_teams: false,
               version: 1,
               archived: false,
             }
           }
           fields={[
             { key: "name", label: "Nombre", required: true },
+            { key: "manages_multiple_teams", label: "Gestiona múltiples equipos", type: "checkbox" },
             {
               key: "reports_to",
               label: "Reporta a",
@@ -425,7 +432,7 @@ function CalendarEditor({
               <option value="">Proyecto</option>
               {teams.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name}
+                  {teamLabel(t)}
                 </option>
               ))}
             </select>

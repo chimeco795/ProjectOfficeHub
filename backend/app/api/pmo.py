@@ -9,6 +9,7 @@ from pydantic import ValidationError, BaseModel
 from ..db import connection, encode
 from ..domain.pmo import Period,Team,Membership,Budget,Entry,Event,DocumentUpdate
 from ..services.master import require,item,audit,uid,now
+from ..access_scope import filter_teams,person_ids
 
 router=APIRouter(prefix='/api',tags=['PMO'])
 CONFIG={'periods':('planning_periods',Period),'teams':('teams',Team),'memberships':('memberships',Membership),
@@ -35,7 +36,10 @@ def validate_refs(db,pid,values,existing_role=None):
         person=getattr(values,key,None)
         if person and not db.execute('SELECT 1 FROM project_people WHERE project_id=? AND person_id=?',(pid,person)).fetchone():
             raise HTTPException(422,'La persona debe estar asignada al proyecto')
-    if getattr(values,'author_id',None):require(db,'people',values.author_id)
+    if getattr(values,'author_id',None):
+        visible=person_ids(db)
+        if visible is not None and values.author_id not in visible:raise HTTPException(404,'Autor no disponible.')
+        require(db,'people',values.author_id)
     for identity in getattr(values,'document_ids',[]):scoped(db,'documents',pid,identity)
     if getattr(values,'lead_id',None):require(db,'people',values.lead_id)
     if getattr(values,'team_id',None):scoped(db,'teams',pid,values.team_id)
@@ -56,7 +60,8 @@ def listing(project_id:str,collection:str):
         require(db,'projects',project_id)
         if table=='teams':rows=db.execute('SELECT t.* FROM teams t JOIN project_teams p ON p.team_id=t.id WHERE p.project_id=?',(project_id,))
         else:rows=db.execute(f'SELECT * FROM {table} WHERE project_id=? ORDER BY id',(project_id,))
-        return [decode(row) for row in rows]
+        decoded=[decode(row) for row in rows]
+        return filter_teams(db,decoded) if table=='teams' else decoded
 
 @router.post('/projects/{project_id}/pmo/{collection}',status_code=201)
 def create(project_id:str,collection:str,value:dict):return save(project_id,collection,value)
@@ -73,7 +78,7 @@ def multi_team_roles(db):
     roles={r['id']:dict(r) for r in db.execute('SELECT * FROM roles')}
     allowed=set()
     for lead in roles.values():
-        if ''.join(c for c in lead['name'].casefold() if c not in ' _-')!='techlead':continue
+        if not lead['manages_multiple_teams']:continue
         role=lead;seen=set()
         while role and role['id'] not in seen:
             seen.add(role['id'])
@@ -97,6 +102,16 @@ def save_record(db,pid,collection,value,identity=None):
     if table=='planning_periods' and old and old['kind']!=values.kind:
         raise HTTPException(422,'El tipo de periodo no puede cambiar')
     fields=values.model_dump(mode='json');fields.pop('version')
+    if table=='teams':
+        for key in ('code','color','shape'):
+            if old and key not in values.model_fields_set:fields[key]=old[key]
+        if not fields['code']:
+            if old:fields['code']=old['code']
+            else:
+                number=1
+                while db.execute('SELECT 1 FROM teams WHERE code=? COLLATE NOCASE',(f'EQ{number}',)).fetchone():number+=1
+                fields['code']=f'EQ{number}'
+        if db.execute('SELECT 1 FROM teams WHERE code=? COLLATE NOCASE AND id!=?',(fields['code'],identity or '')).fetchone():raise HTTPException(409,'El código de equipo ya existe')
     if table=='memberships' and values.role_id:fields['role']=require(db,'roles',values.role_id)['name']
     for key in ('name','title','concept','category','role','kind'):
         if key in fields:
@@ -119,7 +134,7 @@ def save_record(db,pid,collection,value,identity=None):
 
 @router.get('/teams')
 def teams():
-    with connection() as db:return [dict(r) for r in db.execute('SELECT * FROM teams ORDER BY name')]
+    with connection() as db:return filter_teams(db,[dict(r) for r in db.execute('SELECT * FROM teams ORDER BY name')])
 
 class Assign(BaseModel):
     team_id:str

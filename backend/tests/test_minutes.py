@@ -97,7 +97,7 @@ def test_minutes_migration_backup_preserves_existing_tables(tmp_path,monkeypatch
     with db.connection() as connection:
         assert dict(connection.execute('SELECT * FROM projects').fetchone())==before
         assert connection.execute('PRAGMA foreign_key_check').fetchall()==[]
-        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==12
+        assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==13
     backups=list(tmp_path.glob('backup-v10-*.sqlite3'));assert len(backups)==1
     with sqlite3.connect(backups[0]) as connection:
         assert connection.execute('SELECT MAX(version) FROM schema_version').fetchone()[0]==10

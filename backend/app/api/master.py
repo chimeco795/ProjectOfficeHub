@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, model_validator
 from ..db import connection, encode
 from ..domain.master import PersonInput, PersonUpdate, ItemInput, ItemUpdate, Reconcile, Transfer, ApplyToMaster
 from ..services import master as service
+from ..access_scope import filter_people,project_ids
 
 router=APIRouter(prefix='/api',tags=['Master data'])
 
@@ -21,13 +22,13 @@ class RecordVersion(BaseModel):
 
 @router.get('/people')
 def people():
-    with connection() as db:return [dict(r) for r in db.execute('SELECT * FROM people ORDER BY name,id')]
+    with connection() as db:return filter_people(db,[dict(r) for r in db.execute('SELECT * FROM people ORDER BY name,id')])
 
 @router.get('/projects/{project_id}/people')
 def project_people(project_id:str):
     with connection() as db:
         service.require(db,'projects',project_id)
-        return [dict(r) for r in db.execute('SELECT p.* FROM people p JOIN project_people x ON p.id=x.person_id WHERE x.project_id=? ORDER BY name',(project_id,))]
+        return filter_people(db,[dict(r) for r in db.execute('SELECT p.* FROM people p JOIN project_people x ON p.id=x.person_id WHERE x.project_id=? ORDER BY name',(project_id,))])
 
 @router.post('/projects/{project_id}/people',status_code=201)
 def assign_person(project_id:str,value:AssignPerson):
@@ -148,6 +149,7 @@ def project_audit(project_id:str):
         service.require(db,'projects',project_id)
         events=[{**dict(r),'origin':'maestro'} for r in db.execute('''SELECT * FROM audit_events WHERE project_id=? OR
             (project_id IS NULL AND (entity_id IN (SELECT person_id FROM project_people WHERE project_id=?) OR entity_id IN (SELECT id FROM roles)))''',(project_id,project_id))]
+        if project_ids(db) is not None:events=[e for e in events if e['project_id'] is not None]
         events += [{**dict(r),'event':'editar_proyecto','origin':'proyecto'} for r in db.execute('SELECT * FROM project_audit WHERE project_id=?',(project_id,))]
         events += [{**dict(r),'origin':'corte'} for r in db.execute('SELECT a.* FROM cut_audit a JOIN cuts c ON c.id=a.cut_id WHERE c.project_id=?',(project_id,))]
         events += [{**dict(r),'event':'editar_registro','origin':'registro'} for r in db.execute('SELECT a.* FROM audit a JOIN records r ON r.id=a.record_id JOIN cuts c ON c.id=r.cut_id WHERE c.project_id=?',(project_id,))]
